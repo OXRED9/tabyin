@@ -110,6 +110,52 @@ def write_chart(results: dict, out_dir: Path) -> None:
     plt.close(fig)
 
 
+AR_LABELS = {"lexical": "بحث لفظي فقط", "llm": "نموذج لغوي عام بلا استرجاع", "tabayyun": "تبيّن"}
+
+
+def update_readme(results: dict, readme: Path) -> None:
+    """Rewrite the results block of the README from the latest run (between the RESULTS markers)."""
+    if not readme.exists():
+        return
+    text = readme.read_text(encoding="utf-8")
+    start, end = "<!-- RESULTS:START -->", "<!-- RESULTS:END -->"
+    if start not in text or end not in text:
+        return
+    n = results["testset"]["claims"]
+    lines = [
+        f"الأنظمة الثلاثة على المجموعة نفسها ({n} ادعاءً)، {results['runs']} مرات لكل نظام — المتوسط ± الانحراف المعياري:",
+        "",
+        "| النظام | دقة حالة الدليل | إسناد مختلَق | تأييد ما لا يُؤيَّد | امتناع صحيح | ثانية/ادعاء |",
+        "|---|---|---|---|---|---|",
+    ]
+    for key, s in results["systems"].items():
+        name = AR_LABELS[key] + (" (الوضع اللفظي — بلا نموذج لغوي)" if key == "tabayyun" and s.get("mode") == "lexical_only" else "")
+        if s["status"] != "ok":
+            lines.append(f"| {name} | لم يُشغَّل بعد — لا يوجد مفتاح نموذج لغوي | | | | |")
+            continue
+        lines.append(
+            f"| {name} | {pct(s['accuracy'])} | {pct(s['fabricated_attribution_rate'])} | {pct(s['wrongly_endorsed_rate'])} | "
+            f"{pct(s['correct_abstention_rate'])} | {s['seconds_per_claim']['mean']:.2f} |"
+        )
+    reviewed = results["testset"]["reviewed_by_sulaiman"]
+    lines += [
+        "",
+        "![مقارنة الأنظمة الثلاثة](eval/results/comparison.png)",
+        "",
+        "- **إسناد مختلَق**: حكم «مؤيَّد» بلا نص مصدر مطابق خلفه. **تأييد ما لا يُؤيَّد**: «مؤيَّد» على حديث ضعيف أو موضوع أو مسألة خلافية.",
+        f"- راجع المختص الشرعي {reviewed} من {n} صفاً حتى الآن؛ الحالات المتوقعة مبنية على طريقة توليد كل صف.",
+    ]
+    tab = results["systems"].get("tabayyun", {})
+    if tab.get("status") == "ok" and tab.get("mode") == "lexical_only":
+        lines.append(
+            "- أرقام تبيّن أعلاه بالوضع اللفظي: الأخطاء الباقية كلها تقريباً في فئات تحتاج النموذج اللغوي "
+            "(الأحكام، الأقوال المنسوبة). أعد التشغيل بعد ضبط المفاتيح."
+        )
+    block = start + "\n" + "\n".join(lines) + "\n" + end
+    readme.write_text(text[: text.index(start)] + block + text[text.index(end) + len(end) :], encoding="utf-8")
+
+
 def write_markdown_and_chart(results: dict, out_dir: Path) -> None:
     write_markdown(results, out_dir)
     write_chart(results, out_dir)
+    update_readme(results, out_dir.parents[1] / "README.md")
