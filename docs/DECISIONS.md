@@ -399,3 +399,28 @@ app, the browser's verdict card, sharing) and the product owner's changes that f
     at as well, one runaway answer held a report for 40 s; a pointer that does not come in time is
     simply not used. No personal case (level D) and no request for evidence gets any text.
 
+
+Decided in the frontend for the two changes of 4 October (share as image or as text; the evidence a
+ruling points at).
+
+95. **The first choice in the share dialog is what to share**, and it stands above the preview it
+    changes, so that it does not move under the finger: «المشاركة كـ: صورة | نص», remembered in the
+    browser (`tabayyun.shareAs`), image by default. As an image, the named apps open the share sheet
+    with the PNG and the image is sent alone, with no text beside it; where the browser cannot share
+    files an app's button saves the PNG and says to attach it there. As text, the preview is the
+    text itself and the size and theme controls are gone.
+96. **The shared text** is the state's full name with the quoted words (120 characters at most), the
+    reference with its grading word, the suggested action as its sentence, and the address; for a
+    summary, its title and sentence and one line per citation, what most needs attention first, the
+    reference in brackets. Under X's 280 characters it gives way in this order: the quoted words, a
+    summary's citation lines from the end, the action, the reference. Telegram is handed the address
+    apart from the text; Instagram, which has no web link, gets the text copied to paste.
+97. **Evidence referred to is named wherever its reference travels alone.** In the open note and on
+    the verdict card the block is titled «الدليل المشار إليه في المصادر» and nothing is collated or
+    underlined. On the summary card's row and in the shared text, where only the reference and the
+    grading word appear, they are prefixed «الدليل المشار إليه:», so that the narration's grading is
+    not read as the ruling's. The collapsed note shows the reference plainly, as asked.
+98. **The mock's referenced card reuses a narration the fixtures already carry** (HadeethEnc 6399,
+    graded «حسن», the one the fourth claim quotes): a level-C stand-in ruling whose speaker points
+    back at "the narration that was mentioned". HadeethEnc has no weak gradings, so the mock cannot
+    show one. The video scenario now has ten claims.
