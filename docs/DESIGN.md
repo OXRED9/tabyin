@@ -551,3 +551,47 @@ written by a model.
   text shown for correction before anything is verified; a report with a single citation opens its
   note without a tap; an empty field offers «لصق».
 
+
+### Round 3 — the last pass (4 October 2026)
+
+Looked at the report and open note at 1440 after the second fixes, the share dialog, the
+single-citation report and the image states at 390, and the server's cards; the product was also
+driven on the real server at phone size (a screenshot read, corrected and verified).
+
+**Report and open note (1440).**
+- Memorable: nine one-line notes level with their lines and nothing between them and the text but a short stub; the page reads before the tool does.
+- Works: an open note is bounded by one bar in its state's colour and tied to its words by one straight line; the other notes keep their stubs.
+- Works: in a partial quotation the quoted words of the source are in the state's ink — the same language as the passage on the page — and nothing is greyed.
+- Noise removed: the tick on collapsed notes (below).
+- Inconsistent: none found.
+
+**Single citation (390).**
+- Memorable: the answer is on the screen without a tap — state, the abstention or the source's words, the action — directly under the text it is about.
+- Works: the header is the mark, the word, export, theme, language; nothing else.
+- Noise: a band of empty paper between the one-line summary and the rule under it (space kept for a longer sentence).
+- Inconsistent: none.
+- The referral is still the only filled button besides «تحقّق من نص آخر».
+
+**Image input (390, and on the real server).**
+- Works: the picture is a small row above the field, the text it yielded is in the field, and the sentence over it says what to do with it; nothing is verified until the reader presses the button.
+- Works: what was removed is one collapsed line with a count; unreadable words are ringed where they stand.
+- Measured on the real server: a test screenshot was read in 4–14 s and verified in 2.5–3.2 s.
+- Noise: none.
+- Inconsistent: on an insecure address (plain http on a LAN) the «لصق» action is absent, because the browser offers no clipboard there; it appears over HTTPS.
+
+**Share dialog and cards.**
+- Memorable: the card reads as a page of the same book — paper, hairlines, the claim in its state's ink, the source's words in Naskh between two rules.
+- Works: the dialog says in one line what the named apps receive (the verdict as text) and how the image travels («مشاركة», or save).
+- Works: the summary card lists the citations, what most needs attention first.
+- Noise: the four app marks are plain line drawings; acceptable beside their names.
+- Inconsistent: the card prints the address the app is served from — a local address until the public URL is set.
+
+**Removed in the final pass**: the 2px tick of state colour beside every collapsed note. The glyph
+and the coloured state word already said it; the tick said it a third time. It remains only as the
+bar that bounds an open note, where it does a job.
+
+**Lighthouse, final build** (`docs/lighthouse/`, report page, production build): phone preset —
+performance 91, accessibility 100, best practices 100 (first paint 0.8 s, largest paint 3.5 s,
+shift 0.004); desktop — 100 / 100 / 100. What moved the phone number from 58: compression on the
+API (68), then a first screen painted from HTML before any script, one Naskh weight, two Plex
+weights and dialogs loaded on demand (91).
