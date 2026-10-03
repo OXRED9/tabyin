@@ -19,7 +19,7 @@ from pathlib import Path
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__, pipeline
@@ -214,6 +214,27 @@ async def verify_file(request: Request, file: UploadFile = File(...), ui_lang: s
     return StreamingResponse(_stream(events()), media_type="text/event-stream", headers=SSE_HEADERS)
 
 
+@app.get("/api/examples/screenshot.png")
+async def example_image() -> Response:
+    """The image example of the first screen, drawn from the Mushaf data (no file in the repository)."""
+    if not settings.features_image:
+        raise HTTPException(status_code=404)
+    from .report.example_image import example_screenshot
+
+    try:
+        png = await asyncio.to_thread(example_screenshot)
+    except RuntimeError:
+        raise HTTPException(status_code=404) from None
+    return Response(content=png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.post("/share-target", include_in_schema=False)
+async def share_target_fallback() -> RedirectResponse:
+    """The installed app's service worker handles shares itself. If a share reaches the server (the
+    worker is not active yet), nothing is read or kept: the browser is sent to the first screen."""
+    return RedirectResponse("/?share=unavailable", status_code=303)
+
+
 def _problem(status: int, code: str) -> HTTPException:
     """A JSON error with the same fields as the stream's error events: what happened + what to do."""
     return HTTPException(status_code=status, detail=error_event(code, "ingest"))
@@ -323,5 +344,9 @@ if _dist.exists():
             raise HTTPException(status_code=404)
         candidate = (_dist / path).resolve()
         if path and candidate.is_file() and _dist.resolve() in candidate.parents:
+            if candidate.suffix == ".webmanifest":
+                return FileResponse(candidate, media_type="application/manifest+json", headers={"Cache-Control": "no-cache"})
+            if candidate.name == "sw.js":  # the worker must be revalidated on every load
+                return FileResponse(candidate, media_type="text/javascript", headers={"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"})
             return FileResponse(candidate)
         return FileResponse(_dist / "index.html", headers={"Cache-Control": "no-cache"})

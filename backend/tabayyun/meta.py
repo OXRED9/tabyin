@@ -61,6 +61,19 @@ def load_terms() -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))["terms"] if path.exists() else []
 
 
+def _image_example() -> list[dict]:
+    """A chat screenshot with a misquoted verse, drawn from the Mushaf data (report/example_image.py)."""
+    if not (settings.features_image and _vision_available()):
+        return []
+    try:
+        from .report.example_image import example_screenshot
+
+        example_screenshot()
+    except Exception:  # no Arabic shaping on this machine: the example is simply not offered
+        return []
+    return [{"id": "image", "input_type": "image", "label_ar": "لقطة شاشة لرسالة متداولة", "label_en": "A screenshot of a forwarded message", "text": None, "url": "/api/examples/screenshot.png"}]
+
+
 def _vision_available() -> bool:
     from .llm.openrouter import get_llm
 
@@ -82,7 +95,8 @@ def build_meta() -> dict:
         "abstention_verse": _verse(ABSTENTION_VERSE),
         "motto_verse": _verse(MOTTO_VERSE),
         "referral_links": REFERRAL_LINKS,
-        "examples": [
+        "examples": _image_example()
+        + [
             {"id": "text", "input_type": "text", "label_ar": "نص فيه آية وحديث", "label_en": "Text with a verse and a hadith", "text": _example_text(), "url": None},
             {"id": "video", "input_type": "video_url", "label_ar": "رابط مقطع يوتيوب", "label_en": "YouTube link", "text": None, "url": settings.example_video_url},
             {

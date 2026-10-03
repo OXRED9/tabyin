@@ -154,3 +154,22 @@ def test_size_limit_and_feature_flag(ocr, monkeypatch):
     monkeypatch.setattr(settings, "max_image_mb", 10)
     monkeypatch.setattr(settings, "features_image", False)
     assert ocr(VisionStub()).status_code == 404
+
+
+def test_the_example_screenshot_is_drawn_from_the_mushaf_and_misquotes_one_word(ayah):
+    from tabayyun.normalize import normalize_ar
+    from tabayyun.report.example_image import DONOR, VERSE, WORDS, altered_fragment
+
+    altered, original, donor = altered_fragment()
+    source_words = ayah(*VERSE)[1].split()[:WORDS]
+    assert original in source_words and donor == ayah(*DONOR)[1].split()[-1]
+    assert sum(a != b for a, b in zip(altered.split(), source_words)) == 1  # exactly one word differs
+    assert normalize_ar(donor) not in {normalize_ar(w) for w in source_words}
+    png = TestClient(main.app).get("/api/examples/screenshot.png")
+    assert png.status_code == 200 and png.headers["content-type"] == "image/png" and png.content[:4] == b"\x89PNG"
+
+
+def test_a_share_that_reaches_the_server_is_not_read():
+    r = TestClient(main.app).post("/share-target", data={"text": "أي نص"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].startswith("/")
+
