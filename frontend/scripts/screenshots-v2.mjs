@@ -225,6 +225,39 @@ const STATES = {
     await session.context.close()
   },
 
+  // «ما معنى هذه الحالات؟»: the five states, each with what it means and what it does not.
+  legend: async (width, file) => {
+    const { context, page } = await openReport(width)
+    await page.getByTestId('legend-link').first().click()
+    await page.getByTestId('legend').waitFor()
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: file })
+    await context.close()
+  },
+
+  // A narration with several gradings: one line of every distinct wording and their count…
+  'gradings-folded': async (width, file) => {
+    const session = await openReport(width)
+    await openNote(session, 'c4')
+    await session.page.getByTestId('grades').scrollIntoViewIfNeeded()
+    await session.page.waitForTimeout(300)
+    await session.page.screenshot({ path: file })
+    await session.context.close()
+  },
+
+  // …which opens the full list, each grading as its source words it, with its link.
+  'gradings-open': async (width, file) => {
+    const session = await openReport(width)
+    await openNote(session, 'c4')
+    const grades = session.page.getByTestId('grades')
+    await grades.getByRole('button').first().click()
+    await grades.locator('li').first().waitFor()
+    await grades.scrollIntoViewIfNeeded()
+    await session.page.waitForTimeout(300)
+    await session.page.screenshot({ path: file })
+    await session.context.close()
+  },
+
   // The share dialog on a phone, sharing as an image: the card, then the share sheet, the named
   // apps, save and copy. Headless Chromium on Linux has no share sheet, so these two captures
   // give the page one that does nothing: what a phone shows.
@@ -260,6 +293,9 @@ const ONLY_AT = {
   'share-dialog': [390],
   'share-dialog-text': [390],
   referenced: [390, 1440],
+  legend: [390],
+  'gradings-folded': [390],
+  'gradings-open': [390],
 }
 
 for (const [name, capture] of Object.entries(STATES)) {

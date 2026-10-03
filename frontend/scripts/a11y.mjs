@@ -115,6 +115,7 @@ function measureContrast() {
  *              marked and counted, the uncertainty line, the removed items listed (opened)
  *   report     every note open, every «لماذا هذا الحكم؟» open
  *   dialog     the referral dialog
+ *   legend     «ما معنى هذه الحالات؟», opened from the report's head
  *   share      the share dialog on a claim (`card`: the state of the claim whose card is drawn)
  *   share-summary   the share dialog on the summary
  *   sheet      (below 1024px) a note open as a bottom sheet
@@ -190,6 +191,9 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
       const closed = page.locator('[data-margin] [data-note] > button[aria-expanded="false"]')
       for (let i = 0; i < 30 && (await closed.count()) > 0; i++) await closed.first().click()
     }
+    // Several gradings are folded under one line: open them, so the full list is audited too.
+    const foldedGrades = page.locator('[data-testid="grades"] > button[aria-expanded="false"]')
+    for (let i = 0; i < 30 && (await foldedGrades.count()) > 0; i++) await foldedGrades.first().click()
     // F5: open every «لماذا هذا الحكم؟» panel so its list, meter and labels are audited.
     const closedPanels = page.locator('[data-testid="explain"] > button[aria-expanded="false"]')
     for (let i = 0; i < 30 && (await closedPanels.count()) > 0; i++) await closedPanels.first().click()
@@ -210,6 +214,10 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     if (shareAs === 'text') {
       await page.getByTestId('share-as').getByRole('button', { name: t.asText, exact: true }).click()
       await page.getByTestId('share-text').waitFor()
+    }
+    if (state === 'legend') {
+      await page.getByTestId('legend-link').first().click()
+      await page.getByTestId('legend').waitFor()
     }
     if (state === 'dialog') {
       await page.locator('[data-note][data-state="not_found"]').first().getByRole('button', { name: t.referral }).click()
@@ -263,6 +271,10 @@ for (const theme of ['light', 'dark']) {
 for (const theme of ['light', 'dark']) {
   await audit(`share dialog, claim card · ${theme} · ar`, { theme, state: 'share' })
 }
+for (const theme of ['light', 'dark']) {
+  await audit(`states legend · ${theme} · ar`, { theme, state: 'legend' })
+}
+await audit('states legend · light · en · 390px', { lang: 'en', viewport: MOBILE, state: 'legend' })
 await audit('share dialog, verse card · light · ar', { state: 'share', card: 'supported' })
 await audit('share dialog, contradicted card · dark · en', { state: 'share', card: 'contradicted', theme: 'dark', lang: 'en' })
 await audit('share dialog, card with a note · light · ar', { state: 'share', card: 'supported_with_note' })
