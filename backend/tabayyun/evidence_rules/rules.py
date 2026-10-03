@@ -255,7 +255,7 @@ def decide_ruling(*, level: ContentLevel, explicit_text_found: bool) -> Decision
         return Decision(
             S.supported,
             "ruling.text_found",
-            "الحكم مؤيَّد بنص صريح مسترجَع من مصدر معتمد.",
+            "للحكم مرجعية: نص صريح مسترجَع من مصدر معتمد.",
             "The ruling is backed by an explicit text retrieved from an approved source.",
         )
     return Decision(

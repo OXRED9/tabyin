@@ -486,3 +486,53 @@ It is drawn twice from one content table — in the browser (`verdict-card.tsx`)
   («تسعة استشهادات: ثلاثة مؤيَّدة، …») in Plex 600 / 44 with each clause in its state's ink and its
   ring glyph, then the title of what was checked when the report has one.
 - Nothing identifying is drawn: no date, time, reviewer name or link to the clip.
+
+### 8.1 The summary card carries the details (added 4 October 2026)
+
+The first summary card showed only the counts; someone who receives it learns that "nine citations
+were checked" and nothing about them. It now lists them:
+
+```
+│ بطاقة تثبّت                              تبيّن │
+│ ──────────────────────────────────────────── │
+│ خلاصة التحقق                                  │   Plex 600 / 34
+│ مقطع: الصبر والصيام                            │   what was checked, when the report has a title; Plex 26 quiet
+│ تسعة استشهادات: ثلاثة لها مرجعية، واحد له        │   the summary sentence, Plex 600 / 34, each clause in its
+│ مرجعية مع ملاحظة، ثلاثة تحتاج مراجعة…           │   state's ink with its ring glyph
+│ ──────────────────────────────────────────── │
+│ ⊘ مخالف للمصدر   «رباط يوم وليلة خير من…»       │   one row per citation: glyph + short state word (Plex 600 / 26,
+│                  رواه مسلم — «صحيح»            │   state ink) · the quoted words (Amiri 32, one line, cut at a
+│ ◌ بلا مرجعية     «[قول منسوب…]»                │   word with «…») · under it the reference and, for a narration,
+│ ◎ له مرجعية      «يا أيها الذين آمنوا…»         │   the grading word verbatim (Plex 24 quiet)
+│                  البقرة: 153                  │
+│ وثلاثة استشهادات أخرى                           │   when not all fit
+│ ──────────────────────────────────────────── │
+│ ▣ QR            تحقّق بنفسك على تبيّن           │
+```
+
+- Order: what most needs attention first — contradicted, no reference, needs review, with a note,
+  has a reference — and the text's order inside each group.
+- Rows: as many as fit above the footer (about six on the portrait, four on the square); the rest
+  are counted in one closing line. A row is never cut in half.
+- The request carries the list: `cards` (reviewer changes applied) and `title` in `ShareCardRequest`.
+
+### 8.2 State words (4 October 2026)
+
+The team replaced «مؤيَّد», which read as a verdict on the narration itself, with wording about the
+source: «له مرجعية» / «له مرجعية مع ملاحظة» / «يحتاج مراجعة» / «بلا مرجعية» / «مخالف للمصدر» (short
+forms; the long forms are «له مرجعية في مصدر معتمد», «يحتاج مزيد تحقق», «لم يُعثر على مصدر موثوق»).
+English: "Has a reference", "Has a reference, with a note", "Needs review", "No reference found",
+"Differs from the source". In the summary sentence: «واحد له مرجعية»، «اثنان لهما مرجعية»، «ثلاثة لها
+مرجعية»؛ «واحد بلا مرجعية». The suggested action for the first state is «نقله مع ذكر مرجعه». The
+table in §2.2 and every wireframe above read with these words.
+
+### 8.3 Sharing (4 October 2026)
+
+The share dialog offers, in this order: **«مشاركة»** — the system's share sheet with the image
+attached, where the browser can share files (phones, over HTTPS); a row of named targets, icon and
+word each — **واتساب، إكس، تيليغرام** — which open that app with the verdict as text and the
+address (a web page cannot hand an image to a named app; only the share sheet can), and
+**إنستغرام**, which uses the share sheet when there is one and otherwise saves the image and says
+to post it from the app; then **«حفظ الصورة»** and **«نسخ الصورة»**. The text that is shared is
+built from the card's own fields — state, quoted words, reference, grading word, address — never
+written by a model.

@@ -33,7 +33,7 @@ class EvidenceState(str, Enum):
 
 
 class Action(str, Enum):
-    adopt = "adopt"  # اعتماد
+    adopt = "adopt"  # نقله مع ذكر مرجعه
     correct_wording = "correct_wording"  # تصحيح اللفظ
     refer_to_scholars = "refer_to_scholars"  # إحالة إلى أهل العلم
     remove_or_request_source = "remove_or_request_source"  # حذف أو طلب مصدر
@@ -245,6 +245,9 @@ class ShareCardRequest(BaseModel):
     override_state: EvidenceState | None = None
     summary: Summary | None = None
     human_reviewed: bool = False  # summary: some counted states were set by a human reviewer
+    # summary: the citations listed on the card (reviewer changes already applied) and what was checked
+    cards: list[Card] = Field(default_factory=list, max_length=60)
+    title: str | None = Field(default=None, max_length=300)
 
     @model_validator(mode="after")
     def _has_payload(self) -> "ShareCardRequest":

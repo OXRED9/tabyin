@@ -56,9 +56,9 @@ The LLM classifies the level conservatively: **when in doubt, pick the more sens
 
 ## Evidence states (deterministic — `backend/tabayyun/evidence_rules/`)
 
-`supported` (مؤيَّد بمصدر معتمد) · `supported_with_note` (مؤيَّد مع ملاحظة) · `needs_review`
+`supported` (له مرجعية في مصدر معتمد) · `supported_with_note` (له مرجعية مع ملاحظة) · `needs_review`
 (يحتاج مزيد تحقق) · `not_found` (لم يُعثر على مصدر موثوق) · `contradicted` (مخالف للمصدر).
-Actions, in order: اعتماد / تصحيح اللفظ / إحالة إلى أهل العلم / حذف أو طلب مصدر / حذف وتنبيه.
+Actions, in order: نقله مع ذكر مرجعه / تصحيح اللفظ / إحالة إلى أهل العلم / حذف أو طلب مصدر / حذف وتنبيه.
 Thresholds live in `evidence_rules/thresholds.py`; final values are documented in
 `docs/METHODOLOGY.md`. Never move a decision from the rules into a prompt.
 

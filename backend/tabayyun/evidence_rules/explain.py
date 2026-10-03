@@ -258,7 +258,7 @@ def describe(rule_id: str, f: Facts, t: Thresholds = THRESHOLDS) -> RuleExplanat
         base, ("طُبّقت القاعدة " + base + ".", "Rule " + base + " was applied.", "statement", None)
     )
     if cap == "level_c":
-        rule_ar += " ثم طُبّق سقف المستوى (ج): لا «مؤيَّد» ولا «مخالف» في المسائل الخلافية."
+        rule_ar += " ثم طُبّق سقف المستوى (ج): لا «له مرجعية» ولا «مخالف للمصدر» في المسائل الخلافية."
         rule_en += " Then the level-C ceiling was applied: no “supported” or “contradicted” on disputed matters."
         family = "statement"
     elif cap == "level_d":
