@@ -81,6 +81,8 @@ TEXT = {
     "summary_title": ("خلاصة التحقق", "Verification summary"),
     "claim": ("النص المتداول", "The text in circulation"),
     "source": ("في المصدر", "In the source"),
+    # the same block for a ruling or statement that points at its evidence (match_kind "referenced")
+    "evidence": ("الدليل المشار إليه في المصادر", "The evidence referred to, in the sources"),
     "no_grading": ("الحكم غير متاح من المصدر", "Grading not available from the source"),
     "one_grading": ("حكم واحد في المصدر", "one grading in the source"),
     "abstain": ("لا نُصدر حكماً بلا مصدر، ولا نولّد بديلاً.", "We issue no verdict without a source, and generate no substitute."),
@@ -840,7 +842,12 @@ class _Claim:
         else:
             self.mode = "source"
             self.verse = card.source.kind == "quran"
-            self.words, self.span, self.marks = _collate(card)
+            if card.match_kind == "referenced":
+                # The evidence a ruling or statement points at: shown as any source is, with its
+                # reference and grading. Nothing was quoted from it, so nothing is collated or underlined.
+                self.words, self.span, self.marks = _display_words(card.source.text), None, set()
+            else:
+                self.words, self.span, self.marks = _collate(card)
         self.words_rtl = sheet.reads_rtl(" ".join(self.words))
         self.takhrij = self._takhrij() if self.mode == "source" else None
 
@@ -961,7 +968,8 @@ class _Claim:
             return [rule, _gap(sh.px(pad)), *inside, _gap(sh.px(pad)), rule]
 
         if self.mode == "source":
-            items += [_gap(sh.px(20)), sh.item("source-label", sh.tool(sh.say("source"), label)), _gap(sh.px(6))]
+            heading = sh.say("evidence" if self.card.match_kind == "referenced" else "source")
+            items += [_gap(sh.px(20)), sh.item("source-label", sh.tool(heading, label)), _gap(sh.px(6))]
             if body is not None:
                 items += ruled([sh.item("source" if isinstance(wording, tuple) else "source-note", body)], 6)
             if self.takhrij is not None:

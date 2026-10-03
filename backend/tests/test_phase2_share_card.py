@@ -12,6 +12,7 @@ from PIL import Image
 
 from tabayyun import main, pipeline
 from tabayyun.config import settings
+from tabayyun.evidence_rules.grades import GradeCategory, classify_grade
 from tabayyun.meta import build_meta
 from tabayyun.normalize import normalize_ar
 from tabayyun.report import share_card
@@ -35,7 +36,8 @@ from tabayyun.report.share_card import (
 from tabayyun.schemas import STATE_ACTION, Card, EvidenceState, Summary
 from tabayyun.sources.dorar import DorarClient
 from tabayyun.textalign import similarity
-from tests.llm_stubs import NoLLM
+from tests.llm_stubs import NoLLM, ScriptedLLM, claim
+from tests.test_llm_path import RULING
 
 URL = "https://tabayyun.example.org"
 HEADER = {"mark", "logotype", "label"}
@@ -271,6 +273,65 @@ def test_a_personal_case_gets_no_source_and_is_referred(report):
     drawn = draw(disputed)
     assert names(drawn) == ["state", "state-glyph", "claim-label", "claim", "reason-1", "referral", "action"]
     assert text_of(drawn, "reason-1") == TEXT["disagreement"][0]
+
+
+@pytest.fixture()
+def referenced(monkeypatch):
+    """A ruling that points at its evidence, through the real pipeline with the scripted stand-in
+    for the model (as in test_llm_path): the state stays «يحتاج مراجعة», the evidence is attached."""
+    import asyncio
+
+    from tabayyun.ingest.text import ingest_text
+
+    def _card(level: str = "B", ui_lang: str = "ar") -> Card:
+        dorar = DorarClient()
+        dorar.status = "disabled"
+        provider = ScriptedLLM([claim(quote=RULING.rstrip("."), search_query="وجوب صيام رمضان", content_level=level)], judge_index=0, evidence_relation="referenced")
+        monkeypatch.setattr(pipeline, "get_llm", lambda: provider)
+        monkeypatch.setattr(pipeline, "get_dorar", lambda: dorar)
+
+        async def ingest():
+            return ingest_text(RULING)
+
+        (card,) = asyncio.run(pipeline.collect(ingest, ui_lang=ui_lang))["cards"]
+        return Card.model_validate(card)
+
+    return _card
+
+
+@pytest.mark.parametrize("level", ["B", "C"])
+def test_the_evidence_a_ruling_points_at_is_shown_under_its_own_label_and_nothing_is_underlined(referenced, hadith, level):
+    card = referenced(level)
+    assert card.match_kind == "referenced" and card.state == EvidenceState.needs_review and card.source and card.grades
+    grade = card.grades[0]
+    solid = rgb(STATE_TOKENS["light"]["needs_review"][0])
+    for size in SIZES:
+        drawn = draw(card, size=size)
+        assert names(drawn) == ["state", "state-glyph", "verdict", "claim-label", "claim", "source-label", "source", "takhrij", "action"]
+        assert text_of(drawn, "state") == STATE_SHORT["needs_review"][0]  # the state is not raised
+        assert text_of(drawn, "source-label") == "الدليل المشار إليه في المصادر"
+        # the source's wording, its reference and its grading, as for any source
+        shown = text_of(drawn, "source").strip("﴿﴾…").split()
+        assert shown and " ".join(shown[:-1]) in " ".join(card.source.text.split())
+        assert text_of(drawn, "takhrij") == f"{card.source.ref} — «{grade.text}»، {grade.source_name}"
+        assert solid not in colours(drawn.image, drawn.block("source").ink)  # nothing was quoted: nothing is underlined
+        assert text_of(drawn, "action") == ACTION_SENTENCE["refer_to_scholars"][0]
+        assert_inside_the_frame(drawn)
+    assert text_of(draw(card, lang="en"), "source-label") == "The evidence referred to, in the sources"
+    assert text_of(draw(in_state(card, "supported").model_copy(update={"match_kind": "exact"})), "source-label") == TEXT["source"][0]  # any other card: «في المصدر»
+
+    # a weak grading is drawn verbatim like any other (the word is read from the data, by the engine's own reading of it)
+    weak = next(r["grade"] for r in hadith.hadeethenc.values() if classify_grade(r.get("grade")) == GradeCategory.weak)
+    assert weak.splitlines()[0] != grade.text
+    drawn = draw(card.model_copy(update={"grades": [grade.model_copy(update={"text": weak})]}))
+    assert text_of(drawn, "takhrij") == f"{card.source.ref} — «{weak.splitlines()[0]}»، {grade.source_name}"
+    assert text_of(drawn, "state") == STATE_SHORT["needs_review"][0] and text_of(drawn, "source-label") == TEXT["evidence"][0]
+
+    # in the summary's list its reference line is that source's reference, as for any card
+    summary = Summary(total=1, by_state={EvidenceState.needs_review: 1}, mode="full", elapsed_seconds=1.0)
+    row = draw_summary(summary, cards=[card])
+    assert text_of(row, "row-1-state") == STATE_SHORT["needs_review"][0]
+    assert text_of(row, "row-1-ref") == f"{card.source.ref} — «{grade.text}»"
 
 
 def test_nothing_about_the_user_is_drawn(report):
