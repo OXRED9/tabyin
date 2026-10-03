@@ -38,7 +38,7 @@ from tabayyun.textalign import similarity
 from tests.llm_stubs import NoLLM
 
 URL = "https://tabayyun.example.org"
-HEADER = {"logotype", "label"}
+HEADER = {"mark", "logotype", "label"}
 FOOTER = {"qr", "check", "address", "transparency"}
 
 
@@ -143,7 +143,7 @@ def test_a_state_is_a_glyph_a_word_and_its_colour_and_gold_is_only_on_the_verifi
         seen = colours(body(drawn))
         assert rgb(solid) in seen and rgb(ink) in seen  # the underline and the words
         assert drawn.block("state-glyph") is not None and text_of(drawn, "state") == STATE_SHORT[state][0]
-        assert (gold in colours(drawn.image)) == (state == "supported")
+        assert (gold in colours(body(drawn))) == (state == "supported")  # the header's mark has the brand's own gold
 
 
 def in_state(card: Card, state: str) -> Card:
@@ -157,6 +157,22 @@ def test_the_states_are_named_by_what_was_found_about_the_source(report):
     words = {state: (text_of(draw(in_state(card, state)), "state"), text_of(draw(in_state(card, state), lang="en"), "state")) for state in STATE_SHORT}
     assert words == STATE_SHORT  # the short names, from the one table the exports share
     assert words["supported"] == ("له مرجعية", "Has a reference") and words["not_found"] == ("بلا مرجعية", "No reference found")
+
+
+@pytest.mark.parametrize("size", ["portrait", "square"])
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_the_header_shows_the_mark_beside_the_logotype_on_both_kinds_of_card(report, size, theme):
+    for lang in ("ar", "en"):
+        for drawn in (draw(by(report, personal_case=True), size=size, theme=theme, lang=lang), draw_summary(report, size=size, theme=theme, lang=lang)):
+            mark, word = drawn.block("mark"), drawn.block("logotype")
+            assert mark.box[2] - mark.box[0] == mark.box[3] - mark.box[1] == round(56 * share_card.SCALE[size])
+            # on the starting side of the word, on its line
+            assert (mark.box[0] > word.box[2]) if lang == "ar" else (mark.box[2] < word.box[0])
+            assert mark.box[1] < word.box[3] and word.box[1] < mark.box[3]
+            seen = colours(drawn.image, mark.box)
+            assert rgb(share_card._MARK_GOLD) in seen and rgb(share_card._MARK_GREEN[theme]) in seen
+            assert rgb(share_card._MARK_GOLD) not in colours(body(drawn))  # the mark's gold stays in the header
+            assert_inside_the_frame(drawn, theme)
 
 
 def test_the_claim_is_in_the_states_ink_and_underlined(report):
@@ -245,7 +261,7 @@ def test_a_personal_case_gets_no_source_and_is_referred(report):
     forged = in_state(card.model_copy(update={"source": by(report, claim_type="hadith").source}), "supported")
     drawn = draw(forged)
     assert drawn.block("source") is None and text_of(drawn, "state") == STATE_SHORT["needs_review"][0]
-    assert rgb(THEMES["light"]["gold"]) not in colours(drawn.image) and text_of(drawn, "action") == ACTION_SENTENCE["refer_to_scholars"][0]
+    assert rgb(THEMES["light"]["gold"]) not in colours(body(drawn)) and text_of(drawn, "action") == ACTION_SENTENCE["refer_to_scholars"][0]
     # and a disputed matter is never drawn as having a reference, nor as differing from its source
     for state in ("supported", "contradicted"):
         capped = draw(in_state(by(report, claim_type="hadith").model_copy(update={"content_level": "C"}), state))
@@ -369,7 +385,7 @@ def assert_inside_the_frame(drawn: Drawn, theme: str = "light") -> None:
     image = drawn.image
     x0, y0, x1, y1 = drawn.frame
     top, bottom = drawn.fit["body"]
-    margin = min(b.box[0] for b in drawn.blocks if b.name in ("logotype", "label")) - x0  # the paper's inner margin
+    margin = min(b.box[0] for b in drawn.blocks if b.name in HEADER) - x0  # the paper's inner margin
     for b in drawn.blocks:
         assert x0 + 2 < b.ink[0] and y0 + 2 < b.ink[1] and b.ink[2] < x1 - 2 and b.ink[3] < y1 - 2, f"{b.name} leaves the frame: {b.ink}"
         # shaped Arabic may overhang its advance by a few pixels, never by the margin

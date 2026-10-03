@@ -2,7 +2,7 @@
 
 This is the fallback for browsers where client-side rendering fails; the content and its order are
 the same as the client's (docs/API.md → "What a verdict card shows"). The card is paper inside one
-hairline frame: the state (ring glyph + word) and one sentence, the words as they circulate, the
+hairline frame: the mark and the logotype, the state (ring glyph + word) and one sentence, the words as they circulate, the
 source's own wording with its reference and grading, the suggested action, then the address with its
 QR code and the transparency line.
 
@@ -408,6 +408,33 @@ def _ring(state: str, size: int, solid: str, gold: str) -> Image.Image:
     return layer.resize((size, size), Image.LANCZOS)
 
 
+# The brand's mark (frontend/public/favicon.svg): its green, and its gold — the brand's own, the one
+# gold on a card besides the verified ring.
+_MARK_GOLD = "#C9A227"
+_MARK_GREEN = {"light": "#1B6B5E", "dark": "#1F7867"}
+
+
+def _blend(colour: str, onto: str, share: float) -> str:
+    a, b = (tuple(int(c[i : i + 2], 16) for i in (1, 3, 5)) for c in (colour, onto))
+    return "#" + "".join(f"{round(y + (x - y) * share):02x}" for x, y in zip(a, b, strict=True))
+
+
+@lru_cache(maxsize=8)
+def _mark(size: int, green: str) -> Image.Image:
+    """The mark on its 32-unit grid: a rounded green square holding an outlined tile and, over it,
+    a gold tile with a green seal."""
+    ss = 4  # drawn large and reduced, so the corners are smooth
+    u = size * ss / 32
+    layer = Image.new("RGBA", (size * ss, size * ss), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    d.rounded_rectangle([0, 0, 32 * u - 1, 32 * u - 1], radius=7 * u, fill=green)
+    # the outlined tile: white at .18 inside, at .7 on its 2-unit stroke, over the green
+    d.rounded_rectangle([12 * u, 12 * u, 27 * u, 27 * u], radius=5 * u, fill=_blend("#FFFFFF", green, 0.18), outline=_blend("#FFFFFF", green, 0.7), width=round(2 * u))
+    d.rounded_rectangle([6 * u, 6 * u, 20 * u, 20 * u], radius=4.5 * u, fill=_MARK_GOLD)
+    d.ellipse([(13 - 3.6) * u, (13 - 3.6) * u, (13 + 3.6) * u, (13 + 3.6) * u], fill=green)
+    return layer.resize((size, size), Image.LANCZOS)
+
+
 @lru_cache(maxsize=16)
 def _qr(url: str, size: int, dark: str, tile: bool) -> Image.Image:
     """The address as a QR code, modules on whole pixels. On a dark card the code sits on a white
@@ -548,11 +575,16 @@ class _Sheet:
     # ---- the parts every card shares
 
     def header(self, label: str) -> int:
-        """Logotype in Naskh at the starting edge, the card's label in Plex at the other; a hairline
-        under them. Returns the y where the body starts."""
+        """The mark and the logotype in Naskh at the starting edge, the card's label in Plex at the
+        other; a hairline under them. Returns the y where the body starts."""
         base = FRAME + HAIRLINE + self.px(84)
+        side = self.px(56)
+        x, y = (self.right - side if self.rtl else self.left), base - self.px(43)
+        mark = _mark(side, _MARK_GREEN["dark" if self.dark else "light"])
+        self.img.paste(mark, (x, y), mark)
+        self.blocks.append(Block("mark", (x, y, x + side, y + side), (x, y, x + side, y + side)))
         brand = _W(self.say("brand"), self.ink("naskh", 58))
-        ink, end = self._line([brand], self.rtl, base)
+        ink, end = self._line([brand], self.rtl, base, x - self.px(16) if self.rtl else x + side + self.px(16))
         self.blocks.append(Block("logotype", ink, ink, brand.text))
         tag = self.ink("plex", 28, "quiet")
         text = TEXT[label][self.en]

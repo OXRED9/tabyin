@@ -294,8 +294,8 @@ blocks, top to bottom:
 
 | Block | What is drawn | Source |
 |---|---|---|
-| Header | logotype «تبيّن» in Naskh; the label «بطاقة تثبّت» / "Verification card" in Plex, quiet; a hairline | fixed |
-| State | the ring glyph and the state's short name in the state's ink (`DESIGN.md` §8.2): «له مرجعية», «له مرجعية مع ملاحظة», «يحتاج مراجعة», «بلا مرجعية», «مخالف للمصدر» — "Has a reference", "Has a reference, with a note", "Needs review", "No reference found", "Differs from the source". Gold appears only in the ring of «له مرجعية» | `card.state`; the words are `STATE_SHORT` in `report/labels.py` |
+| Header | the brand's mark (as in `favicon.svg`) and, beside it, the logotype «تبيّن» in Naskh; the label «بطاقة تثبّت» / "Verification card" in Plex, quiet; a hairline | fixed |
+| State | the ring glyph and the state's short name in the state's ink (`DESIGN.md` §8.2): «له مرجعية», «له مرجعية مع ملاحظة», «يحتاج مراجعة», «بلا مرجعية», «مخالف للمصدر» — "Has a reference", "Has a reference, with a note", "Needs review", "No reference found", "Differs from the source". Gold appears only in the ring of «له مرجعية» (the mark in the header keeps the brand's own gold) | `card.state`; the words are `STATE_SHORT` in `report/labels.py` |
 | Verdict sentence | one sentence in Plex, at most 3 lines (2 on the square card) | first sentence of `note_ar` / `note_en` (up to the first `.`, `؟`, `?` or `!`) |
 | «النص المتداول» | the claim in Naskh, in the state's ink, underlined in the state's colour — as the passage looks on the page | `card.text_as_quoted`, cut at 240 characters at a word boundary with «…» |
 | «في المصدر» | the source's own wording between two hairlines: Amiri Quran inside ﴿ ﴾ for a verse, Amiri for anything else. Words that differ from the claim are underlined in the state's colour | `card.source.text`; the underlined words are the source side of `card.diff`'s `replace` steps |
