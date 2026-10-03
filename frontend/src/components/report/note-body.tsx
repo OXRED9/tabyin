@@ -81,11 +81,24 @@ function Remark({ state, children }: { state: EvidenceState; children: ReactNode
  * When the collation prints the source word for word, the marks are put on these words instead
  * of printing the text a second time.
  */
-function SourceWords({ source, marked, state }: { source: SourceRef; marked: Card['diff']; state: EvidenceState }) {
+function SourceWords({
+  source,
+  marked,
+  state,
+  title,
+}: {
+  source: SourceRef
+  marked: Card['diff']
+  state: EvidenceState
+  /** Said above the words when they are not a quotation's source but the evidence pointed at. */
+  title?: string
+}) {
   const { t } = useI18n()
   const voice = source.kind === 'quran' ? 'quran-text' : 'naskh-quote'
   return (
-    <figure aria-label={t.notes.sourceWords} className="border-y py-2">
+    <figure aria-label={title ?? t.notes.sourceWords}>
+      {title ? <figcaption className="pb-1 text-sm text-quiet">{title}</figcaption> : null}
+      <div className="border-y py-2">
       {marked ? (
         <blockquote lang="ar" dir="rtl" className={voice}>
           <MarkedSource diff={marked} state={state} />
@@ -95,6 +108,7 @@ function SourceWords({ source, marked, state }: { source: SourceRef; marked: Car
           <LongText text={source.text} className={voice} />
         </blockquote>
       )}
+      </div>
     </figure>
   )
 }
@@ -220,7 +234,9 @@ export default function NoteBody({
   const { t, lang, pick } = useI18n()
   const state = card.state
   const note = pick(card.note_ar, card.note_en)
-  const showDiff = hasDifferences(card.diff)
+  // The evidence a ruling points at is shown as a source, but nothing was quoted from it: no collation.
+  const referenced = card.match_kind === 'referenced'
+  const showDiff = !referenced && hasDifferences(card.diff)
   // When the comparison already prints the source text word for word, do not print it twice.
   const markedSource = showDiff && card.source && diffCoversSource(card.diff!, card.source.text) ? card.diff : null
   const verse = meta?.abstention_verse ?? null
@@ -247,7 +263,12 @@ export default function NoteBody({
 
       {card.source ? (
         <>
-          <SourceWords source={card.source} marked={markedSource} state={state} />
+          <SourceWords
+            source={card.source}
+            marked={markedSource}
+            state={state}
+            title={referenced ? t.card.referencedSource : undefined}
+          />
           {markedSource && hasUnquoted(markedSource) ? (
             <p className="text-sm text-quiet">{t.diff.partial}</p>
           ) : null}
@@ -293,7 +314,7 @@ export default function NoteBody({
         </section>
       ) : card.source && card.match_kind === 'exact' ? (
         <p className="text-sm text-supported-ink">{t.diff.exact}</p>
-      ) : card.source && card.match_kind !== 'none' ? (
+      ) : card.source && card.match_kind !== 'none' && !referenced ? (
         <p className="text-sm text-quiet">{t.matchKinds[card.match_kind]}</p>
       ) : null}
 

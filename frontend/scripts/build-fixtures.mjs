@@ -329,6 +329,7 @@ function card(partial) {
 const STAND_IN = {
   attributed: '[قول منسوب إلى أحد العلماء كما ورد في المقطع]',
   disputed: '[حكم في مسألة خلافية كما ورد في المقطع]',
+  referenced: '[حكم في مسألة خلافية استُدلّ له بحديث كما ورد في المقطع]',
 }
 // Not religious texts: a pillar named in the pitch deck's own mock, a personal question, a request.
 const PLAIN = {
@@ -442,6 +443,27 @@ function buildCards(lang) {
       disagreement_noted: true,
       note_ar: 'مسألة اجتهادية وقع فيها خلاف بين أهل العلم. لا يرجّح تبيّن قولاً على قول.',
       note_en: 'An ijtihadi matter on which scholars differ. Tabayyun prefers no opinion over another.',
+    }),
+    // A disputed ruling for which the speaker points at a narration. The backend shows that
+    // narration as the evidence referred to, with its grading, and does not raise the state
+    // (`match_kind: "referenced"`, backend/tabayyun/verify.py); the last sentence of the note is
+    // the backend's own. The narration is one the fixtures already carry (the one c4 quotes).
+    referenced: card({
+      claim_type: 'ruling',
+      content_level: 'C',
+      certainty: 'ijtihadi',
+      text_as_quoted: STAND_IN.referenced,
+      state: 'needs_review',
+      rule_id: 'level_c.cap_needs_review',
+      match_kind: 'referenced',
+      source: hadithSource(hB, lang),
+      grades: [hadithGrade(hB)],
+      referral: true,
+      disagreement_noted: true,
+      note_ar:
+        'مسألة اجتهادية وقع فيها خلاف بين أهل العلم. لا يرجّح تبيّن قولاً على قول. أقرب نص في المصادر لما أُشير إليه معروض مع حكمه؛ عرضه لا يعني ترجيحاً ولا حكماً من تبيّن.',
+      note_en:
+        'An ijtihadi matter on which scholars differ. Tabayyun prefers no opinion over another. The closest text in the sources to what is referred to is shown with its grading; showing it is neither a preference nor a ruling by Tabayyun.',
     }),
     misattributed: card({
       claim_type: 'ayah',
@@ -638,6 +660,24 @@ function buildCards(lang) {
     ms: 9,
   })
 
+  cards.referenced.explain = explain(cards.referenced, {
+    rule: [
+      'صُنّفت المسألة خلافية (المستوى C)، وسقف هذا المستوى «يحتاج مزيد تحقق». النص المعروض هو ما أُشير إليه في الكلام، وعرضه لا يرفع الحالة.',
+      'The matter was classified as disputed (level C); that level is capped at “needs further verification”. The text shown is what the speaker points at; showing it does not raise the state.',
+    ],
+    limits: [
+      'تبيّن لا يرجّح بين الأقوال في المسائل الخلافية ولا يفتي فيها، ولا ينظر في صحة الاستدلال بالنص المشار إليه؛ يُرجع في ذلك إلى أهل العلم.',
+      'Tabayyun prefers no opinion on disputed matters and issues no fatwa, and does not assess whether the text referred to supports the ruling; that is for scholars.',
+    ],
+    candidates: [hadithCandidate(hB, null, false)],
+    level: [
+      'مسألة فقهية يختلف فيها أهل العلم؛ وعند الشك يُختار المستوى الأشد حساسية.',
+      'A fiqh matter on which scholars differ; when in doubt the more sensitive level is chosen.',
+    ],
+    origin: 'model',
+    ms: 412,
+  })
+
   const misQuran = quranCandidates(cards.misattributed.text_as_quoted, lang, null, 2)
   cards.misattributed.explain = explain(cards.misattributed, {
     rule: [
@@ -776,6 +816,7 @@ const video = scenario({
     { at: 378, card: 'bookHadith', before: 'ويُروى كذلك: ', after: '' },
     { at: 397, card: 'attributed', before: 'وقد قيل: ', after: '' },
     { at: 431, card: 'disputed', before: 'وأما ', after: ' فهذا ما أراه في المسألة.' },
+    { at: 448, card: 'referenced', before: 'وكذلك ', after: '، ودليله عندهم الحديث الذي مرّ في فضل الصيام.' },
     { at: 466, card: 'misattributed', before: 'وقال الله تعالى: ', after: '' },
     { at: 492, card: 'personal', before: 'ووصلني هذا السؤال: ', after: '' },
     { at: 510, text: 'نكتفي بهذا القدر، وإلى لقاء قادم.' },

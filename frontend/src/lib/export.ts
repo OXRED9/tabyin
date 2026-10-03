@@ -202,7 +202,7 @@ function cardBlock(card: Card, report: Report, ctx: { t: Dictionary; lang: UiLan
     ${card.disagreement_noted ? `<p class="notice">${esc(t.card.disagreement)}</p>` : ''}
     ${abstention}
     ${note ? `<p class="note">${esc(note)}</p>` : ''}
-    ${card.source ? sourceBlock(card.source, t, t.card.sourceText) : ''}
+    ${card.source ? sourceBlock(card.source, t, card.match_kind === 'referenced' ? t.card.referencedSource : t.card.sourceText) : ''}
     ${grades}
     <dl class="meta">
       ${field(t.card.level, `${esc(card.content_level)} · ${esc(t.levels[card.content_level])}`)}

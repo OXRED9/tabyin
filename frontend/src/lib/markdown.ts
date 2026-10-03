@@ -121,7 +121,8 @@ function cardBlock(card: Card, report: Report, ctx: Context): string {
   if (note) lines.push(`- **${t.card.note}:** ${oneLine(note)}`)
 
   if (card.source) {
-    lines.push(`- **${t.card.sourceText}:**`, '', quote(card.source.text).replace(/^/gm, '  '), '')
+    const heading = card.match_kind === 'referenced' ? t.card.referencedSource : t.card.sourceText
+    lines.push(`- **${heading}:**`, '', quote(card.source.text).replace(/^/gm, '  '), '')
     lines.push(`- **${t.card.reference}:** ${oneLine(card.source.ref)}`)
     lines.push(`- **${t.card.source}:** ${mdLink(card.source.source_name, card.source.url)}`)
     if (card.source.attribution && card.source.attribution !== card.source.ref) {

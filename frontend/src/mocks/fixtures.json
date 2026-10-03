@@ -151,22 +151,28 @@
      "id": 7,
      "text": "وأما [حكم في مسألة خلافية كما ورد في المقطع] فهذا ما أراه في المسألة.",
      "start": 431,
-     "end": 466
+     "end": 448
     },
     {
      "id": 8,
+     "text": "وكذلك [حكم في مسألة خلافية استُدلّ له بحديث كما ورد في المقطع]، ودليله عندهم الحديث الذي مرّ في فضل الصيام.",
+     "start": 448,
+     "end": 466
+    },
+    {
+     "id": 9,
      "text": "وقال الله تعالى: رباط يوم وليلة خير من صيام شهر وقيامه",
      "start": 466,
      "end": 492
     },
     {
-     "id": 9,
+     "id": 10,
      "text": "ووصلني هذا السؤال: طلّقت زوجتي وأنا غاضب، فهل يقع الطلاق؟",
      "start": 492,
      "end": 510
     },
     {
-     "id": 10,
+     "id": 11,
      "text": "نكتفي بهذا القدر، وإلى لقاء قادم.",
      "start": 510,
      "end": 521
@@ -892,6 +898,86 @@
      {
       "id": "c8",
       "index": 8,
+      "certainty": "ijtihadi",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "refer_to_scholars",
+      "similarity": null,
+      "match_kind": "referenced",
+      "source": {
+       "kind": "hadith",
+       "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+       "text": "عن أبي أمامة رضي الله عنه مرفوعاً: «من صام يوماً في سبيل الله جعل الله بينه وبين النار خَنْدَقًا كما بين السماء والأرض».",
+       "ref": "رواه الترمذي",
+       "url": "https://hadeethenc.com/ar/browse/hadith/6399",
+       "attribution": "رواه الترمذي",
+       "explanation": "في هذا الحديث بيان فضل من صام يوما ًخالصاً لوجه الله، حيث ينجيه الله من النار ويبعده عنها كبعد السماء عن الأرض.",
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [
+       {
+        "text": "حسن",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/6399"
+       }
+      ],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "مسألة اجتهادية وقع فيها خلاف بين أهل العلم. لا يرجّح تبيّن قولاً على قول. أقرب نص في المصادر لما أُشير إليه معروض مع حكمه؛ عرضه لا يعني ترجيحاً ولا حكماً من تبيّن.",
+      "note_en": "An ijtihadi matter on which scholars differ. Tabayyun prefers no opinion over another. The closest text in the sources to what is referred to is shown with its grading; showing it is neither a preference nor a ruling by Tabayyun.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": true,
+      "timestamp": {
+       "start": 448,
+       "end": null
+      },
+      "span": {
+       "segment_id": 8,
+       "start": 6,
+       "end": 62
+      },
+      "warnings": [],
+      "copy_text": "عن أبي أمامة رضي الله عنه مرفوعاً: «من صام يوماً في سبيل الله جعل الله بينه وبين النار خَنْدَقًا كما بين السماء والأرض».\nرواه الترمذي — حسن (موسوعة الأحاديث النبوية (HadeethEnc.com))\nhttps://hadeethenc.com/ar/browse/hadith/6399",
+      "explain": {
+       "rule_ar": "صُنّفت المسألة خلافية (المستوى C)، وسقف هذا المستوى «يحتاج مزيد تحقق». النص المعروض هو ما أُشير إليه في الكلام، وعرضه لا يرفع الحالة.",
+       "rule_en": "The matter was classified as disputed (level C); that level is capped at “needs further verification”. The text shown is what the speaker points at; showing it does not raise the state.",
+       "limits_ar": "تبيّن لا يرجّح بين الأقوال في المسائل الخلافية ولا يفتي فيها، ولا ينظر في صحة الاستدلال بالنص المشار إليه؛ يُرجع في ذلك إلى أهل العلم.",
+       "limits_en": "Tabayyun prefers no opinion on disputed matters and issues no fatwa, and does not assess whether the text referred to supports the ruling; that is for scholars.",
+       "similarity": null,
+       "threshold": null,
+       "candidates": [
+        {
+         "rank": 1,
+         "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+         "ref": "رواه الترمذي",
+         "url": "https://hadeethenc.com/ar/browse/hadith/6399",
+         "similarity": null,
+         "chosen": false,
+         "grade_text": "حسن",
+         "excerpt": "عن أبي أمامة رضي الله عنه مرفوعاً: «من صام يوماً في سبيل الله جعل الله بينه وبين النار خَنْدَقًا كما بين السماء والأرض»."
+        }
+       ],
+       "level_reason_ar": "مسألة فقهية يختلف فيها أهل العلم؛ وعند الشك يُختار المستوى الأشد حساسية.",
+       "level_reason_en": "A fiqh matter on which scholars differ; when in doubt the more sensitive level is chosen.",
+       "level_reason_origin": "model",
+       "match_ms": 412,
+       "data_version": "2026.10.03 · quran 6236 (Tanzil Uthmani 1.1) · hadeethenc 3574 · books 58802"
+      },
+      "claim_type": "ruling",
+      "content_level": "C",
+      "text_as_quoted": "[حكم في مسألة خلافية استُدلّ له بحديث كما ورد في المقطع]",
+      "state": "needs_review",
+      "rule_id": "level_c.cap_needs_review",
+      "position": 587
+     },
+     {
+      "id": "c9",
+      "index": 9,
       "certainty": "definitive",
       "attributed_to": "القرآن الكريم",
       "explicit_attribution": true,
@@ -931,7 +1017,7 @@
        "end": null
       },
       "span": {
-       "segment_id": 8,
+       "segment_id": 9,
        "start": 17,
        "end": 54
       },
@@ -1007,11 +1093,11 @@
       "text_as_quoted": "رباط يوم وليلة خير من صيام شهر وقيامه",
       "state": "contradicted",
       "rule_id": "ayah.not_in_mushaf_found_as_hadith",
-      "position": 598
+      "position": 706
      },
      {
-      "id": "c9",
-      "index": 9,
+      "id": "c10",
+      "index": 10,
       "certainty": "not_applicable",
       "attributed_to": null,
       "explicit_attribution": false,
@@ -1034,7 +1120,7 @@
        "end": null
       },
       "span": {
-       "segment_id": 9,
+       "segment_id": 10,
        "start": 19,
        "end": 57
       },
@@ -1059,7 +1145,7 @@
       "text_as_quoted": "طلّقت زوجتي وأنا غاضب، فهل يقع الطلاق؟",
       "state": "needs_review",
       "rule_id": "level_d.personal_case",
-      "position": 655
+      "position": 763
      }
     ],
     "en": [
@@ -1791,6 +1877,91 @@
      {
       "id": "c8",
       "index": 8,
+      "certainty": "ijtihadi",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "refer_to_scholars",
+      "similarity": null,
+      "match_kind": "referenced",
+      "source": {
+       "kind": "hadith",
+       "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+       "text": "عن أبي أمامة رضي الله عنه مرفوعاً: «من صام يوماً في سبيل الله جعل الله بينه وبين النار خَنْدَقًا كما بين السماء والأرض».",
+       "ref": "رواه الترمذي",
+       "url": "https://hadeethenc.com/ar/browse/hadith/6399",
+       "attribution": "رواه الترمذي",
+       "explanation": "في هذا الحديث بيان فضل من صام يوما ًخالصاً لوجه الله، حيث ينجيه الله من النار ويبعده عنها كبعد السماء عن الأرض.",
+       "translation": {
+        "lang": "en",
+        "text": "Abu Umāmah (may Allah be pleased with him) reported that the Prophet (may Allah's peace and blessings be upon him) said: \"Whoever fasts one day in the cause of Allah, Allah shall put between him and Hellfire a trench as wide as the distance between the heavens and the earth.\"",
+        "source_name": "Encyclopedia of Translated Prophetic Hadiths (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/en/browse/hadith/6399"
+       }
+      },
+      "other_sources": [],
+      "grades": [
+       {
+        "text": "حسن",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/6399"
+       }
+      ],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "مسألة اجتهادية وقع فيها خلاف بين أهل العلم. لا يرجّح تبيّن قولاً على قول. أقرب نص في المصادر لما أُشير إليه معروض مع حكمه؛ عرضه لا يعني ترجيحاً ولا حكماً من تبيّن.",
+      "note_en": "An ijtihadi matter on which scholars differ. Tabayyun prefers no opinion over another. The closest text in the sources to what is referred to is shown with its grading; showing it is neither a preference nor a ruling by Tabayyun.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": true,
+      "timestamp": {
+       "start": 448,
+       "end": null
+      },
+      "span": {
+       "segment_id": 8,
+       "start": 6,
+       "end": 62
+      },
+      "warnings": [],
+      "copy_text": "عن أبي أمامة رضي الله عنه مرفوعاً: «من صام يوماً في سبيل الله جعل الله بينه وبين النار خَنْدَقًا كما بين السماء والأرض».\nرواه الترمذي — حسن (موسوعة الأحاديث النبوية (HadeethEnc.com))\nhttps://hadeethenc.com/ar/browse/hadith/6399",
+      "explain": {
+       "rule_ar": "صُنّفت المسألة خلافية (المستوى C)، وسقف هذا المستوى «يحتاج مزيد تحقق». النص المعروض هو ما أُشير إليه في الكلام، وعرضه لا يرفع الحالة.",
+       "rule_en": "The matter was classified as disputed (level C); that level is capped at “needs further verification”. The text shown is what the speaker points at; showing it does not raise the state.",
+       "limits_ar": "تبيّن لا يرجّح بين الأقوال في المسائل الخلافية ولا يفتي فيها، ولا ينظر في صحة الاستدلال بالنص المشار إليه؛ يُرجع في ذلك إلى أهل العلم.",
+       "limits_en": "Tabayyun prefers no opinion on disputed matters and issues no fatwa, and does not assess whether the text referred to supports the ruling; that is for scholars.",
+       "similarity": null,
+       "threshold": null,
+       "candidates": [
+        {
+         "rank": 1,
+         "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+         "ref": "رواه الترمذي",
+         "url": "https://hadeethenc.com/ar/browse/hadith/6399",
+         "similarity": null,
+         "chosen": false,
+         "grade_text": "حسن",
+         "excerpt": "عن أبي أمامة رضي الله عنه مرفوعاً: «من صام يوماً في سبيل الله جعل الله بينه وبين النار خَنْدَقًا كما بين السماء والأرض»."
+        }
+       ],
+       "level_reason_ar": "مسألة فقهية يختلف فيها أهل العلم؛ وعند الشك يُختار المستوى الأشد حساسية.",
+       "level_reason_en": "A fiqh matter on which scholars differ; when in doubt the more sensitive level is chosen.",
+       "level_reason_origin": "model",
+       "match_ms": 412,
+       "data_version": "2026.10.03 · quran 6236 (Tanzil Uthmani 1.1) · hadeethenc 3574 · books 58802"
+      },
+      "claim_type": "ruling",
+      "content_level": "C",
+      "text_as_quoted": "[حكم في مسألة خلافية استُدلّ له بحديث كما ورد في المقطع]",
+      "state": "needs_review",
+      "rule_id": "level_c.cap_needs_review",
+      "position": 587
+     },
+     {
+      "id": "c9",
+      "index": 9,
       "certainty": "definitive",
       "attributed_to": "The Quran",
       "explicit_attribution": true,
@@ -1835,7 +2006,7 @@
        "end": null
       },
       "span": {
-       "segment_id": 8,
+       "segment_id": 9,
        "start": 17,
        "end": 54
       },
@@ -1911,11 +2082,11 @@
       "text_as_quoted": "رباط يوم وليلة خير من صيام شهر وقيامه",
       "state": "contradicted",
       "rule_id": "ayah.not_in_mushaf_found_as_hadith",
-      "position": 598
+      "position": 706
      },
      {
-      "id": "c9",
-      "index": 9,
+      "id": "c10",
+      "index": 10,
       "certainty": "not_applicable",
       "attributed_to": null,
       "explicit_attribution": false,
@@ -1938,7 +2109,7 @@
        "end": null
       },
       "span": {
-       "segment_id": 9,
+       "segment_id": 10,
        "start": 19,
        "end": 57
       },
@@ -1963,7 +2134,7 @@
       "text_as_quoted": "طلّقت زوجتي وأنا غاضب، فهل يقع الطلاق؟",
       "state": "needs_review",
       "rule_id": "level_d.personal_case",
-      "position": 655
+      "position": 763
      }
     ]
    },
