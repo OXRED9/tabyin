@@ -18,6 +18,7 @@ frontend/dist/
 data/cache/
 data/raw/open-hadith-data/
 data/hadith_books.sqlite
+data/hadeethenc.json
 data/*.npy
 data/tmp/
 

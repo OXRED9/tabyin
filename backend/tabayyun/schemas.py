@@ -133,6 +133,7 @@ class Card(BaseModel):
 
     timestamp: Timestamp | None = None
     span: Span | None = None
+    position: int = 0  # character offset in the whole text: the chronological sort key
     warnings: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -168,6 +169,7 @@ class ClaimStub(BaseModel):
     text_as_quoted: str
     span: Span | None = None
     timestamp: Timestamp | None = None
+    position: int = 0
 
 
 class Summary(BaseModel):
