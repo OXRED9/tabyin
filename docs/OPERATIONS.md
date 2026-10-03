@@ -96,6 +96,17 @@ A typical verification (one article or a five-minute clip) therefore costs a few
 default model and about one cent with a smaller one. Verbatim verses and narrations cost nothing:
 they are decided before any model is called.
 
+### Phase 2 features — cost and flags
+
+| Feature | Flag | LLM calls | Extra cost |
+|---|---|---|---|
+| F3 verdict card (PNG) | `FEATURES_SHARE_CARD` | none | none: rendered in the browser; the server fallback draws it with Pillow in about 0.15 s |
+| F4 copy the correct text | `FEATURES_COPY` | none | none: the text is assembled from the source record already retrieved |
+| F5 "why this verdict?" | `FEATURES_EXPLAIN` | none of its own (the classifier's one-line level reason rides on the existing extraction call, ≈ 30 output tokens per claim) | negligible |
+
+`PUBLIC_URL` sets the address printed and QR-encoded on verdict cards; without it the card shows
+the address the request came to.
+
 ## Privacy
 
 - Inputs are processed in memory and streamed back; nothing about a request is written to a database.
@@ -106,6 +117,8 @@ they are decided before any model is called.
   `localStorage` and can be cleared there.
 - No analytics, no third-party scripts, self-hosted fonts.
 - No religious or personal attribute of the user is inferred or stored.
+- Verdict cards carry no date, time, reviewer name or video link. The server-side card endpoint
+  receives the card to draw, returns the image with `Cache-Control: no-store`, and keeps nothing.
 - Disclosed data flows to third parties: the text being verified is sent to the configured LLM
   provider; a quoted narration (its first words) is sent to Dorar's search; audio is sent to the
   speech-to-text provider when cloud transcription is used; a video URL is requested from its

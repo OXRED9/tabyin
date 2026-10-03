@@ -13,7 +13,8 @@ RUN npm run build
 # ---- 2) python deps + data -----------------------------------------------------------------
 FROM python:3.11-slim AS runtime
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg ca-certificates && rm -rf /var/lib/apt/lists/*
+# libfribidi0: Pillow's bundled libraqm loads it at run time to shape Arabic on verdict cards.
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg ca-certificates libfribidi0 && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 COPY backend/pyproject.toml backend/pyproject.toml

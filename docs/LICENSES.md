@@ -28,7 +28,9 @@ The source code in this repository is released under the MIT licence (`LICENSE`)
 | faster-whisper (optional), CTranslate2 | MIT |
 | anthropic, openai SDKs | MIT / Apache-2.0 |
 | React, Vite, Tailwind CSS, shadcn/ui, Radix UI, lucide-react | MIT / ISC |
-| IBM Plex Sans Arabic, Inter, Amiri Quran (self-hosted via Fontsource) | SIL Open Font License 1.1 |
+| IBM Plex Sans Arabic, Inter, Amiri Quran (self-hosted via Fontsource in the UI; TTF copies with their OFL texts in `backend/tabayyun/assets/fonts/` for server-side verdict cards) | SIL Open Font License 1.1 |
+| Pillow (with libraqm, HarfBuzz, FriBiDi), segno | MIT-CMU / MIT, LGPL (FriBiDi, system library) / BSD-3-Clause |
+| html-to-image, qrcode-generator (UI) | MIT |
 
 ## Third-party services
 

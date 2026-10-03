@@ -209,8 +209,10 @@ async def share_card(req: ShareCardRequest, request: Request) -> Response:
         raise HTTPException(status_code=404, detail="feature disabled")
     if _rate_limited(request):
         raise HTTPException(status_code=429, detail="rate limited")
-    from .report.share_card import render_claim_card, render_summary_card
+    from .report.share_card import render_claim_card, render_summary_card, renderer_available
 
+    if not renderer_available():
+        raise HTTPException(status_code=503, detail="Arabic text shaping is not available on this server")
     app_url = (settings.public_url or str(request.base_url)).rstrip("/")
     if req.kind == "summary":
         png = await asyncio.to_thread(render_summary_card, req.summary, size=req.size, theme=req.theme, lang=req.lang, app_url=app_url)

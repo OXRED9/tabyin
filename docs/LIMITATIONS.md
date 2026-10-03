@@ -79,6 +79,23 @@ and unresolved as of 3 October 2026.
 - **Reviewer overrides are local**: they live in the browser and in the exported file, not on a
   server, so two reviewers cannot see each other's decisions.
 
+## Phase 2 features (F3, F4, F5)
+
+- **Verdict cards can be made for any card the browser holds**, including one edited in the
+  browser's developer tools; the server fallback validates the payload's shape, not its truth. The
+  card's QR code leads to the tool, not to a stored copy of the verdict — nothing is stored.
+- **The client-rendered and server-rendered cards are two implementations of one content table**;
+  they match in content and closely in layout, not pixel for pixel.
+- **The server fallback needs Arabic shaping** (libraqm + FriBiDi). Where they are missing it
+  answers 503 rather than drawing broken letters.
+- **Copy** gives the whole source text of a narration, including its chain and any second wording
+  the source lists, not only the quoted part.
+- **"Why this verdict?"** explains the rule and shows the candidates; it does not show the model's
+  prompt or reasoning, and the one-line level reason is the model's own wording when a model
+  classified the claim.
+- **Web Share with a file** is not available in every browser (notably desktop Firefox); there the
+  card is downloaded and copied to the clipboard instead.
+
 ## Operations
 
 - **Free-tier hosting**: the process uses about 320 MB of memory with all indexes loaded (measured); local

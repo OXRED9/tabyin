@@ -48,6 +48,14 @@ TEXT = {
 }
 
 
+def renderer_available() -> bool:
+    """Arabic needs shaping and bidirectional layout (libraqm + FriBiDi). Without them the letters
+    would be drawn unjoined and in the wrong order — worse than no card — so the endpoint refuses."""
+    from PIL import features
+
+    return bool(features.check("raqm"))
+
+
 @lru_cache(maxsize=32)
 def _font(name: str, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(str(FONTS / name), size, layout_engine=ImageFont.Layout.RAQM)
