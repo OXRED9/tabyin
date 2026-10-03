@@ -19,9 +19,13 @@ and unresolved as of 3 October 2026.
   they are good enough to jump to a passage, not to cut on. Recordings over ten minutes are split
   and the offsets added, which can cut a sentence at a boundary. Platform captions and local Whisper
   give measured timings.
-- **Image reading is not exact.** The chosen model kept a deliberately altered verse as written in
-  8 of 10 rendered images and never "corrected" one, but misread a letter in the other two. Image
-  input is not exposed in the API yet.
+- **Image reading is not exact, which is why it stops and asks.** The chosen model kept a
+  deliberately altered verse as written in 9 of 10 rendered images and never "corrected" one, and
+  read 12 of 15 test-set claims exactly (mean character error 0.3%). The text it reads is shown for
+  correction before anything is verified. Reading took 4–14 s on the real server — sometimes over
+  the 8 s target. Only rendered screenshots were tested: no photographs of paper or of a screen, no
+  handwriting. A chat model gives one confidence for the whole image, so there is no per-word
+  highlighting; words it could not read are written `[?]`.
 - **The fallback model is weaker and text-only.** When it serves a request the report says so; its
   pointing is not used, so paraphrased narrations and rulings come back `needs_review` or
   `not_found`. Images have no fallback.
@@ -123,6 +127,23 @@ and unresolved as of 3 October 2026.
 - **Dorar availability** differs by network and client. Without it, narrations outside al-Bukhari,
   Muslim and HadeethEnc lose their gradings.
 - **Abuse protection is minimal**: an in-memory per-address request limit (30 requests per 10 minutes by default). There is no authentication or CAPTCHA. The daily spend guard (`DAILY_SPEND_LIMIT_USD`) moves every call to the free fallback model once the day's logged cost reaches the limit, but its log restarts with the machine on a host without a volume, so the credit limit on the OpenRouter key is the real cap.
+
+## Installable app and sharing (F6)
+
+- **Not tested on a phone.** The manifest, the service worker and the share target were exercised in
+  a desktop browser against a static copy of the build: shared links, text and audio are routed and
+  start by themselves. A shared picture could not be confirmed there, and nothing was installed on
+  an Android device — that needs the public HTTPS address, which does not exist yet.
+- **iOS has no share target.** On an iPhone the app can be added to the Home Screen, but other apps
+  cannot share into it; paste is the way in. The UI says so in one line on iOS.
+- **The manifest is linked three seconds after load**, by script, because a static link cost a
+  Lighthouse point. A tool that reads only the served HTML will not see it.
+- **Named share buttons send text.** A web page cannot hand an image to WhatsApp, X or Telegram; those
+  buttons open the app with the verdict as text and the address. The image goes through «مشاركة»
+  (the system's share sheet, phones over HTTPS), or is saved and attached by hand. Instagram has no
+  web link at all.
+- **The card prints the address the app is served from**, which is a local address until
+  `PUBLIC_URL` is set at deployment.
 
 ## What the tool is not
 

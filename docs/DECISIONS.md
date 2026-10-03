@@ -123,7 +123,8 @@ plainly below, with the command that finishes the job in `OPERATIONS.md`.
     paraphrase rule was not changed; whether to raise it is a threshold question for the full eval.
 37. **`MODEL_VISION = qwen/qwen3.7-flash`.** Ten rendered images, each with a verse in which one word
     was replaced by code. It kept the altered wording in 8 and never restored the original verse; it
-    is also the cheapest candidate ($0.00006 per image). DeepSeek V4.1 Flash restored the original
+    is also the cheapest candidate ($0.00006 per image). A later run on the same images gave 9 of 10, again
+    with none restored, and 12 of 15 test-set claims exact (`eval/results/ocr_exactness.md`). DeepSeek V4.1 Flash restored the original
     wording in 2 of 10 — the failure that would hide a misquotation — and is rejected. Gemini 3.5 and
     3.1 Flash-Lite and GLM 5.3 Flash had most calls refused and are **not measured** (the three images
     the Gemini models did read were exact). Qwen 3.8 Flash returned an invalid or truncated answer for

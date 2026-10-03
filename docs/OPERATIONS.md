@@ -175,6 +175,8 @@ tokens it would cost 16 times as much to run.
 |---|---|---|---|
 | F3 verdict card (PNG) | `FEATURES_SHARE_CARD` | none | none: rendered in the browser; the server fallback draws it with Pillow in about 0.15 s |
 | F4 copy the correct text | `FEATURES_COPY` | none | none: the text is assembled from the source record already retrieved |
+| F1 image input | `FEATURES_IMAGE` | one vision call per image (`MODEL_VISION`) | measured: about $0.00005 per image, 4–14 s; the verification that follows is an ordinary text request |
+| F6 installable app, share target | — | none | none: a manifest and a service worker that caches the app shell only, never `/api/*` |
 | F5 "why this verdict?" | `FEATURES_EXPLAIN` | none of its own (the classifier's one-line level reason rides on the existing extraction call, ≈ 30 output tokens per claim) | negligible |
 
 `PUBLIC_URL` sets the address printed and QR-encoded on verdict cards; without it the card shows
