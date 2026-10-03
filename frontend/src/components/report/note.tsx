@@ -1,7 +1,8 @@
 import { ChevronDown, ChevronLeft, UserRoundCheck } from 'lucide-react'
-import { Suspense, lazy, memo, useId } from 'react'
+import { Suspense, memo, useId } from 'react'
 import type { CSSProperties } from 'react'
 
+import NoteBody from '@/components/report/lazy-note-body'
 import type { NoteBodyProps } from '@/components/report/note-body'
 import { StateGlyph } from '@/components/state-glyph'
 import { useI18n } from '@/lib/i18n'
@@ -12,7 +13,6 @@ import { cn } from '@/lib/utils'
 
 // What an open note says is not needed to draw the page: it is fetched when a note is first
 // opened (and warmed up once the report is complete, so that opening is immediate).
-const NoteBody = lazy(() => import('@/components/report/note-body'))
 
 interface MarginNoteProps extends Omit<NoteBodyProps, 'showQuoted' | 'onLocate'> {
   /** Wide screens open a note in place; narrower ones hand it to a sheet and keep the margin still. */

@@ -1,6 +1,7 @@
 import {
   AudioLines,
   ChevronDown,
+  ClipboardPaste,
   FileAudio,
   Image as ImageIcon,
   Link2,
@@ -53,6 +54,8 @@ interface ComposerProps {
   limits: Meta['limits']
   /** `meta.features.image`: pictures can be read (`POST /api/ocr`). Off → no «صورة» action. */
   imageInput: boolean
+  /** A one-line remark above the field (what was shared to the app could not be received). */
+  notice?: string | null
   /** The picture being read, or read, if there is one. */
   image: ImageReading | null
   onImage: (file: File) => void
@@ -83,6 +86,7 @@ export function Composer({
   onSubmit,
   limits,
   imageInput,
+  notice,
   image,
   onImage,
   onImageRemove,
@@ -103,6 +107,9 @@ export function Composer({
   const [scrollTop, setScrollTop] = useState(0)
   const [scrollbar, setScrollbar] = useState(0)
   const fileInput = useRef<HTMLInputElement | null>(null)
+  // «لصق» exists only where the page may read the clipboard: a secure context with the API.
+  // (Plain http on a LAN address has neither, and a button that does nothing is worse than none.)
+  const [canPaste] = useState(() => window.isSecureContext && typeof navigator.clipboard?.readText === 'function')
 
   const file = draft.file
   const link = file ? null : detectLink(draft.text)
@@ -174,6 +181,35 @@ export function Composer({
     }
   }
 
+  /** The clipboard's picture goes to the reader; otherwise its text goes into the field. */
+  const pasteClipboard = async () => {
+    try {
+      if (typeof navigator.clipboard.read === 'function') {
+        const items = await navigator.clipboard.read()
+        for (const item of items) {
+          const type = imageInput ? item.types.find((candidate) => candidate.startsWith('image/')) : undefined
+          if (type) {
+            const blob = await item.getType(type)
+            onImage(new File([blob], `clipboard.${type.split('/')[1] || 'png'}`, { type }))
+            return
+          }
+        }
+        for (const item of items) {
+          if (!item.types.includes('text/plain')) continue
+          const text = await (await item.getType('text/plain')).text()
+          if (text.trim()) onChange({ text, linkAs: null })
+          break
+        }
+      } else {
+        const text = await navigator.clipboard.readText()
+        if (text.trim()) onChange({ text, linkAs: null })
+      }
+    } catch {
+      /* Reading was refused or the clipboard is empty: the keyboard's paste still works. */
+    }
+    fieldRef.current?.focus()
+  }
+
   const onDrop = (event: DragEvent) => {
     event.preventDefault()
     setDragging(false)
@@ -227,6 +263,13 @@ export function Composer({
       <p role="status" aria-live="polite" className="sr-only">
         {reading ? t.input.imageReading : read ? t.input.imageRead : ''}
       </p>
+
+      {notice ? (
+        <p role="status" className="mt-3 flex items-start gap-2 text-sm text-ink">
+          <StateGlyph state="needs_review" className="mt-0.5 size-[18px]" />
+          {notice}
+        </p>
+      ) : null}
 
       {image ? (
         <div data-testid="image-row" className="mt-3 flex items-center gap-3 rounded-control border border-rule-strong p-2">
@@ -312,7 +355,8 @@ export function Composer({
             className={cn(
               'ruled block max-h-[50vh] min-h-[calc(var(--line)*4+0.75rem)] w-full resize-none rounded-sheet border border-rule-strong bg-paper px-4 pt-1 pb-2 text-ink transition-colors duration-150 field-sizing-content placeholder:font-sans placeholder:text-base placeholder:leading-(--line) placeholder:text-quiet focus-visible:border-green disabled:opacity-60 aria-invalid:border-contra',
               fieldFace,
-              draft.text && 'pe-12',
+              // Room at the end of the first line for × (or for «لصق» while the field is empty).
+              draft.text ? 'pe-12' : canPaste && 'pe-24',
               dragging && 'border-green',
             )}
           />
@@ -356,6 +400,19 @@ export function Composer({
               className="absolute end-2 top-2 text-quiet"
             >
               <X aria-hidden="true" />
+            </Button>
+          ) : null}
+          {!draft.text && !reading && canPaste ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              data-testid="paste"
+              onClick={() => void pasteClipboard()}
+              className="absolute end-2 top-2 text-quiet"
+            >
+              <ClipboardPaste aria-hidden="true" />
+              {t.input.paste}
             </Button>
           ) : null}
           {dragging ? (

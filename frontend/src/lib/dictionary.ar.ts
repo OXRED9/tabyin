@@ -137,12 +137,22 @@ export const ar = {
     dropHere: 'أفلت الملف هنا',
     fileSize: (size: string, unit: 'kb' | 'mb') => `${size} ${unit === 'kb' ? 'ك.ب' : 'م.ب'}`,
     clear: 'مسح الحقل',
+    paste: 'لصق',
     chars: (n: number, max: number) => `${n.toLocaleString('en-US')} / ${max.toLocaleString('en-US')}`,
     verify: 'تحقّق',
     verifying: 'جارٍ التحقق…',
     cancel: 'إلغاء',
     examples: 'جرّب:',
     recent: (n: number) => `آخر ما تحققتَ منه (${n})`,
+  },
+
+  // The installable app (F6).
+  pwa: {
+    install: 'ثبّت تبيّن على جهازك لتشارك إليه مباشرة من أي تطبيق',
+    installButton: 'تثبيت',
+    dismiss: 'إخفاء',
+    ios: 'لتثبيت تبيّن: زر المشاركة في Safari ثم «إضافة إلى الشاشة الرئيسية». المشاركة إليه غير متاحة على iOS؛ الصق النص أو الرابط.',
+    shareUnavailable: 'تعذّر استلام ما شاركتَه. الصقه هنا بدلاً من ذلك.',
   },
 
   stages: {
@@ -326,6 +336,7 @@ export const ar = {
     quotedWords: 'النص كما ورد',
     without: 'استشهاد بلا موضع في النص',
     quote: (text: string) => `«${text}»`,
+    jump: (n: number) => `الحواشي (${n})`,
   },
 
   card: {
@@ -337,7 +348,7 @@ export const ar = {
     grades: 'الحكم على الحديث',
     gradeUnavailable: 'الحكم غير متاح من المصدر',
     gradesCount: (n: number) =>
-      n === 2 ? 'حكمان في المصادر' : n <= 10 ? `${n} أحكام في المصادر` : `${n} حكماً في المصادر`,
+      n === 1 ? 'حكم واحد في المصدر' : n === 2 ? 'حكمان في المصادر' : n <= 10 ? `${n} أحكام في المصادر` : `${n} حكماً في المصادر`,
     gradesMany: 'وردت عدة أحكام، وتُعرض كلها كما في مصادرها دون ترجيح.',
     gradeVerbatim: 'منقول بنصّه من المصدر',
     scholar: 'المحدِّث',
@@ -422,6 +433,11 @@ export const ar = {
     cardLabel: 'بطاقة تثبّت',
     summaryLabel: 'خلاصة التحقق',
     asQuoted: 'النص كما ورد',
+    circulating: 'النص المتداول',
+    referral: 'تبيّن لا يفتي ولا يرجّح؛ يُرجع في هذه المسألة إلى أهل العلم.',
+    checked: 'المحتوى المفحوص',
+    // The server's card says the same sentence (docs/DECISIONS.md, 65). TODO-SULAIMAN-REVIEW (wording).
+    verseInMushaf: 'نص الآية أطول من أن تسعه البطاقة؛ يُقرأ كاملاً في موضعه من المصحف.',
     reference: 'المرجع',
     grading: 'الحكم (منقول حرفياً)',
     source: 'المصدر',

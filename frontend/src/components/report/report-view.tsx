@@ -1,8 +1,9 @@
-import { History, RotateCcw, Share2 } from 'lucide-react'
+import { ChevronDown, History, RotateCcw, Share2 } from 'lucide-react'
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 
 import { ProgressPanel } from '@/components/progress-panel'
+import LazyNoteBody from '@/components/report/lazy-note-body'
 import { MarginNote, PendingNote } from '@/components/report/note'
 import { NoteRow, OrderToggle } from '@/components/report/notes-list'
 import type { NoteOrder } from '@/components/report/notes-list'
@@ -18,6 +19,7 @@ import type { VerifyState } from '@/hooks/use-verify'
 import { featuresOf } from '@/lib/features'
 import { formatSeconds, safeHref } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
+import { lazyWithPreload } from '@/lib/lazy'
 import { countStates, sourcesUsed } from '@/lib/report'
 import { STATES_BY_RISK, STATE_STYLE, chronological } from '@/lib/states'
 import type { Card, ClaimStub, EvidenceState, Meta, ReviewerOverride } from '@/lib/types'
@@ -45,6 +47,7 @@ const GLIDE_MS = 220
 const NONE: ReadonlySet<string> = new Set()
 
 // Nothing that lies over the page is needed to draw it: each of these is fetched when first used.
+const InlineNote = lazyWithPreload(() => import('@/components/report/inline-note'))
 const NoteSheet = lazy(() => import('@/components/report/note-sheet'))
 const ReferralDialog = lazy(() => import('@/components/report/referral-dialog'))
 const ShareCardDialog = lazy(() => import('@/components/share/share-card-dialog'))
@@ -87,6 +90,7 @@ export function ReportView({
   // keeps its notes collapsed and level, and a note opens as a sheet, as on a phone.
   const inPlace = useMediaQuery('(min-width: 1024px)')
   const gridRef = useRef<HTMLDivElement | null>(null)
+  const notesRef = useRef<HTMLElement | null>(null)
   const glideTimer = useRef<number | null>(null)
   const flashTimer = useRef<number | null>(null)
 
@@ -100,6 +104,7 @@ export function ReportView({
   const [referralSeen, setReferralSeen] = useState(false)
   const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null)
   const [glide, setGlide] = useState(false)
+  const [notesBelow, setNotesBelow] = useState(false)
   // False only between the end of a live run and the end of its orchestrated moment.
   const [inked, setInked] = useState(!running)
 
@@ -134,6 +139,19 @@ export function ReportView({
 
   const hasText = segments.some((s) => s.text.trim().length > 0)
   const noClaims = done && ordered.length === 0
+
+  // Exactly one claim: nobody should have to tap to read the answer. At 1024 and up its margin
+  // note opens by itself (once; it can be closed). Below that the note is set open, inline,
+  // directly under the text, with no margin and no one-item list. Only once the report is
+  // complete: while it streams, the page behaves as always.
+  const single = done && ordered.length === 1 ? cards[ordered[0].id] : undefined
+  const singleInline = !!single && !inPlace
+  const [openedAlone, setOpenedAlone] = useState(false)
+  if (single && inPlace && !openedAlone) {
+    setOpenedAlone(true)
+    setOpenIds(new Set([single.id]))
+  }
+  const withMargin = hasMargin && !singleInline
   const settled = !running
   const inking = settled && !inked
 
@@ -157,7 +175,7 @@ export function ReportView({
   // Notes opened in place stay open only while the screen is wide enough for that.
   const openInPlace = inPlace ? openIds : NONE
   const signature = [
-    hasMargin,
+    withMargin,
     ids.join(','),
     [...openInPlace].join(','),
     readyCards.length,
@@ -193,6 +211,13 @@ export function ReportView({
   const selectPassage = useCallback(
     (claimId: string) => {
       if (!cards[claimId]) return
+      if (singleInline) {
+        // The note is already open under the text: go to it.
+        document
+          .getElementById(`note-${claimId}`)
+          ?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' })
+        return
+      }
       if (!inPlace) {
         setSheetId(claimId)
         return
@@ -205,7 +230,7 @@ export function ReportView({
         note?.querySelector('button')?.focus({ preventScroll: true })
       })
     },
-    [cards, hidden, inPlace, toggleNote],
+    [cards, hidden, inPlace, singleInline, toggleNote],
   )
 
   /** A phone's note → its words in the text, tinted for a moment so the eye finds them. */
@@ -221,6 +246,25 @@ export function ReportView({
     }, 220)
   }, [])
 
+  // Does the phone's list of notes start below the first screen? Asked again whenever the page's
+  // height changes (the text arrives, a note is added) or the window does — and already while the
+  // report streams, so that the link is in the head from the first frame of the finished report.
+  const listCount = ordered.length
+  useEffect(() => {
+    if (hasMargin || listCount < 2) return
+    const check = () => {
+      const section = notesRef.current
+      setNotesBelow(!!section && section.getBoundingClientRect().top + window.scrollY > window.innerHeight)
+    }
+    const observer = new ResizeObserver(check)
+    observer.observe(document.body)
+    window.addEventListener('resize', check)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', check)
+    }
+  }, [hasMargin, listCount])
+
   const openReferral = useCallback(() => {
     setReferralSeen(true)
     setReferralOpen(true)
@@ -231,12 +275,21 @@ export function ReportView({
   useEffect(() => {
     if (!done) return
     const timer = window.setTimeout(() => {
-      void import('@/components/report/note-body')
+      void LazyNoteBody.preload()
       if (!inPlace) void import('@/components/report/note-sheet')
       void document.fonts?.load('26px "Amiri Quran"', 'ب').catch(() => undefined)
     }, WARM_UP_MS)
     return () => window.clearTimeout(timer)
   }, [done, inPlace])
+
+  // A report that will have one claim opens its note when it completes (inline below 1024px, in
+  // the margin above). Once matching is over the claims are all known: if there is one, the
+  // note's code is fetched in the moment before the report completes, so the note is there with
+  // the rest of it and nothing under it is pushed down.
+  const loneClaim = running && claims.length === 1 && state.stages.match?.status === 'done'
+  useEffect(() => {
+    if (loneClaim) void (inPlace ? LazyNoteBody : InlineNote).preload()
+  }, [loneClaim, inPlace])
 
   // F3: which verdict card the share dialog is showing, if any.
   const shareClaim = useCallback(
@@ -327,14 +380,31 @@ export function ReportView({
         </div>
       ) : (
         <div className="flex min-h-(--sheet-head) items-center gap-x-6 border-b pb-5">
-          <SummarySentence
-            total={ordered.length}
-            counts={counts}
-            modified={overrides.length}
-            filter={activeFilter}
-            onFilter={setFilter}
-            className="min-w-0 flex-1"
-          />
+          <div className="min-w-0 flex-1">
+            <SummarySentence
+              total={ordered.length}
+              counts={counts}
+              modified={overrides.length}
+              filter={activeFilter}
+              onFilter={setFilter}
+            />
+            {/* On a phone the notes follow the text. When they start below the first screen,
+                this takes the reader to them. */}
+            {notesBelow && !withMargin && !singleInline ? (
+              <a
+                href="#notes-title"
+                onClick={(event) => {
+                  event.preventDefault()
+                  notesRef.current?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' })
+                  document.getElementById('notes-title')?.focus({ preventScroll: true })
+                }}
+                className="inline-flex min-h-8 items-center gap-1 text-sm text-green underline decoration-green/40 underline-offset-4"
+              >
+                {t.notes.jump(ordered.length)}
+                <ChevronDown aria-hidden="true" className="size-4" />
+              </a>
+            ) : null}
+          </div>
           <Button type="button" variant="outline" size="touch" onClick={onVerifyAnother} className="shrink-0 max-md:hidden">
             <RotateCcw aria-hidden="true" />
             {t.report.another}
@@ -349,10 +419,12 @@ export function ReportView({
         data-inking={inking ? '' : undefined}
         className={cn(
           'relative isolate mt-6',
-          hasMargin && 'grid grid-cols-[minmax(0,1fr)_16rem] gap-x-6 lg:grid-cols-[minmax(0,36rem)_22rem] lg:gap-x-8',
+          withMargin && 'grid grid-cols-[minmax(0,1fr)_16rem] gap-x-6 lg:grid-cols-[minmax(0,36rem)_22rem] lg:gap-x-8',
+          // Without a margin beside it the text keeps the page's measure.
+          hasMargin && !withMargin && 'max-w-[36rem]',
         )}
       >
-        {hasMargin ? (
+        {withMargin ? (
           <svg aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 size-full overflow-visible">
             {/* At rest a note is tied to its line by a stub in the gutter, and a note that was
                 pushed away from its line by none. The note in hand (hovered, focused, open) gets
@@ -405,7 +477,7 @@ export function ReportView({
           </p>
         )}
 
-        {hasMargin ? (
+        {withMargin ? (
           <aside
             data-margin
             aria-label={t.notes.title}
@@ -438,10 +510,20 @@ export function ReportView({
         ) : null}
       </div>
 
-      {hasMargin || (ordered.length === 0 && !notices) ? null : (
-        <section aria-labelledby="notes-title" className="mt-8 border-t pt-4">
+      {/* One boundary around the inline note and what follows it: the colophon is not set under
+          the text first and then pushed down when the note arrives. */}
+      <Suspense fallback={null}>
+      {singleInline && single ? (
+        <div className="mt-6 max-w-[36rem] space-y-4">
+          {notices}
+          <InlineNote {...bodyProps} card={single} override={overrideByCard.get(single.id)} />
+        </div>
+      ) : null}
+
+      {withMargin || singleInline || (ordered.length === 0 && !notices) ? null : (
+        <section ref={notesRef} aria-labelledby="notes-title" className="mt-8 scroll-mt-16 border-t pt-4">
           <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-4">
-            <h2 id="notes-title" className="text-base font-semibold text-ink">
+            <h2 id="notes-title" tabIndex={-1} className="text-base font-semibold text-ink">
               {t.notes.title}
             </h2>
             {done && ordered.length > 1 ? <OrderToggle value={order} onChange={setOrder} /> : null}
@@ -510,6 +592,7 @@ export function ReportView({
           </div>
         </div>
       ) : null}
+      </Suspense>
 
       <Suspense fallback={null}>
         {sheetCard ? (

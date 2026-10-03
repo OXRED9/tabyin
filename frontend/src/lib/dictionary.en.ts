@@ -88,12 +88,21 @@ export const en: Dictionary = {
     dropHere: 'Drop the file here',
     fileSize: (size: string, unit: 'kb' | 'mb') => `${size} ${unit === 'kb' ? 'KB' : 'MB'}`,
     clear: 'Clear field',
+    paste: 'Paste',
     chars: (n: number, max: number) => `${n.toLocaleString('en-US')} / ${max.toLocaleString('en-US')}`,
     verify: 'Verify',
     verifying: 'Verifying…',
     cancel: 'Cancel',
     examples: 'Try:',
     recent: (n: number) => `What you verified recently (${n})`,
+  },
+
+  pwa: {
+    install: 'Install Tabayyun on your device to share to it directly from any app',
+    installButton: 'Install',
+    dismiss: 'Dismiss',
+    ios: 'To install Tabayyun: Safari’s share button, then “Add to Home Screen”. Sharing into it is not available on iOS; paste the text or the link.',
+    shareUnavailable: 'What you shared could not be received. Paste it here instead.',
   },
 
   stages: {
@@ -248,6 +257,7 @@ export const en: Dictionary = {
     quotedWords: 'As quoted',
     without: 'A citation with no place in the text',
     quote: (text: string) => `“${text}”`,
+    jump: (n: number) => `Notes (${n})`,
   },
 
   card: {
@@ -258,7 +268,7 @@ export const en: Dictionary = {
     grade: 'Grading',
     grades: 'Hadith grading',
     gradeUnavailable: 'Grading not available from the source',
-    gradesCount: (n: number) => `${n} gradings in the sources`,
+    gradesCount: (n: number) => (n === 1 ? '1 grading in the source' : `${n} gradings in the sources`),
     gradesMany: 'Several gradings exist. All are shown as they appear in their sources, with no preference.',
     gradeVerbatim: 'Copied verbatim from the source',
     scholar: 'Scholar',
@@ -343,6 +353,10 @@ export const en: Dictionary = {
     cardLabel: 'Verification card',
     summaryLabel: 'Verification summary',
     asQuoted: 'As quoted',
+    circulating: 'The text in circulation',
+    referral: 'Tabayyun issues no fatwa and prefers no opinion; this matter is for qualified scholars.',
+    checked: 'What was checked',
+    verseInMushaf: 'The verse is longer than this card can hold; it is read in full in its place in the Mushaf.',
     reference: 'Reference',
     grading: 'Grading (verbatim)',
     source: 'Source',
