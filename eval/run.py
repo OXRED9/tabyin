@@ -34,7 +34,7 @@ from tabayyun import pipeline  # noqa: E402
 from tabayyun.config import settings  # noqa: E402
 from tabayyun.ingest.text import ingest_text  # noqa: E402
 from tabayyun.llm.base import LLMError  # noqa: E402
-from tabayyun.llm.router import get_llm  # noqa: E402
+from tabayyun.llm.openrouter import get_llm  # noqa: E402
 from tabayyun.normalize import normalize_ar, normalize_latin  # noqa: E402
 from tabayyun.sources.hadith import get_hadith_index  # noqa: E402
 from tabayyun.sources.quran import get_quran_index  # noqa: E402
@@ -123,8 +123,9 @@ wording differs slightly), "needs_review" (disputed, weak, or a personal case ne
 
 
 async def system_llm(row: dict) -> Prediction:
+    """MODEL_BASELINE_LLM asked directly, no retrieval and no fallback: what a general chatbot says."""
     try:
-        v = await get_llm().complete_json(system=LLM_SYSTEM, user=row["input_text"], schema=LLM_SCHEMA, model_cls=LLMVerdict, max_tokens=4000)
+        v, _calls = await get_llm().complete_json(task="baseline", system=LLM_SYSTEM, user=row["input_text"], schema=LLM_SCHEMA, model_cls=LLMVerdict)
     except LLMError as e:
         return Prediction(state="no_output", detail=str(e)[:120])
     ref = f"quran:{v.surah}:{v.ayah}" if v.surah and v.ayah else (v.reference.strip() or None)
@@ -245,6 +246,8 @@ def score(rows: list[dict], preds: list[Prediction], system: str) -> dict:
         "wrongly_endorsed_ids": [r["id"] for r, f in zip(rows, endorsed) if f],
         "correct_abstention_rate": round(abstained / len(abst_rows), 4) if abst_rows else None,
         "no_output": sum(1 for p in preds if p.state == "no_output"),
+        # Tabayyun items the model did not answer (refused, failed): they were decided in lexical-only mode
+        "without_model": sum(1 for p in preds if p.detail.endswith("/lexical_only")) if system == "tabayyun" else 0,
         "seconds_per_claim": round(statistics.mean(p.seconds for p in preds), 3),
         "per_state": per_state,
         "per_category": {k: {**v, "accuracy": round(v["correct"] / v["n"], 3)} for k, v in per_category.items()},
@@ -280,6 +283,7 @@ async def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--only", default="lexical,llm,tabayyun")
+    ap.add_argument("--concurrency", type=int, default=4, help="model calls in flight at once (lower it on a small balance)")
     args = ap.parse_args()
 
     rows = [json.loads(line) for line in TESTSET.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -289,24 +293,29 @@ async def main() -> None:
         "testset": {"path": str(TESTSET.relative_to(ROOT)), "claims": len(rows), "reviewed_by_sulaiman": sum(1 for r in rows if r["reviewed_by_sulaiman"])},
         "runs": args.runs,
         "llm_available": llm.available,
-        "llm_models": {"anthropic": settings.anthropic_model if settings.anthropic_api_key else None, "openai": settings.openai_model if settings.openai_api_key else None},
+        "llm_models": llm.status()["models"],
         "systems": {},
     }
     for name in [s for s in args.only.split(",") if s in SYSTEMS]:
-        if name == "llm" and not llm.available:
-            out["systems"][name] = {"label": LABELS[name], "status": "not_run", "reason": "no LLM provider key configured"}
-            print(f"{name}: skipped (no LLM key)")
+        if name == "llm" and not llm.can("baseline"):
+            out["systems"][name] = {"label": LABELS[name], "status": "not_run", "reason": "no OpenRouter key or MODEL_BASELINE_LLM configured"}
+            print(f"{name}: skipped (no key / baseline model)")
             continue
         per_run = []
         last_preds: list[Prediction] = []
         for i in range(args.runs):
-            preds = await run_system(name, rows, concurrency=4 if name != "lexical" else 1)
+            preds = await run_system(name, rows, concurrency=args.concurrency if name != "lexical" else 1)
             per_run.append(score(rows, preds, name))
             last_preds = preds
             print(f"{name} run {i + 1}: accuracy {per_run[-1]['accuracy']:.3f}  fabricated {per_run[-1]['fabricated_attribution_rate']:.3f}  abstention {per_run[-1]['correct_abstention_rate']}  {per_run[-1]['seconds_per_claim']}s/claim")
         mode = "full" if (name != "tabayyun" or llm.available) else "lexical_only"
+        degraded = max(r["without_model"] for r in per_run) if mode == "full" else 0
+        if degraded:
+            mode = "partial"
+            print(f"WARNING: {degraded} of {len(rows)} items were answered without the model — this run does not measure full mode")
+        model_note = f" ({settings.model_baseline_llm})" if name == "llm" else (f" ({settings.model_extract})" if name == "tabayyun" and mode == "full" else "")
         out["systems"][name] = {
-            "label": LABELS[name] + (" (lexical-only mode)" if name == "tabayyun" and mode == "lexical_only" else ""),
+            "label": LABELS[name] + model_note + (" (lexical-only mode)" if name == "tabayyun" and mode == "lexical_only" else "") + (f" (incomplete: {degraded} items without the model)" if degraded else ""),
             "status": "ok",
             "mode": mode,
             "accuracy": mean_std([r["accuracy"] for r in per_run]),

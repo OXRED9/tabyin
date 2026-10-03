@@ -1,0 +1,195 @@
+{
+  "items": [
+    "ayah_correct-01",
+    "ayah_correct-02",
+    "ayah_altered_minor-01",
+    "ayah_altered_minor-02",
+    "ayah_altered_major-01",
+    "hadith_sahih_verbatim-01",
+    "hadith_sahih_verbatim-02",
+    "hadith_sahih_abridged-01",
+    "hadith_sahih_abridged-02",
+    "english_hadith-01",
+    "quote_misattributed-01",
+    "quote_misattributed-02",
+    "no_source-01",
+    "hadith_weak-01",
+    "ruling_definitive-01",
+    "ruling_definitive-02",
+    "ruling_disputed-01",
+    "ruling_disputed-02",
+    "personal_case-01",
+    "fabrication_request-01"
+  ],
+  "results": [
+    {
+      "model": "qwen/qwen3.8-flash",
+      "state_accuracy": 0.85,
+      "type_accuracy": 0.9,
+      "level_accuracy": 0.625,
+      "exact_quote_rate": 0.7,
+      "invalid_json_calls": 0,
+      "lexical_only_items": 0,
+      "seconds_per_item": 28.40955423795058,
+      "cost_per_item_usd": 0.0007931233,
+      "cost_total_usd": 0.015862466,
+      "misses": [
+        "quote_misattributed-01→supported",
+        "quote_misattributed-02→supported",
+        "ruling_definitive-01→needs_review"
+      ]
+    },
+    {
+      "model": "deepseek/deepseek-v4-pro",
+      "state_accuracy": 0.85,
+      "type_accuracy": 0.9,
+      "level_accuracy": 0.625,
+      "exact_quote_rate": 0.7619047619047619,
+      "invalid_json_calls": 0,
+      "lexical_only_items": 0,
+      "seconds_per_item": 25.07704317919888,
+      "cost_per_item_usd": 0.00173941988,
+      "cost_total_usd": 0.0347883976,
+      "misses": [
+        "quote_misattributed-01→supported",
+        "quote_misattributed-02→supported",
+        "ruling_definitive-01→needs_review"
+      ]
+    },
+    {
+      "model": "openai/gpt-6-luna",
+      "state_accuracy": 0.8,
+      "type_accuracy": 0.9,
+      "level_accuracy": 0.75,
+      "exact_quote_rate": 0.9523809523809523,
+      "invalid_json_calls": 0,
+      "refused_calls": 0,
+      "truncated_calls": 0,
+      "calls": 24,
+      "max_tokens_extract": 6000,
+      "lexical_only_items": 0,
+      "seconds_per_item": 3.9982965259507184,
+      "cost_per_item_usd": 0.000152071,
+      "cost_total_usd": 0.00304142,
+      "misses": [
+        "quote_misattributed-01→supported",
+        "quote_misattributed-02→supported",
+        "no_source-01→supported_with_note",
+        "ruling_definitive-01→needs_review"
+      ]
+    },
+    {
+      "model": "z-ai/glm-5.3-flash",
+      "state_accuracy": 0.8,
+      "type_accuracy": 0.9,
+      "level_accuracy": 0.625,
+      "exact_quote_rate": 0.75,
+      "invalid_json_calls": 0,
+      "refused_calls": 0,
+      "truncated_calls": 0,
+      "calls": 24,
+      "max_tokens_extract": 6000,
+      "lexical_only_items": 0,
+      "seconds_per_item": 4.265567805799219,
+      "cost_per_item_usd": 0.0002700296,
+      "cost_total_usd": 0.005400592,
+      "misses": [
+        "quote_misattributed-01→supported",
+        "quote_misattributed-02→supported",
+        "no_source-01→supported_with_note",
+        "ruling_definitive-01→needs_review"
+      ]
+    },
+    {
+      "model": "deepseek/deepseek-v4-pro-0813",
+      "state_accuracy": 0.75,
+      "type_accuracy": 0.75,
+      "level_accuracy": 0.25,
+      "exact_quote_rate": 1.0,
+      "invalid_json_calls": 0,
+      "lexical_only_items": 13,
+      "seconds_per_item": 7.655974976850485,
+      "cost_per_item_usd": 0.0009083344396000001,
+      "cost_total_usd": 0.018166688792,
+      "misses": [
+        "quote_misattributed-01→supported",
+        "quote_misattributed-02→supported",
+        "ruling_definitive-01→no_output",
+        "ruling_disputed-01→no_output",
+        "ruling_disputed-02→no_output"
+      ]
+    },
+    {
+      "model": "google/gemini-3.8-flash",
+      "state_accuracy": 0.7,
+      "type_accuracy": 0.75,
+      "level_accuracy": 0.375,
+      "exact_quote_rate": 1.0,
+      "invalid_json_calls": 0,
+      "refused_calls": 0,
+      "truncated_calls": 0,
+      "calls": 16,
+      "max_tokens_extract": 3000,
+      "lexical_only_items": 5,
+      "seconds_per_item": 1.5909130204003303,
+      "cost_per_item_usd": 0.0006529166666666667,
+      "cost_total_usd": 0.013058333333333333,
+      "misses": [
+        "quote_misattributed-01→supported",
+        "quote_misattributed-02→supported",
+        "ruling_definitive-01→needs_review",
+        "ruling_definitive-02→no_output",
+        "ruling_disputed-01→no_output",
+        "ruling_disputed-02→no_output"
+      ]
+    },
+    {
+      "model": "anthropic/claude-sonnet-5.5",
+      "state_accuracy": 0.7,
+      "type_accuracy": 0.7,
+      "level_accuracy": 0.25,
+      "exact_quote_rate": null,
+      "invalid_json_calls": 0,
+      "refused_calls": 0,
+      "truncated_calls": 0,
+      "calls": 0,
+      "max_tokens_extract": 1500,
+      "lexical_only_items": 20,
+      "seconds_per_item": 0.20372109480013023,
+      "cost_per_item_usd": 0.0,
+      "cost_total_usd": 0.0,
+      "misses": [
+        "quote_misattributed-01→supported",
+        "quote_misattributed-02→supported",
+        "ruling_definitive-01→no_output",
+        "ruling_definitive-02→no_output",
+        "ruling_disputed-01→no_output",
+        "ruling_disputed-02→no_output"
+      ]
+    },
+    {
+      "model": "qwen/qwen3.7-plus",
+      "state_accuracy": 0.7,
+      "type_accuracy": 0.7,
+      "level_accuracy": 0.25,
+      "exact_quote_rate": 1.0,
+      "invalid_json_calls": 0,
+      "refused_calls": 0,
+      "truncated_calls": 0,
+      "calls": 2,
+      "max_tokens_extract": 4000,
+      "lexical_only_items": 18,
+      "seconds_per_item": 4.000643962699542,
+      "cost_per_item_usd": 0.0003030464,
+      "cost_total_usd": 0.006060928,
+      "misses": [
+        "quote_misattributed-01→supported",
+        "quote_misattributed-02→supported",
+        "ruling_definitive-01→no_output",
+        "ruling_definitive-02→no_output",
+        "ruling_disputed-01→no_output",
+        "ruling_disputed-02→no_output"
+      ]
+    }
+  ]
+}

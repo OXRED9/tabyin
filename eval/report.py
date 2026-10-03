@@ -81,7 +81,7 @@ def write_chart(results: dict, out_dir: Path) -> None:
         for i, (key, s) in enumerate(systems):
             y = len(systems) - 1 - i
             if s["status"] != "ok" or s[metric]["mean"] is None:
-                ax.text(1.5, y, "not run (no API key)", va="center", ha="left", fontsize=9, color=MUTED, style="italic")
+                ax.text(1.5, y, "not run", va="center", ha="left", fontsize=9, color=MUTED, style="italic")
                 continue
             value = s[metric]["mean"] * 100
             ax.barh(y, value, height=0.42, color=COLORS[key], linewidth=0)
@@ -131,7 +131,7 @@ def update_readme(results: dict, readme: Path) -> None:
     for key, s in results["systems"].items():
         name = AR_LABELS[key] + (" (الوضع اللفظي — بلا نموذج لغوي)" if key == "tabayyun" and s.get("mode") == "lexical_only" else "")
         if s["status"] != "ok":
-            lines.append(f"| {name} | لم يُشغَّل بعد — لا يوجد مفتاح نموذج لغوي | | | | |")
+            lines.append(f"| {name} | لم يُشغَّل بعد — لا مفتاح أو لا نموذج مرجعي مضبوط | | | | |")
             continue
         lines.append(
             f"| {name} | {pct(s['accuracy'])} | {pct(s['fabricated_attribution_rate'])} | {pct(s['wrongly_endorsed_rate'])} | "
