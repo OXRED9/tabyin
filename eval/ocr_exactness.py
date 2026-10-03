@@ -6,8 +6,11 @@ word has been replaced, programmatically, by a word from another verse. A model 
 if its transcription contains the altered wording; a model that "restores" the original verse fails,
 because that would hide exactly the error Tabayyun exists to detect.
 
+Fifteen more images carry claims from the test set (eval/testset/claims.jsonl) as they would be
+forwarded, to measure the character error rate on ordinary citations (F1's OCR evaluation).
+
 Reported per model: exact (altered wording kept), corrected (original restored — the dangerous
-failure), character error rate over the whole image text, latency, cost.
+failure), character error rate over the altered-verse images and over the test-set images, latency, cost.
 
 Usage: backend/.venv/bin/python eval/ocr_exactness.py --models a/b,c/d [--save-images]
 """
@@ -37,6 +40,8 @@ RESULTS = ROOT / "eval" / "results"
 IMAGES = ROOT / "eval" / "testset" / "images"
 SEED = 1448
 N_IMAGES = 10
+N_TESTSET = 15
+TESTSET = ROOT / "eval" / "testset" / "claims.jsonl"
 HEADERS = ["رسالة محوَّلة", "منقول", "وصلتني هذه الرسالة", "للفائدة"]
 INTROS = ["قال الله تعالى:", "يقول الله عز وجل:", "جاء في القرآن الكريم:"]
 FOOTERS = ["انشرها تؤجر", "لا تدعها تقف عندك", "أرسلها لمن تحب"]
@@ -68,6 +73,23 @@ def build_cases() -> list[dict]:
     return cases
 
 
+def build_testset_cases() -> list[dict]:
+    """Fifteen Arabic test-set inputs of message length, taken round-robin over the categories."""
+    rng = random.Random(SEED)
+    rows = [json.loads(line) for line in TESTSET.read_text(encoding="utf-8").splitlines() if line.strip()]
+    by_category: dict[str, list[dict]] = {}
+    for r in rows:
+        text = r["input_text"]
+        if 30 <= len(text) <= 220 and sum("\u0600" <= ch <= "\u06ff" for ch in text) > len(text) * 0.5:
+            by_category.setdefault(r["category"], []).append(r)
+    picked: list[dict] = []
+    while len(picked) < N_TESTSET and any(by_category.values()):
+        for rows_ in by_category.values():
+            if rows_ and len(picked) < N_TESTSET:
+                picked.append(rows_.pop(0))
+    return [{"ref": r["id"], "altered": r["input_text"], "testset": True, "lines": [rng.choice(HEADERS), "", r["input_text"], rng.choice(FOOTERS)]} for r in picked]
+
+
 def render(case: dict) -> bytes:
     from PIL import Image, ImageDraw, ImageFont
 
@@ -93,8 +115,9 @@ def render(case: dict) -> bytes:
     y = 54
     d.text((828, y), case["lines"][0], font=regular, fill="#667781", anchor="ra", **kw)
     y += 58
-    d.text((828, y), case["lines"][1], font=regular, fill="#111B21", anchor="ra", **kw)
-    y += 58
+    if case["lines"][1]:
+        d.text((828, y), case["lines"][1], font=regular, fill="#111B21", anchor="ra", **kw)
+        y += 58
     for ln in verse_lines:
         d.text((828, y), ln, font=bold, fill="#111B21", anchor="ra", **kw)
         y += 62
@@ -117,17 +140,26 @@ async def run_model(model: str, cases: list[dict], images: list[bytes], concurre
         user = [text_part("Transcribe the text in this image as instructed."), image_part(image, "image/png")]
         async with sem:
             parsed, info, _err = await llm._once(model, "vision", OCR_SYSTEM, user, OCR_SCHEMA, OCRResult, 2000, False)
+        testset = bool(case.get("testset"))
         if parsed is None:
-            return {"ref": case["ref"], "exact": False, "corrected": False, "failed": True, "refused": "402" in (info.error or ""), "cer": 1.0, "ms": info.latency_ms, "cost": info.cost_usd}
+            return {"ref": case["ref"], "testset": testset, "exact": False, "corrected": False, "failed": True, "refused": "402" in (info.error or ""), "cer": 1.0, "ms": info.latency_ms, "cost": info.cost_usd}
         got = normalize_ar(parsed.text)
-        exact = normalize_ar(case["altered"]) in got
+        exact = " ".join(normalize_ar(case["altered"]).split()) in " ".join(got.split())
         tokens = got.split()
-        corrected = normalize_ar(case["original_word"]) in tokens and normalize_ar(case["inserted_word"]) not in tokens
-        return {"ref": case["ref"], "exact": exact, "corrected": corrected, "failed": False, "cer": cer(" ".join(case["lines"]), parsed.text), "ms": info.latency_ms, "cost": info.cost_usd}
+        corrected = (not testset) and normalize_ar(case["original_word"]) in tokens and normalize_ar(case["inserted_word"]) not in tokens
+        return {"ref": case["ref"], "testset": testset, "exact": exact, "corrected": corrected, "failed": False, "cer": cer(" ".join(x for x in case["lines"] if x), parsed.text), "ms": info.latency_ms, "cost": info.cost_usd}
 
-    rows = list(await asyncio.gather(*(one(c, i) for c, i in zip(cases, images))))
+    everything = list(await asyncio.gather(*(one(c, i) for c, i in zip(cases, images))))
+    extra = [r for r in everything if r["testset"]]
+    rows = [r for r in everything if not r["testset"]]
     n = len(rows)
+    read = [r for r in extra if not r["failed"]]
     return {
+        "testset_n": len(extra),
+        "testset_exact": sum(r["exact"] for r in extra),
+        "testset_failed_calls": sum(r["failed"] for r in extra),
+        "testset_mean_cer": (sum(r["cer"] for r in read) / len(read)) if read else None,
+        "testset_cost_per_image_usd": (sum(r["cost"] for r in extra) / len(extra)) if extra else None,
         "model": model,
         "exact": sum(r["exact"] for r in rows),
         "corrected": sum(r["corrected"] for r in rows),
@@ -148,14 +180,14 @@ async def main() -> None:
     ap.add_argument("--concurrency", type=int, default=2, help="images in flight at once")
     args = ap.parse_args()
     catalog = load_catalog()
-    cases = build_cases()
+    cases = build_cases() + build_testset_cases()
     images = [render(c) for c in cases]
     if args.save_images:
         IMAGES.mkdir(parents=True, exist_ok=True)
         for i, (case, png) in enumerate(zip(cases, images), start=1):
             (IMAGES / f"altered-verse-{i:02d}.png").write_bytes(png)
         (IMAGES / "manifest.json").write_text(
-            json.dumps([{"file": f"altered-verse-{i:02d}.png", **{k: c[k] for k in ("ref", "original_word", "inserted_word", "altered")}} for i, c in enumerate(cases, start=1)], ensure_ascii=False, indent=2),
+            json.dumps([{"file": f"altered-verse-{i:02d}.png", **{k: c.get(k) for k in ("ref", "original_word", "inserted_word", "altered")}} for i, c in enumerate(cases, start=1)], ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
     out_file = RESULTS / "ocr_exactness.json"
@@ -188,6 +220,20 @@ async def main() -> None:
             f"| `{r['model']}`{' (incomplete)' if r['failed_calls'] else ''} | {r['exact']}/{r['n']} | {r['corrected']} | {r['failed_calls']} | {r['mean_cer'] * 100:.1f}% | {r['seconds_per_image']:.1f} | "
             f"${r['cost_per_image_usd']:.6f} | ${info.prompt_usd_per_mtok:g} / ${info.completion_usd_per_mtok:g} |"
         )
+    with_testset = [r for r in results if r.get("testset_n")]
+    if with_testset:
+        lines += [
+            "",
+            f"## Test-set claims as forwarded messages ({N_TESTSET} images)",
+            "",
+            "“Exact” = the whole claim came back character for character (after the usual normalisation of diacritics and letter forms).",
+            "",
+            "| Model | Exact | Failed calls | Mean CER | $ / image |",
+            "|---|---|---|---|---|",
+        ]
+        for r in with_testset:
+            mean = "—" if r["testset_mean_cer"] is None else f"{r['testset_mean_cer'] * 100:.1f}%"
+            lines.append(f"| `{r['model']}` | {r['testset_exact']}/{r['testset_n']} | {r['testset_failed_calls']} | {mean} | ${r['testset_cost_per_image_usd']:.6f} |")
     (RESULTS / "ocr_exactness.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"wrote {RESULTS}/ocr_exactness.md")
 

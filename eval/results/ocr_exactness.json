@@ -1,18 +1,22 @@
 [
   {
+    "testset_n": 15,
+    "testset_exact": 12,
+    "testset_failed_calls": 0,
+    "testset_mean_cer": 0.0028833379366890927,
+    "testset_cost_per_image_usd": 4.413599999999999e-05,
     "model": "qwen/qwen3.7-flash",
-    "exact": 8,
+    "exact": 9,
     "corrected": 0,
     "failed_calls": 0,
+    "refused_calls": 0,
     "n": 10,
-    "mean_cer": 0.00437485058570404,
-    "seconds_per_image": 6.435899999999999,
-    "cost_per_image_usd": 5.9533e-05,
+    "mean_cer": 0.0010638297872340426,
+    "seconds_per_image": 5.0588999999999995,
+    "cost_per_image_usd": 4.6598000000000003e-05,
     "missed": [
-      "27:73",
       "47:28"
-    ],
-    "refused_calls": null
+    ]
   },
   {
     "model": "deepseek/deepseek-v4.1-flash",
