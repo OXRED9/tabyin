@@ -16,6 +16,9 @@
  * text example with one word replaced by `[?]` and a short list of removed noise. The image
  * example's picture is drawn here on a canvas. Nothing is requested from the network.
  *
+ * `?mock=1&share=1` stands for a link shared to the installed app (the page routes it and starts
+ * by itself); `&install=1` (or `=ios`) forces the install line in a finished report's footer.
+ *
  * `?mock=1&scenario=<name>&autorun=1` submits that scenario's input on load, with no click, so
  * the page reaches its report by itself (for audits of the report page; `&speed=` still applies).
  * It works in the production build too, and does nothing without `mock`.
@@ -228,6 +231,14 @@ export async function mockExampleImage(): Promise<File> {
   }
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
   return new File([blob ?? new Blob()], 'screenshot.png', { type: 'image/png' })
+}
+
+/**
+ * `?mock=1&share=1`: what another app "shared". There is no service worker in mock mode, so the
+ * payload is made here: the clip example's link, in `text`, the way Android apps often send it.
+ */
+export function mockSharePayload(): { title: string; text: string; url: string; files: File[] } {
+  return { title: '', text: scenarios.video.source.url ?? '', url: '', files: [] }
 }
 
 /** A greeting with no citation in it: what the `no_claims` scenario is run on. */

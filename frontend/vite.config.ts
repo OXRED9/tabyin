@@ -25,6 +25,8 @@ const codeAfterShell = (): Plugin => ({
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), codeAfterShell()],
+  // Names this build: the page registers /sw.js?v=<build>, and the worker names its cache after it.
+  define: { __BUILD_ID__: JSON.stringify(Date.now().toString(36)) },
   resolve: {
     alias: { '@': path.resolve(import.meta.dirname, './src') },
   },

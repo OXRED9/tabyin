@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { dictionaryFor, loadDictionary } from './lib/dictionary'
 import { initialLang } from './lib/lang'
+import { initPwa } from './lib/pwa'
 
 /*
  * index.html links the stylesheet and paints a static shell (the bar, the sheet, the headline)
@@ -17,6 +18,8 @@ function start() {
     </StrictMode>,
   )
 }
+
+initPwa()
 
 const lang = initialLang()
 if (dictionaryFor(lang)) start()

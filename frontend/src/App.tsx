@@ -5,6 +5,7 @@ import { AppHeader } from '@/components/app-header'
 import { Composer } from '@/components/composer'
 import type { AttachKind } from '@/components/composer'
 import { InlineError } from '@/components/inline-error'
+import { InstallLine } from '@/components/install-line'
 import { ReportView } from '@/components/report/report-view'
 import { Button } from '@/components/ui/button'
 import { DirectionProvider } from '@/components/ui/direction'
@@ -18,13 +19,15 @@ import { emptyDraft } from '@/lib/draft'
 import type { InputDraft } from '@/lib/draft'
 import { errorCopy, errorRemedies, localError } from '@/lib/errors'
 import { featuresOf } from '@/lib/features'
-import { isMediaFile } from '@/lib/files'
+import { isImageFile, isMediaFile } from '@/lib/files'
 import { safeHref, truncate } from '@/lib/format'
 import { clearHistory, loadHistory, saveHistoryEntry, subscribeHistory } from '@/lib/history'
 import type { HistoryEntry, SubmittedInput } from '@/lib/history'
 import { I18nProvider, useI18n } from '@/lib/i18n'
 import { detectLink, looksLikeBrokenLink } from '@/lib/link'
 import { notify, subscribeToaster, toasterWanted } from '@/lib/notify'
+import { takeSharedPayload } from '@/lib/pwa'
+import type { SharedPayload } from '@/lib/pwa'
 import { assembleReport } from '@/lib/report'
 import { chronological } from '@/lib/states'
 import { readStored, writeStored } from '@/lib/storage'
@@ -68,9 +71,15 @@ function Shell() {
   const [historySeen, setHistorySeen] = useState(false)
   const toaster = useSyncExternalStore(subscribeToaster, toasterWanted)
   const [autorunPending, setAutorunPending] = useState(AUTORUN)
+  // `?share=unavailable`: something was shared to the app but could not be received.
+  const [shareUnavailable, setShareUnavailable] = useState(
+    () => new URLSearchParams(window.location.search).get('share') === 'unavailable',
+  )
   const fieldRef = useRef<HTMLTextAreaElement | null>(null)
   const pickerRef = useRef<((kind: AttachKind) => void) | null>(null)
   const autorunStarted = useRef(false)
+  const shareTaken = useRef(false)
+  const metaLoaded = useRef<Promise<Meta | null>>(Promise.resolve(null))
   const wide = useMediaQuery('(min-width: 640px)')
 
   const limits = meta?.limits ?? DEFAULT_LIMITS
@@ -82,11 +91,13 @@ function Shell() {
   // Static content the UI must not hard-code (verses, examples, referral links).
   useEffect(() => {
     const controller = new AbortController()
-    fetchMeta(controller.signal)
-      .then(setMeta)
-      .catch(() => {
-        /* The page works without it: examples and verses simply do not show. */
-      })
+    metaLoaded.current = fetchMeta(controller.signal).then(
+      (loaded) => {
+        setMeta(loaded)
+        return loaded
+      },
+      () => null, // The page works without it: examples and verses simply do not show.
+    )
     return () => controller.abort()
   }, [])
 
@@ -139,6 +150,7 @@ function Shell() {
   const patchDraft = useCallback(
     (patch: Partial<InputDraft>) => {
       setDraft((current) => ({ ...current, ...patch }))
+      setShareUnavailable(false)
       clearError()
     },
     [clearError],
@@ -201,6 +213,45 @@ function Shell() {
     },
     [draft, image?.status, limits, running, showError, start],
   )
+
+  // F6: what another app shared to the installed app arrives as `/?share=1`. It is taken once,
+  // the address is cleaned, and it is routed by what it is: a link (in `url`, or a `text` that is
+  // only a link, as Android apps often send it) and any other text start verifying by
+  // themselves, as does a clip; a picture goes to the reader, which stops to ask, as always.
+  const actions = useRef({ submit, readImageFile })
+  useEffect(() => {
+    actions.current = { submit, readImageFile }
+  })
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search)
+    const share = query.get('share')
+    if (!share || shareTaken.current) return
+    shareTaken.current = true
+    query.delete('share')
+    const rest = query.toString()
+    window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`)
+    if (share !== '1') return
+
+    const route = (payload: SharedPayload, loaded: Meta | null) => {
+      const file = payload.files[0]
+      if (file && isImageFile(file)) {
+        if (featuresOf(loaded).image) actions.current.readImageFile(file)
+        else showError(localError('unsupported_file'))
+        return
+      }
+      const link = detectLink(payload.url) ?? detectLink(payload.text)
+      const next: InputDraft = file
+        ? { ...emptyDraft, file }
+        : { ...emptyDraft, text: link ? link.url : payload.text.trim() || payload.title.trim() }
+      if (!next.file && !next.text) return
+      setDraft(next)
+      actions.current.submit(next)
+    }
+    void takeSharedPayload().then(async (payload) => {
+      if (payload) route(payload, await metaLoaded.current)
+      else setShareUnavailable(true)
+    })
+  }, [showError])
 
   const applyExample = useCallback(
     (example: MetaExample) => {
@@ -500,6 +551,7 @@ function Shell() {
                   onSubmit={() => submit()}
                   limits={limits}
                   imageInput={features.image}
+                  notice={shareUnavailable ? t.pwa.shareUnavailable : null}
                   image={image}
                   onImage={readImageFile}
                   onImageRemove={() => {
@@ -520,13 +572,17 @@ function Shell() {
               )}
 
               {/* The transparency line is the sheet's footer in every state. */}
-              <footer className="mt-10 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-t pt-4 text-sm text-quiet">
-                <p>{t.transparency}</p>
-                {hasResults && !running && history.length > 0 ? (
-                  <Button type="button" variant="link" onClick={showHistory} className="print:hidden">
-                    {t.input.recent(history.length)}
-                  </Button>
-                ) : null}
+              <footer className="mt-10 space-y-3 border-t pt-4 text-sm text-quiet">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+                  <p>{t.transparency}</p>
+                  {hasResults && !running && history.length > 0 ? (
+                    <Button type="button" variant="link" onClick={showHistory} className="print:hidden">
+                      {t.input.recent(history.length)}
+                    </Button>
+                  ) : null}
+                </div>
+                {/* Offered only after a verification has succeeded, never on load. */}
+                {hasReport ? <InstallLine /> : null}
               </footer>
             </div>
           </main>
