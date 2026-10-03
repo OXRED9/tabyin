@@ -146,15 +146,15 @@ def test_model_level_reason_is_labelled_as_the_models(monkeypatch):
 
     from tabayyun import pipeline
     from tabayyun.ingest.text import ingest_text
-    from tabayyun.llm.router import LLMRouter
     from tabayyun.sources.dorar import DorarClient
-    from tests.test_llm_path import ScriptedProvider, claim
+    from tests.llm_stubs import ScriptedLLM as ScriptedProvider
+    from tests.llm_stubs import claim
 
     text = "قراءة الفاتحة واجبة على المأموم في الصلاة الجهرية."
     provider = ScriptedProvider([claim(quote=text.rstrip("."), content_level="C", certainty="ijtihadi", level_reason_ar="مسألة اختلفت فيها المذاهب", level_reason_en="A matter the schools differ on")])
     dorar = DorarClient()
     dorar.status = "disabled"
-    monkeypatch.setattr(pipeline, "get_llm", lambda: LLMRouter(providers=[provider]))
+    monkeypatch.setattr(pipeline, "get_llm", lambda: provider)
     monkeypatch.setattr(pipeline, "get_dorar", lambda: dorar)
 
     async def ingest():

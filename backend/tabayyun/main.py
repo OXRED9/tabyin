@@ -37,7 +37,7 @@ from .sources.quran import get_quran_index
 logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 # Privacy: HTTP client libraries log request URLs at INFO, and those URLs carry the user's words
 # (a Dorar search query, a video link). Keep them out of the logs.
-for _noisy in ("httpx", "httpcore", "openai", "anthropic", "urllib3", "trafilatura"):
+for _noisy in ("httpx", "httpcore", "openai", "urllib3", "trafilatura"):
     logging.getLogger(_noisy).setLevel(logging.WARNING)
 log = logging.getLogger("tabayyun")
 SSE_HEADERS = {"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no", "Connection": "keep-alive"}
@@ -136,6 +136,16 @@ async def health() -> dict:
 @app.get("/api/meta")
 async def meta() -> dict:
     return build_meta()
+
+
+@app.get("/admin/usage")
+async def admin_usage() -> dict:
+    """Development only (DEV_MODE=true): model calls and cost per day, task and model. No content is logged."""
+    if not settings.dev_mode:
+        raise HTTPException(status_code=404)
+    from .llm.usage import get_usage_log
+
+    return get_usage_log().summary() | {"models": get_llm().status()["models"]}
 
 
 @app.post("/api/verify")
@@ -246,7 +256,7 @@ if _dist.exists():
 
     @app.get("/{path:path}", include_in_schema=False)
     async def spa(path: str):
-        if path.startswith("api/"):
+        if path.startswith(("api/", "admin/")):
             raise HTTPException(status_code=404)
         candidate = (_dist / path).resolve()
         if path and candidate.is_file() and _dist.resolve() in candidate.parents:

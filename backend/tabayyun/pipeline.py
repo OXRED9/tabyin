@@ -91,7 +91,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
 
         # ---- 2. extract (and start matching what is already certain)
         current = "extract"
-        quran, hadith, llm = get_quran_index(), get_hadith_index(), get_llm()
+        quran, hadith, llm = get_quran_index(), get_hadith_index(), get_llm().session()
         ctx = Context(doc=doc, quran=quran, hadith=hadith, dorar=get_dorar(), llm=llm, llm_enabled=llm.available, ui_lang=ui_lang)
         text_len = len(doc.full_text)
         await put(stage("extract", "start", eta_seconds=4 + text_len // 1500 if llm.available else 1))
@@ -183,11 +183,13 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         warnings = list(dict.fromkeys(doc.warnings))
         if ctx.dorar.status == "unreachable":
             warnings.append("dorar_unreachable")
+        if mode == "full" and llm.fallback_used:
+            warnings.append("llm_fallback")  # the backup model answered: the UI shows "reduced coverage"
         summary = Summary(
             total=len(cards),
             by_state=by_state,
             mode=mode,  # type: ignore[arg-type]
-            llm_provider=llm.last_provider if mode == "full" else None,
+            llm_provider=", ".join(llm.models_used) if mode == "full" and llm.models_used else None,
             warnings=warnings,
             elapsed_seconds=round(time.monotonic() - started, 2),
             stage_seconds={

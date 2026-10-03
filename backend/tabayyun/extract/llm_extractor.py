@@ -9,7 +9,7 @@ from rapidfuzz import fuzz
 
 from ..ingest.document import Document
 from ..llm.base import LLMError
-from ..llm.router import LLMRouter
+from ..llm.router import LLMSession
 from ..schemas import Certainty, ClaimType, ContentLevel
 from .models import CLAIMS_SCHEMA, LLMClaims, RawClaim
 from .prompts import EXTRACT_SYSTEM
@@ -56,14 +56,16 @@ def locate(quote: str, text: str) -> tuple[int, int] | None:
     return None
 
 
-async def extract_with_llm(doc: Document, llm: LLMRouter, *, max_claims: int) -> list[RawClaim]:
-    """Raises LLMError when every provider fails, so the caller can switch to lexical-only mode."""
+async def extract_with_llm(doc: Document, llm: LLMSession, *, max_claims: int) -> list[RawClaim]:
+    """Raises LLMError when the primary and the fallback model both fail, so the caller can switch
+    to lexical-only mode."""
     text = doc.full_text
     sem = asyncio.Semaphore(MAX_PARALLEL)
 
     async def run(offset: int, chunk: str) -> list[RawClaim]:
         async with sem:
             result = await llm.complete_json(
+                task="extract",
                 system=EXTRACT_SYSTEM,
                 user=f"<text>\n{chunk}\n</text>",
                 schema=CLAIMS_SCHEMA,

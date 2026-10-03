@@ -93,3 +93,60 @@ JUDGEMENT_SCHEMA: dict = {
     "required": ["best_index", "relation"],
     "additionalProperties": False,
 }
+
+
+# ---- vision (OCR) and audio (speech-to-text) contracts
+
+
+class OCRResult(BaseModel):
+    text: str
+    confidence: float
+    notes: str
+
+
+OCR_SCHEMA: dict = {
+    "type": "object",
+    "properties": {"text": {"type": "string"}, "confidence": {"type": "number"}, "notes": {"type": "string"}},
+    "required": ["text", "confidence", "notes"],
+    "additionalProperties": False,
+}
+
+
+class AudioSegment(BaseModel):
+    start: float
+    end: float
+    text: str
+
+
+class AudioTranscript(BaseModel):
+    segments: list[AudioSegment]
+
+
+AUDIO_SCHEMA: dict = {
+    "type": "object",
+    "properties": {
+        "segments": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"start": {"type": "number"}, "end": {"type": "number"}, "text": {"type": "string"}},
+                "required": ["start", "end", "text"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["segments"],
+    "additionalProperties": False,
+}
+
+
+class TopicSummary(BaseModel):
+    topic_ar: str
+
+
+TOPIC_SCHEMA: dict = {
+    "type": "object",
+    "properties": {"topic_ar": {"type": "string"}},
+    "required": ["topic_ar"],
+    "additionalProperties": False,
+}

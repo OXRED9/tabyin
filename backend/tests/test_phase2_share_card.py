@@ -7,11 +7,11 @@ from PIL import Image
 
 from tabayyun import main, pipeline
 from tabayyun.config import settings
-from tabayyun.llm.router import LLMRouter
 from tabayyun.meta import build_meta
 from tabayyun.report.share_card import SIZES, _first_sentence, render_claim_card, render_summary_card
 from tabayyun.schemas import Card, EvidenceState, Summary
 from tabayyun.sources.dorar import DorarClient
+from tests.llm_stubs import NoLLM
 
 URL = "https://tabayyun.example.org"
 
@@ -93,7 +93,7 @@ def test_first_sentence():
 def client(monkeypatch):
     dorar = DorarClient()
     dorar.status = "disabled"
-    monkeypatch.setattr(pipeline, "get_llm", lambda: LLMRouter(providers=[]))
+    monkeypatch.setattr(pipeline, "get_llm", lambda: NoLLM())
     monkeypatch.setattr(pipeline, "get_dorar", lambda: dorar)
     main._recent.clear()
     with TestClient(main.app) as c:

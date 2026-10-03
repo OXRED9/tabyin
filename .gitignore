@@ -26,3 +26,10 @@ data/tmp/
 .idea/
 .vscode/
 .DS_Store
+
+# editor swap files (may hold a copy of .env)
+*.swp
+*.swo
+
+# rendered OCR test images (regenerated from a fixed seed by eval/ocr_exactness.py --save-images)
+eval/testset/images/

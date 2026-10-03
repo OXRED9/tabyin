@@ -9,40 +9,10 @@ import asyncio
 import pytest
 
 from tabayyun import pipeline
-from tabayyun.extract.models import LLMClaim, LLMClaims, LLMJudgement
-from tabayyun.extract.prompts import EXTRACT_SYSTEM, JUDGE_SYSTEM
 from tabayyun.ingest.text import ingest_text
-from tabayyun.llm.base import LLMError
-from tabayyun.llm.router import LLMRouter
 from tabayyun.sources.dorar import DorarClient
-
-
-class ScriptedProvider:
-    name = "scripted"
-    available = True
-
-    def __init__(self, claims=None, judge_index=-1, fail=False, name="scripted"):
-        self.name = name
-        self.claims = claims or []
-        self.judge_index = judge_index
-        self.fail = fail
-        self.calls: list[str] = []
-
-    async def complete_json(self, *, system, user, schema, model_cls, max_tokens=8000):
-        if self.fail:
-            raise LLMError("scripted failure", cooldown=30)
-        if system == EXTRACT_SYSTEM:
-            self.calls.append("extract")
-            return LLMClaims(claims=self.claims)
-        assert system == JUDGE_SYSTEM
-        self.calls.append("judge")
-        relation = "none" if self.judge_index < 0 else ("same_narration" if 'task = "hadith_match"' in user else "explicit_support")
-        return LLMJudgement(best_index=self.judge_index, relation=relation)
-
-
-def claim(**kw) -> LLMClaim:
-    base = dict(type="ruling", quote="", attributed_to="", explicit_attribution=False, content_level="A", certainty="definitive", search_query="", evidence_ref="", level_reason_ar="مسألة من المعلوم من الدين", level_reason_en="A matter known to be settled")
-    return LLMClaim(**{**base, **kw})
+from tests.llm_stubs import ScriptedLLM as ScriptedProvider
+from tests.llm_stubs import claim
 
 
 @pytest.fixture()
@@ -50,8 +20,7 @@ def run(monkeypatch):
     def _run(text: str, provider, ui_lang="ar") -> dict:
         dorar = DorarClient()
         dorar.status = "disabled"
-        router = LLMRouter(providers=[provider] if not isinstance(provider, list) else provider)
-        monkeypatch.setattr(pipeline, "get_llm", lambda: router)
+        monkeypatch.setattr(pipeline, "get_llm", lambda: provider)
         monkeypatch.setattr(pipeline, "get_dorar", lambda: dorar)
 
         async def ingest():
@@ -119,6 +88,26 @@ def test_paraphrased_narration_needs_the_models_pointer_and_shared_vocabulary(ru
     assert card["state"] in ("needs_review", "not_found")
 
 
+def test_a_pointer_from_the_fallback_model_never_lifts_a_claim_to_supported(run, matn):
+    """Found in the bake-off: weaker models pointed at a real narration for a text with no source.
+    The backup model is not measured for that job, so its pointer is ignored."""
+    ruling = "صيام شهر رمضان واجب على كل مسلم بالغ قادر."
+    extracted = [claim(quote=ruling.rstrip("."), search_query="وجوب صيام رمضان", evidence_ref="2:183")]
+    (primary,) = run(ruling, ScriptedProvider(extracted, judge_index=0))["cards"]
+    assert primary["state"] == "supported"
+    report = run(ruling, ScriptedProvider(extracted, judge_index=0, judge_from_fallback=True))
+    (backup,) = report["cards"]
+    assert backup["state"] == "needs_review" and "llm_fallback" in report["summary"]["warnings"]
+
+    words = matn("4560").split()
+    reordered = " ".join(words[len(words) // 2 :] + words[: len(words) // 2])
+    text = f"ذكر المحاضر ما معناه: {reordered}."
+    narration = [claim(type="hadith", quote=reordered, explicit_attribution=False, certainty="not_applicable")]
+    for idx in range(5):
+        (card,) = run(text, ScriptedProvider(narration, judge_index=idx, judge_from_fallback=True))["cards"]
+        assert card["state"] in ("needs_review", "not_found") and card["match_kind"] != "paraphrase"
+
+
 def test_sound_narration_attributed_to_someone_else_is_contradicted(run, matn):
     narration = matn("4560")
     text = f"قال أحد الدعاة المعاصرين من كلامه: «{narration}»"
@@ -135,11 +124,11 @@ def test_provider_failure_falls_back_to_lexical_only_mode(run, ayah):
     assert report["cards"][0]["state"] == "supported"  # the Mushaf scan does not need a model
 
 
-def test_router_fails_over_to_the_second_provider(run):
+def test_a_request_served_by_the_fallback_model_is_flagged_for_the_ui(run):
     text = "طلقت زوجتي وأنا غضبان فهل يقع الطلاق؟"
-    second = ScriptedProvider([claim(quote=text.rstrip("؟"), content_level="D", certainty="ijtihadi")])
-    report = run(text, [ScriptedProvider(fail=True, name="primary"), second])
-    assert report["summary"]["mode"] == "full" and second.calls == ["extract"]
+    provider = ScriptedProvider([claim(quote=text.rstrip("؟"), content_level="D", certainty="ijtihadi")], fallback=True)
+    report = run(text, provider)
+    assert report["summary"]["mode"] == "full" and "llm_fallback" in report["summary"]["warnings"]
     assert report["cards"][0]["personal_case"]
 
 

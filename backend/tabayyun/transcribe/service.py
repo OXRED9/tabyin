@@ -1,13 +1,18 @@
-"""Speech-to-text behind one interface: cloud provider first, local faster-whisper as fallback.
+"""Speech-to-text behind one interface.
 
-Both return time-stamped segments. Audio is read from a temporary file that the caller deletes;
-nothing is kept after the request.
+Order: an audio-capable chat model through OpenRouter (MODEL_AUDIO) -> local faster-whisper, if that
+optional package is installed. Both return time-stamped segments. Audio is read from a temporary
+file that the caller deletes; nothing is kept after the request.
+
+The timestamps of the OpenRouter path are produced by a chat model asked for JSON segments, not by
+a dedicated speech-recognition endpoint: they are approximate (see docs/LIMITATIONS.md).
 """
 from __future__ import annotations
 
 import asyncio
 import importlib.util
 import logging
+import re
 import shutil
 import subprocess
 import tempfile
@@ -15,11 +20,15 @@ from functools import lru_cache
 from pathlib import Path
 
 from ..config import settings
+from ..extract.models import AUDIO_SCHEMA, AudioTranscript
+from ..extract.prompts import TRANSCRIBE_SYSTEM
 from ..ingest.document import IngestError
+from ..llm.base import LLMError
+from ..llm.openrouter import LLMSession, audio_part, get_llm, text_part
 from ..schemas import Segment
 
 log = logging.getLogger("tabayyun.transcribe")
-_OPENAI_MAX_BYTES = 24 * 1024 * 1024
+_PARALLEL_CHUNKS = 2
 
 
 def local_available() -> bool:
@@ -27,7 +36,7 @@ def local_available() -> bool:
 
 
 def cloud_available() -> bool:
-    return bool(settings.openai_api_key) and settings.transcription_provider in ("auto", "openai")
+    return get_llm().can("audio") and settings.transcription_provider in ("auto", "openrouter")
 
 
 def transcription_status() -> dict:
@@ -64,22 +73,67 @@ def media_duration(path: str) -> float | None:
     if exe is None:
         return None
     proc = subprocess.run([exe, "-i", path], capture_output=True)
-    import re
-
     m = re.search(rb"Duration: (\d+):(\d+):(\d+(?:\.\d+)?)", proc.stderr)
     return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3)) if m else None
 
 
-async def _cloud(path: str) -> list[Segment]:
-    import openai
+def split_audio(path: str, chunk_seconds: int, directory: str) -> list[tuple[float, str]]:
+    """(offset_seconds, chunk_path) for an audio file; a short file is returned as a single chunk."""
+    duration = media_duration(path) or 0.0
+    if duration <= chunk_seconds + 15:
+        return [(0.0, path)]
+    exe = ffmpeg_exe()
+    pattern = str(Path(directory) / "chunk-%03d.mp3")
+    proc = subprocess.run([exe, "-y", "-loglevel", "error", "-i", path, "-f", "segment", "-segment_time", str(chunk_seconds), "-c", "copy", pattern], capture_output=True)
+    chunks = sorted(Path(directory).glob("chunk-*.mp3"))
+    if proc.returncode != 0 or not chunks:
+        return [(0.0, path)]
+    return [(i * float(chunk_seconds), str(p)) for i, p in enumerate(chunks)]
 
-    client = openai.AsyncOpenAI(api_key=settings.openai_api_key, timeout=180, max_retries=1)
-    with open(path, "rb") as fh:
-        result = await client.audio.transcriptions.create(
-            model=settings.openai_transcribe_model, file=fh, response_format="verbose_json", timestamp_granularities=["segment"]
-        )
-    segments = getattr(result, "segments", None) or []
-    return [Segment(id=i, text=s.text.strip(), start=float(s.start), end=float(s.end)) for i, s in enumerate(segments) if s.text.strip()]
+
+def clean_segments(raw: list, offset: float, limit: float | None) -> list[Segment]:
+    """Model-produced timestamps are made usable: offset by the chunk start, ordered, clamped, non-overlapping."""
+    out: list[Segment] = []
+    previous_end = 0.0
+    for seg in raw:
+        text = " ".join((seg.text or "").split())
+        if not text:
+            continue
+        start = max(0.0, float(seg.start))
+        end = max(start, float(seg.end))
+        if limit is not None:
+            start, end = min(start, limit), min(end, limit)
+        start = max(start, previous_end)  # a model may repeat or rewind a timestamp
+        end = max(end, start)
+        previous_end = end
+        out.append(Segment(id=0, text=text, start=round(offset + start, 2), end=round(offset + end, 2)))
+    return out
+
+
+async def _cloud(audio: str, session: LLMSession) -> list[Segment]:
+    """Transcribe with the audio-capable chat model, 10-minute chunks, timestamps offset per chunk."""
+    with tempfile.TemporaryDirectory(prefix="tabayyun-chunks-") as tmp:
+        chunks = await asyncio.to_thread(split_audio, audio, settings.audio_chunk_seconds, tmp)
+        sem = asyncio.Semaphore(_PARALLEL_CHUNKS)
+
+        async def one(offset: float, path: str) -> list[Segment]:
+            data = await asyncio.to_thread(Path(path).read_bytes)
+            length = await asyncio.to_thread(media_duration, path)
+            async with sem:
+                result = await session.complete_json(
+                    task="audio",
+                    system=TRANSCRIBE_SYSTEM,
+                    user=[text_part("Transcribe this recording as instructed."), audio_part(data, "mp3")],
+                    schema=AUDIO_SCHEMA,
+                    model_cls=AudioTranscript,
+                )
+            return clean_segments(result.segments, offset, length)
+
+        parts = await asyncio.gather(*(one(o, p) for o, p in chunks))
+    segments = [s for part in parts for s in part]
+    for i, s in enumerate(segments):
+        s.id = i
+    return segments
 
 
 @lru_cache(maxsize=1)
@@ -94,25 +148,28 @@ def _local(path: str) -> list[Segment]:
     return [Segment(id=i, text=s.text.strip(), start=float(s.start), end=float(s.end)) for i, s in enumerate(segments) if s.text.strip()]
 
 
-async def transcribe(path: str) -> tuple[list[Segment], str]:
-    """Transcribe an audio/video file. Returns (segments, origin)."""
+async def transcribe(path: str) -> tuple[list[Segment], str, list[str]]:
+    """Transcribe an audio/video file. Returns (segments, origin, warnings)."""
     if not cloud_available() and not local_available():
         raise IngestError("transcription_unavailable")
     audio = await asyncio.to_thread(to_speech_audio, path)
     try:
-        if cloud_available() and Path(audio).stat().st_size <= _OPENAI_MAX_BYTES:
+        if cloud_available():
+            session = get_llm().session()
             try:
-                segments = await _cloud(audio)
+                segments = await _cloud(audio, session)
                 if segments:
-                    return segments, "cloud-stt"
-            except Exception as e:
-                log.warning("cloud transcription failed, trying local: %s", type(e).__name__)
-        if local_available():
-            segments = await asyncio.to_thread(_local, audio)
-            if segments:
-                return segments, "local-stt"
-            raise IngestError("no_speech")
-        raise IngestError("transcription_unavailable")
+                    return segments, "cloud-stt", (["llm_fallback"] if session.fallback_used else [])
+                if not local_available():
+                    raise IngestError("no_speech")
+            except LLMError as e:
+                log.warning("cloud transcription failed: %s", type(e).__name__)
+                if not local_available():
+                    raise IngestError("transcription_unavailable") from e
+        segments = await asyncio.to_thread(_local, audio)
+        if segments:
+            return segments, "local-stt", []
+        raise IngestError("no_speech")
     finally:
         Path(audio).unlink(missing_ok=True)
 

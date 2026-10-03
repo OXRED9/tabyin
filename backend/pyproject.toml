@@ -21,14 +21,14 @@ dependencies = [
   "imageio-ffmpeg>=0.5",
   "pillow>=11.0",
   "segno>=1.6",
-  "anthropic>=0.40",
-  "openai>=1.50",
+  "openai>=1.50",  # OpenAI-compatible client, pointed at OpenRouter (the only model provider)
 ]
 
 [project.optional-dependencies]
-# Local multilingual embeddings for semantic hadith retrieval (ONNX, CPU).
+# Local multilingual embeddings (intfloat/multilingual-e5-small, ONNX, CPU) for the
+# "authentic alternatives" feature. Never served through OpenRouter.
 embeddings = ["fastembed>=0.4"]
-# Local speech-to-text fallback (used when no cloud transcription key is configured).
+# Local speech-to-text fallback (used when the OpenRouter audio model is unavailable).
 whisper = ["faster-whisper>=1.0"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "matplotlib>=3.9"]
 
@@ -42,7 +42,10 @@ packages = ["tabayyun"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# A bare `pytest` is offline and free. `-m network` / `-m llm` on the command line opt in
+# (`llm` tests make real, paid model calls whenever a key is configured).
+addopts = "-m 'not network and not llm'"
 markers = [
   "network: test needs live network access to an approved source",
-  "llm: test needs a configured LLM provider key",
+  "llm: test makes real model calls through OpenRouter (needs OPENROUTER_API_KEY)",
 ]

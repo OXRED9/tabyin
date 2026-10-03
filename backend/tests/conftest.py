@@ -51,12 +51,12 @@ def matn(hadith):
 def offline(monkeypatch):
     """Deterministic pipeline: no LLM provider and no live source calls (lexical-only mode)."""
     from tabayyun import pipeline
-    from tabayyun.llm.router import LLMRouter
     from tabayyun.sources.dorar import DorarClient
+    from tests.llm_stubs import NoLLM
 
     dorar = DorarClient()
     dorar.status = "disabled"
-    monkeypatch.setattr(pipeline, "get_llm", lambda: LLMRouter(providers=[]))
+    monkeypatch.setattr(pipeline, "get_llm", lambda: NoLLM())
     monkeypatch.setattr(pipeline, "get_dorar", lambda: dorar)
 
 
@@ -75,3 +75,24 @@ def verify_text(offline):
         return asyncio.run(pipeline.collect(ingest, ui_lang=ui_lang))
 
     return _run
+
+
+@pytest.fixture(autouse=True)
+def _no_real_model_calls(request, monkeypatch, tmp_path):
+    """Unit tests never reach OpenRouter, whatever is in .env. Tests marked ``network`` or ``llm``
+    opt out. The usage log is redirected to a temporary file for every test."""
+    from tabayyun.llm import usage
+
+    log = usage.UsageLog(tmp_path / "usage.sqlite")
+    monkeypatch.setattr(usage, "get_usage_log", lambda: log)
+    from tabayyun.llm import openrouter
+
+    monkeypatch.setattr(openrouter, "get_usage_log", lambda: log)
+    if request.node.get_closest_marker("network") or request.node.get_closest_marker("llm"):
+        return
+    from tabayyun import main, pipeline
+    from tabayyun.transcribe import service
+    from tests.llm_stubs import NoLLM
+
+    for module in (pipeline, service, main):
+        monkeypatch.setattr(module, "get_llm", lambda: NoLLM())

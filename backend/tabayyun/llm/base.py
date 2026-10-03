@@ -1,36 +1,29 @@
-"""Provider-neutral LLM interface.
+"""LLM interface.
 
 The LLM has exactly two jobs in Tabayyun, and neither is a decision:
-  * propose  — extract candidate claims from text, or point at which retrieved source text (if any)
-               corresponds to a claim;
+  * propose  — locate candidate claims in text, read text from an image or from speech, or point
+               at which retrieved source text (if any) corresponds to a claim;
   * explain  — nothing it writes is ever shown as a source text, a reference or a grading.
 Every call returns JSON constrained by a schema and validated with Pydantic.
+
+All model calls go through one provider, OpenRouter (``llm/openrouter.py``), with one API key.
 """
 from __future__ import annotations
 
-from typing import Protocol, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 
+# What a call is for. Each task has its own model (MODEL_* in .env) and output budget.
+TASKS = ("extract", "judge", "vision", "audio", "cheap", "baseline")
+
 
 class LLMError(Exception):
-    """A provider failed in a way that should trigger failover (network, auth, rate limit, refusal).
+    """The primary model and the fallback model both failed (or no key is configured).
+    The caller then degrades: lexical-only verification, or a readable error for OCR/audio."""
 
-    ``cooldown``: seconds to skip this provider afterwards. Zero for failures tied to one request
-    (a refusal, a truncated or invalid answer); non-zero when the provider itself is unavailable.
-    """
-
-    def __init__(self, message: str, cooldown: float = 0.0) -> None:
+    def __init__(self, message: str, calls: list | None = None) -> None:
         super().__init__(message)
-        self.cooldown = cooldown
-
-
-class LLMProvider(Protocol):
-    name: str
-
-    @property
-    def available(self) -> bool: ...
-
-    async def complete_json(self, *, system: str, user: str, schema: dict, model_cls: type[T], max_tokens: int = 8000) -> T: ...
+        self.calls = calls or []  # the CallInfo of every attempt (no content), for the session's record

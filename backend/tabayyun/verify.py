@@ -32,7 +32,7 @@ from .extract.models import JUDGEMENT_SCHEMA, LLMJudgement, RawClaim
 from .extract.prompts import JUDGE_SYSTEM
 from .ingest.document import Document
 from .llm.base import LLMError
-from .llm.router import LLMRouter
+from .llm.router import LLMSession
 from .normalize import arabic_ratio, normalize_ar, normalize_latin
 from .schemas import (
     Card,
@@ -70,7 +70,7 @@ class Context:
     quran: QuranIndex
     hadith: HadithIndex
     dorar: DorarClient
-    llm: LLMRouter
+    llm: LLMSession
     llm_enabled: bool  # False in lexical-only mode
     ui_lang: str = "ar"
 
@@ -110,14 +110,19 @@ async def judge(ctx: Context, task: str, claim_text: str, texts: list[str]) -> i
     listing = "\n\n".join(f"[{i}] {t[:1800]}" for i, t in enumerate(texts))
     try:
         result = await ctx.llm.complete_json(
+            task="judge",
             system=JUDGE_SYSTEM,
             user=f"task = \"{task}\"\n\n<claim>\n{claim_text}\n</claim>\n\n<source_texts>\n{listing}\n</source_texts>",
             schema=JUDGEMENT_SCHEMA,
             model_cls=LLMJudgement,
-            max_tokens=4000,
         )
     except LLMError as e:
         log.warning("judge unavailable: %s", e)
+        return None
+    # A pointer can lift a claim to "supported", so it is only honoured from the model that was
+    # measured for the job. When the backup model answered, the claim keeps its conservative state.
+    if getattr(ctx.llm, "last_call_fallback", False):
+        log.warning("judge answer came from the fallback model and is not used")
         return None
     expected = "same_narration" if task == "hadith_match" else "explicit_support"
     if result.relation != expected or not (0 <= result.best_index < len(texts)):

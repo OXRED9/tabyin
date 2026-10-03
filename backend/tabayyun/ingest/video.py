@@ -122,9 +122,9 @@ async def ingest_video(url: str | None) -> Document:
             raise
         except Exception as e:
             raise IngestError("video_download_failed", str(e)[:200]) from e
-        raw, origin = await transcribe(path)
+        raw, origin, warnings = await transcribe(path)
     segments = merge_segments(raw)
     if not segments:
         raise IngestError("no_speech")
     source.transcript_origin = origin
-    return Document(source=source, segments=segments)
+    return Document(source=source, segments=segments, warnings=warnings)

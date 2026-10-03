@@ -4,14 +4,15 @@ Tabayyun is not a chat assistant: it never answers a question in its own words. 
 the test checks the behaviour the package expects *of this kind of tool*: source every verdict,
 abstain when there is no source, refer personal cases, flag a misquoted verse gently with the
 correct text, and never produce religious text of its own. Cases that depend on the LLM's
-classification are marked ``llm`` and run only when a provider key is configured.
+classification are marked ``llm``: they make real, paid model calls and run only when asked for
+(``pytest -m llm``) with a key configured.
 """
 import pytest
 
 from tabayyun.llm.router import get_llm
 from tabayyun.meta import load_terms
 
-needs_llm = pytest.mark.skipif(not get_llm().available, reason="no LLM provider key configured")
+needs_llm = pytest.mark.skipif(not get_llm().available, reason="no OpenRouter key / extraction model configured")
 
 # (id, the package's test question, what the package expects)
 QUESTIONS = [

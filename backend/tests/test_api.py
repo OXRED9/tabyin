@@ -6,15 +6,15 @@ from fastapi.testclient import TestClient
 
 from tabayyun import main, pipeline
 from tabayyun.config import settings
-from tabayyun.llm.router import LLMRouter
 from tabayyun.sources.dorar import DorarClient
+from tests.llm_stubs import NoLLM
 
 
 @pytest.fixture()
 def client(monkeypatch):
     dorar = DorarClient()
     dorar.status = "disabled"
-    monkeypatch.setattr(pipeline, "get_llm", lambda: LLMRouter(providers=[]))
+    monkeypatch.setattr(pipeline, "get_llm", lambda: NoLLM())
     monkeypatch.setattr(pipeline, "get_dorar", lambda: dorar)
     main._recent.clear()
     with TestClient(main.app) as c:
