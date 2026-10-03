@@ -131,6 +131,9 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     for (let i = 0; i < 20 && (await page.getByRole('button', { name: t.expand }).count()) > 0; i++) {
       await page.getByRole('button', { name: t.expand }).first().click()
     }
+    // F5: open every «لماذا هذا الحكم؟» panel so its table, meter and labels are audited.
+    const closedPanels = page.locator('[data-testid="explain"] > button[aria-expanded="false"]')
+    for (let i = 0; i < 20 && (await closedPanels.count()) > 0; i++) await closedPanels.first().click()
     if (state === 'dialog') {
       await page.locator('[role="article"][data-state="not_found"]').first().getByRole('button', { name: t.referral }).click()
       await page.getByRole('dialog').waitFor()

@@ -5,9 +5,10 @@
 import { ApiFailure, requestExportHtml } from './api'
 import type { Dictionary } from './dictionary'
 import { formatClock, formatDateTime, formatPercent, safeHref } from './format'
+import { formatDuration, formatSimilarity, stageTimingLine } from './markdown'
 import { countStates, sourcesUsed } from './report'
 import { STATES_FOR_SUMMARY } from './states'
-import type { Card, Meta, Report, SourceRef, UiLang } from './types'
+import type { Card, Explain, Meta, Report, SourceRef, UiLang } from './types'
 
 function stamp(iso: string): string {
   const d = new Date(iso)
@@ -115,6 +116,52 @@ function sourceBlock(source: SourceRef, t: Dictionary, heading: string): string 
   </section>`
 }
 
+/** F5 «لماذا هذا الحكم؟» for the printable page: the same content as the on-screen panel. */
+function explainBlock(card: Card, explain: Explain, report: Report, t: Dictionary, lang: UiLang): string {
+  const pick = (ar: string, en: string) => (lang === 'ar' ? ar || en : en || ar)
+  const meets = explain.similarity != null && explain.threshold != null ? explain.similarity >= explain.threshold : null
+  const similarity =
+    explain.similarity == null
+      ? esc(t.explain.noSimilarity)
+      : [
+          esc(t.explain.similarityOf(formatSimilarity(explain.similarity))),
+          explain.threshold == null ? '' : esc(t.explain.thresholdOf(formatSimilarity(explain.threshold))),
+          meets == null ? '' : `<strong>${esc(meets ? t.explain.meets : t.explain.below)}</strong>`,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+  const candidates =
+    explain.candidates.length === 0
+      ? `<p>${esc(t.explain.noCandidates)}</p>`
+      : `<table class="candidates"><thead><tr>
+          <th>${esc(t.explain.rank)}</th><th>${esc(t.explain.reference)} · ${esc(t.explain.source)}</th>
+          <th>${esc(t.explain.similarity)}</th><th>${esc(t.explain.grade)}</th><th>${esc(t.explain.chosen)}</th>
+        </tr></thead><tbody>${explain.candidates
+          .map(
+            (c) => `<tr class="${c.chosen ? 'chosen' : ''}">
+              <td>${c.rank}</td>
+              <td>${c.url ? link(c.url, c.ref) : esc(c.ref)}<br><span class="muted">${esc(c.source_name)}</span><br><span class="excerpt" lang="ar" dir="rtl">${esc(c.excerpt)}</span></td>
+              <td>${c.similarity == null ? esc(t.explain.byTopic) : esc(formatSimilarity(c.similarity))}</td>
+              <td lang="ar">${c.grade_text ? esc(c.grade_text) : '—'}</td>
+              <td>${c.chosen ? `✓ ${esc(t.explain.chosen)}` : ''}</td>
+            </tr>`,
+          )
+          .join('')}</tbody></table>`
+  const origin = explain.level_reason_origin === 'model' ? t.explain.levelByModel : t.explain.levelByRule
+  return `<section class="explain">
+    <h4>${esc(t.explain.title)}</h4>
+    <p><strong>${esc(pick(explain.rule_ar, explain.rule_en))}</strong></p>
+    <p>${similarity}</p>
+    <h4>${esc(t.explain.candidates)}</h4>
+    ${candidates}
+    <p><strong>${esc(t.explain.level)}:</strong> ${esc(card.content_level)} · ${esc(t.levels[card.content_level])} — ${esc(pick(explain.level_reason_ar, explain.level_reason_en))} <span class="muted">(${esc(origin)})</span></p>
+    <p class="muted">${esc(t.explain.matchMs(formatDuration(explain.match_ms / 1000, t)))}${
+      report.summary.stage_seconds ? ` · ${esc(stageTimingLine(report.summary.stage_seconds, t))}` : ''
+    }<br>${esc(t.explain.dataVersion)}: <code>${esc(explain.data_version)}</code></p>
+    <p class="limits"><strong>${esc(t.explain.limits)}:</strong> ${esc(pick(explain.limits_ar, explain.limits_en))}</p>
+  </section>`
+}
+
 function cardBlock(card: Card, report: Report, ctx: { t: Dictionary; lang: UiLang; meta: Meta | null }): string {
   const { t, lang, meta } = ctx
   const override = report.reviewer_overrides.find((o) => o.card_id === card.id)
@@ -129,7 +176,7 @@ function cardBlock(card: Card, report: Report, ctx: { t: Dictionary; lang: UiLan
           <ul class="grades">${card.grades
             .map(
               (g) =>
-                `<li><strong lang="ar" dir="rtl">${esc(g.text)}</strong>${g.scholar ? ` — ${esc(t.card.scholar)}: ${esc(g.scholar)}` : ''}${g.book ? ` — ${esc(g.book)}` : ''} <span class="muted">(${link(g.source_url, g.source_name)})</span></li>`,
+                `<li><strong lang="ar" dir="rtl">${esc(g.text)}</strong>${g.scholar ? ` — ${esc(t.card.scholar)}: ${esc(g.scholar)}` : ''}${g.book ? ` — ${esc(g.book)}` : ''}${g.narrator ? ` — ${esc(t.card.narrator)}: ${esc(g.narrator)}` : ''} <span class="muted">(${link(g.source_url, g.source_name)})</span></li>`,
             )
             .join('')}</ul></section>`
       : card.grade_unavailable
@@ -182,6 +229,7 @@ function cardBlock(card: Card, report: Report, ctx: { t: Dictionary; lang: UiLan
         ? `<p class="ai"><strong>${esc(t.card.aiExplanation)}</strong> <span class="muted">${esc(t.card.aiExplanationHint)}</span><br>${esc(card.ai_explanation)}</p>`
         : ''
     }
+    ${card.explain ? explainBlock(card, card.explain, report, t, lang) : ''}
     ${card.other_sources.map((s) => sourceBlock(s, t, t.card.otherSources(card.other_sources.length))).join('')}
     ${card.referral ? `<p class="notice">${esc(t.actions.refer_to_scholars)}</p>` : ''}
   </article>`
@@ -239,6 +287,14 @@ export function buildPrintableHtml(
   .ai { border: 1px dashed #4a5b56; }
   .grades { margin: 4px 0; padding-inline-start: 20px; }
   code { font-size: 12px; direction: ltr; unicode-bidi: isolate; }
+  .explain { margin: 12px 0; padding: 4px 12px 8px; border: 1px solid #dce2de; border-radius: 8px; }
+  .explain p { margin: 6px 0; }
+  .candidates { width: 100%; border-collapse: collapse; font-size: 13px; margin: 4px 0 8px; }
+  .candidates th, .candidates td { border: 1px solid #dce2de; padding: 4px 8px; text-align: start; vertical-align: top; }
+  .candidates th { background: #f6f7f5; color: #4a5b56; font-weight: 600; }
+  .candidates tr.chosen td { background: #e6eeeb; }
+  .excerpt { font-size: 12px; color: #2a3a36; }
+  .limits { border-top: 1px solid #dce2de; padding-top: 8px; }
   .state-supported { border-inline-start-color: #1a7f4e; } .state-supported .badge { color: #125c38; background: #e2f3e9; }
   .state-supported_with_note { border-inline-start-color: #5c9a2b; } .state-supported_with_note .badge { color: #3c6417; background: #eaf4de; }
   .state-needs_review { border-inline-start-color: #b87a00; } .state-needs_review .badge { color: #734700; background: #fcf0cf; }

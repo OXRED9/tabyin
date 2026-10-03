@@ -1,0 +1,58 @@
+import { Check, Copy } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
+
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { copyText } from '@/lib/clipboard'
+import { useI18n } from '@/lib/i18n'
+import type { SourceRef } from '@/lib/types'
+
+/**
+ * F4: one click copies `card.copy_text` exactly as the API built it: the source's wording with
+ * its reference (and grading), never the wording as quoted by the content.
+ */
+export function CopySourceButton({ text, kind }: { text: string; kind: SourceRef['kind'] | null }) {
+  const { t } = useI18n()
+  const [copied, setCopied] = useState(false)
+  const timer = useRef<number | null>(null)
+
+  useEffect(
+    () => () => {
+      if (timer.current) window.clearTimeout(timer.current)
+    },
+    [],
+  )
+
+  const label = kind === 'quran' ? t.copy.ayah : kind === 'hadith' ? t.copy.hadith : t.copy.source
+
+  const copy = async () => {
+    if (await copyText(text)) {
+      setCopied(true)
+      toast(t.copy.done)
+      if (timer.current) window.clearTimeout(timer.current)
+      timer.current = window.setTimeout(() => setCopied(false), 2000)
+    } else {
+      toast.error(t.copy.failed)
+    }
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="touch"
+          data-testid="copy-source"
+          onClick={() => void copy()}
+          className="bg-background"
+        >
+          {copied ? <Check aria-hidden="true" className="text-supported-ink" /> : <Copy aria-hidden="true" />}
+          {label}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{t.copy.hint}</TooltipContent>
+    </Tooltip>
+  )
+}

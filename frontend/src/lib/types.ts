@@ -100,6 +100,40 @@ export interface SourceRef {
   translation: Translation | null
 }
 
+/** F5: one retrieved candidate, as listed under "لماذا هذا الحكم؟". */
+export interface ExplainCandidate {
+  /** 1-based */
+  rank: number
+  source_name: string
+  ref: string
+  url: string | null
+  /** null when the candidate was retrieved by topic, not by wording */
+  similarity: number | null
+  /** the candidate the card's source came from */
+  chosen: boolean
+  /** verbatim, when the corpus carries one */
+  grade_text: string | null
+  /** first ~160 characters of the candidate's verbatim text */
+  excerpt: string
+}
+
+/** F5: why the verdict was reached. Everything here is produced by rules, never by a model. */
+export interface Explain {
+  rule_ar: string
+  rule_en: string
+  limits_ar: string
+  limits_en: string
+  similarity: number | null
+  threshold: number | null
+  candidates: ExplainCandidate[]
+  level_reason_ar: string
+  level_reason_en: string
+  /** "model" = the LLM classifier's own words, to be labelled as such */
+  level_reason_origin: 'rule' | 'model'
+  match_ms: number
+  data_version: string
+}
+
 export interface Card {
   id: string
   index: number
@@ -130,6 +164,17 @@ export interface Card {
   /** Character offset in the whole text: the chronological sort key. */
   position?: number
   warnings: string[]
+  /** F4. The source's wording, ready to paste; never the user's. null when there is no source. */
+  copy_text?: string | null
+  /** F5. null when the feature is off. */
+  explain?: Explain | null
+}
+
+export interface StageSeconds {
+  ingest: number
+  extract: number
+  match: number
+  total: number
 }
 
 export interface Summary {
@@ -139,6 +184,7 @@ export interface Summary {
   llm_provider: string | null
   warnings: string[]
   elapsed_seconds: number
+  stage_seconds?: StageSeconds
 }
 
 export type StageId = 'ingest' | 'extract' | 'match' | 'rules' | 'report'
@@ -210,6 +256,17 @@ export interface Meta {
   referral_links: ReferralLink[]
   examples: MetaExample[]
   limits: { max_text_chars: number; max_upload_mb: number; max_media_minutes: number }
+  /** Phase 2 feature flags. A missing key means the backend predates the flag: treated as on. */
+  features?: Partial<Features>
+  /** PUBLIC_URL; null → the UI uses window.location.origin */
+  app_url?: string | null
+  data_version?: string
+}
+
+export interface Features {
+  share_card: boolean
+  copy: boolean
+  explain: boolean
 }
 
 export interface ReviewerOverride {

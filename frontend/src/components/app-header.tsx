@@ -30,6 +30,7 @@ interface AppHeaderProps {
   onClearHistory: () => void
   onExportJson: () => void
   onExportHtml: () => void
+  onCopyReport?: () => void
   onHome: () => void
 }
 
@@ -79,6 +80,7 @@ export function AppHeader({
   onClearHistory,
   onExportJson,
   onExportHtml,
+  onCopyReport,
   onHome,
 }: AppHeaderProps) {
   const { t } = useI18n()
@@ -186,7 +188,7 @@ export function AppHeader({
           </DropdownMenu>
 
           {hasReport ? (
-            <ExportMenu onExportJson={onExportJson} onExportHtml={onExportHtml}>
+            <ExportMenu onExportJson={onExportJson} onExportHtml={onExportHtml} onCopyReport={onCopyReport}>
               <Button
                 type="button"
                 variant="gold"

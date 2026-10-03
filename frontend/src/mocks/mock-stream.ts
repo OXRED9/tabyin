@@ -8,8 +8,9 @@
  *   text                        → a short report; the "fabrication" example gives a request card
  *   article link                → the short report as an article
  *   a link containing "tiktok"  → a download error; one containing "fail" → a fetch error
- * `?scenario=video|text|fabrication|lexical|no_claims|error|tiktok` forces one, and `?speed=4`
- * replays faster.
+ * `?scenario=video|text|fabrication|lexical|no_claims|error|tiktok` forces one, `?speed=4`
+ * replays faster, and `?off=copy,explain,share_card` turns Phase 2 feature flags off (the cards
+ * then come without that feature's data, as from the real API).
  *
  * The religious texts come from `fixtures.json`, generated from the repository's source data by
  * `scripts/build-fixtures.mjs`. None is written here.
@@ -125,9 +126,15 @@ const stub = (card: Card): ClaimStub => ({
   position: card.position,
 })
 
+const flagsOff = () => new Set((params().get('off') ?? '').split(',').filter(Boolean))
+
 export async function mockMeta(): Promise<Meta> {
   await new Promise((resolve) => setTimeout(resolve, 120))
-  return fixtures.meta as Meta
+  const off = flagsOff()
+  return {
+    ...(fixtures.meta as Meta),
+    features: { share_card: !off.has('share_card'), copy: !off.has('copy'), explain: !off.has('explain') },
+  }
 }
 
 export async function mockVerify(
@@ -184,9 +191,16 @@ export async function mockVerify(
   const lexical = name === 'lexical'
   const empty = name === 'no_claims'
   // In lexical-only mode only verbatim verses and hadith are caught.
+  const off = flagsOff()
   const cards = empty
     ? []
-    : base.cards[uiLang].filter((c) => !lexical || c.claim_type === 'ayah' || c.claim_type === 'hadith')
+    : base.cards[uiLang]
+        .filter((c) => !lexical || c.claim_type === 'ayah' || c.claim_type === 'hadith')
+        .map((c) => ({
+          ...c,
+          copy_text: off.has('copy') ? null : c.copy_text,
+          explain: off.has('explain') ? null : c.explain,
+        }))
 
   const source: SourceInfo = { ...base.source, input_type: input.input_type }
   if (input.input_type === 'video_url' || input.input_type === 'article_url') {
@@ -205,6 +219,8 @@ export async function mockVerify(
   onEvent({ event: 'source', data: source })
   onEvent({ event: 'segments', data: { segments } })
   stage('ingest', 'done')
+  const ingestDone = performance.now()
+  let matching = 0
   stage('extract', 'start', { eta_seconds: isMedia ? 11 : 5 })
 
   // Verbatim Quran verses are announced, and may be matched, before extraction finishes.
@@ -217,7 +233,9 @@ export async function mockVerify(
     stage('match', 'start', { done: 0, total: early.length })
     onEvent({ event: 'claims', data: { claims: early.map(stub) } })
     for (const card of early) {
+      const before = performance.now()
       await wait(600)
+      matching += performance.now() - before
       onEvent({ event: 'card', data: card })
       done += 1
       stage('match', 'progress', { done, total: early.length })
@@ -228,6 +246,7 @@ export async function mockVerify(
   if (lexical) onEvent({ event: 'error', data: ERRORS.llm })
   if (empty) onEvent({ event: 'error', data: ERRORS.noClaims })
   stage('extract', 'done')
+  const extractDone = performance.now()
 
   if (late.length > 0) {
     onEvent({ event: 'claims', data: { claims: late.map(stub) } })
@@ -237,7 +256,9 @@ export async function mockVerify(
       eta_seconds: Math.ceil(late.length * 0.9) + 1,
     })
     for (const card of late) {
+      const before = performance.now()
       await wait(700 + Math.min(600, card.text_as_quoted.length * 6))
+      matching += performance.now() - before
       onEvent({ event: 'card', data: card })
       done += 1
       stage('match', 'progress', {
@@ -252,8 +273,20 @@ export async function mockVerify(
   await wait(250)
   stage('rules', 'done')
   const warnings = params().has('dorar') ? ['dorar_unreachable'] : []
+  const seconds = (ms: number) => Number((ms / 1000).toFixed(2))
   const elapsed = Number(((performance.now() - started) / 1000).toFixed(1))
-  onEvent({ event: 'summary', data: summarise(cards, lexical ? 'lexical_only' : 'full', elapsed, warnings) })
+  onEvent({
+    event: 'summary',
+    data: {
+      ...summarise(cards, lexical ? 'lexical_only' : 'full', elapsed, warnings),
+      stage_seconds: {
+        ingest: seconds(ingestDone - started),
+        extract: seconds(extractDone - ingestDone),
+        match: seconds(matching),
+        total: seconds(performance.now() - started),
+      },
+    },
+  })
   await wait(150)
   stage('report', 'done')
   onEvent({ event: 'done', data: {} })

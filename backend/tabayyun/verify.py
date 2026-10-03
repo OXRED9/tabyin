@@ -480,7 +480,7 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
             candidates.append(
                 ExplainCandidate(
                     rank=0, source_name=src.source_name, ref=src.ref, url=src.url, similarity=c.similarity,
-                    chosen=c is primary and decision.state != EvidenceState.not_found, grade_text=c.grade_text, excerpt=_excerpt(c.matched_span_text or c.text),
+                    chosen=c is primary and decision.state != EvidenceState.not_found, grade_text=c.grade_text, excerpt=_excerpt(c.text),
                 )
             )  # fmt: skip
             if len(candidates) >= 5:
@@ -629,7 +629,7 @@ async def verify_quote(claim: RawClaim, cid: str, index: int, ctx: Context) -> C
         listed.append(
             ExplainCandidate(
                 rank=0, source_name=src.source_name, ref=src.ref, url=src.url, similarity=c.similarity,
-                chosen=c is best and decision.state != EvidenceState.not_found, grade_text=c.grade_text, excerpt=_excerpt(c.matched_span_text or c.text),
+                chosen=c is best and decision.state != EvidenceState.not_found, grade_text=c.grade_text, excerpt=_excerpt(c.text),
             )
         )  # fmt: skip
     facts = Facts(similarity=best.similarity if best else None, quoted_words=len(claim.quote.split()))

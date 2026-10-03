@@ -15,14 +15,17 @@ import { useMediaQuery } from '@/hooks/use-media-query'
 import { ThemeProvider } from '@/hooks/use-theme'
 import { useVerify } from '@/hooks/use-verify'
 import { fetchMeta } from '@/lib/api'
+import { copyText } from '@/lib/clipboard'
 import { emptyDraft } from '@/lib/draft'
 import type { InputDraft } from '@/lib/draft'
 import { errorCopy, errorRemedies, localError } from '@/lib/errors'
 import { downloadJson, exportHtml } from '@/lib/export'
+import { featuresOf } from '@/lib/features'
 import { isHttpUrl, safeHref, truncate } from '@/lib/format'
 import { clearHistory, loadHistory, saveHistoryEntry } from '@/lib/history'
 import type { HistoryEntry } from '@/lib/history'
 import { I18nProvider, useI18n } from '@/lib/i18n'
+import { buildMarkdownReport } from '@/lib/markdown'
 import { assembleReport } from '@/lib/report'
 import { chronological } from '@/lib/states'
 import { readStored, writeStored } from '@/lib/storage'
@@ -257,6 +260,16 @@ function Shell() {
       .catch(() => toast.error(t.errors.internal.message))
   }, [report, t, lang, meta])
 
+  // F4: the whole report as Markdown, on the clipboard.
+  const copyReport = useCallback(() => {
+    if (!report) return
+    void copyText(buildMarkdownReport(report, { t, lang, meta })).then((copied) => {
+      if (copied) toast(t.copy.reportDone)
+      else toast.error(t.copy.failed)
+    })
+  }, [report, t, lang, meta])
+  const features = useMemo(() => featuresOf(meta), [meta])
+
   // Ctrl/⌘ + Enter anywhere on the page runs the verification.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -351,6 +364,7 @@ function Shell() {
             onClearHistory={wipeHistory}
             onExportJson={exportJson}
             onExportHtml={exportPrintable}
+            onCopyReport={features.copy ? copyReport : undefined}
             onHome={goHome}
           />
           <TransparencyLine />
@@ -447,6 +461,7 @@ function Shell() {
                 onRemoveOverride={dropOverride}
                 onExportJson={exportJson}
                 onExportHtml={exportPrintable}
+                onCopyReport={features.copy ? copyReport : undefined}
                 onVerifyAnother={verifyAnother}
               />
             ) : null}

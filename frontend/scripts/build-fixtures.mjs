@@ -138,6 +138,8 @@ function quranSource(a, lang) {
     explanation: null,
     // data/quran.json carries no translation, and one is never typed by hand.
     translation: null,
+    // Short reference for copy_text; stripped before the fixture is written.
+    quranRef: { ar: `${a.name_ar}: ${a.number}`, en: `${a.name_en} ${a.surah}:${a.number}` },
   }
 }
 
@@ -193,6 +195,99 @@ function bookHadith(number) {
   return null
 }
 
+// ── Retrieval for the explainability panel (F5) ───────────────────────────────────────────────
+// The candidates shown under "لماذا هذا الحكم؟" are really retrieved here, from the same data
+// files, and really scored: a local alignment of the quoted words against each text (a match
+// scores +1, a mismatch or a gap −1), divided by the number of quoted words. No candidate, score
+// or grading is typed.
+const tokensOf = (s) => words(s).map(normalise).filter(Boolean)
+
+function alignmentScore(q, t) {
+  let best = 0
+  let prev = new Array(t.length + 1).fill(0)
+  for (let i = 1; i <= q.length; i++) {
+    const row = new Array(t.length + 1).fill(0)
+    for (let j = 1; j <= t.length; j++) {
+      const v = Math.max(0, prev[j - 1] + (q[i - 1] === t[j - 1] ? 1 : -1), prev[j] - 1, row[j - 1] - 1)
+      row[j] = v
+      if (v > best) best = v
+    }
+    prev = row
+  }
+  return q.length ? Number((best / q.length).toFixed(2)) : 0
+}
+
+const excerptOf = (text) => {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  return clean.length > 160 ? `${clean.slice(0, 160).trimEnd()}…` : clean
+}
+
+const quranIndex = quran.ayahs.map((row) => ({ surah: row[0], number: row[1], tokens: tokensOf(row[3]) }))
+const hadithIndex = hadeethenc.hadeeths.map((h) => ({ h, tokens: tokensOf(h.hadeeth) }))
+const retrievalCache = new Map()
+
+function retrieve(kind, quoted, limit) {
+  const key = `${kind}|${limit}|${quoted}`
+  if (!retrievalCache.has(key)) {
+    const q = tokensOf(quoted)
+    const index = kind === 'quran' ? quranIndex : hadithIndex
+    retrievalCache.set(
+      key,
+      index
+        .map((entry) => ({ entry, similarity: alignmentScore(q, entry.tokens) }))
+        .sort((a, b) => b.similarity - a.similarity || a.entry.tokens.length - b.entry.tokens.length)
+        .slice(0, limit),
+    )
+  }
+  return retrievalCache.get(key)
+}
+
+const quranCandidate = (a, lang, similarity, chosen) => {
+  const src = quranSource(a, lang)
+  return { source_name: src.source_name, ref: src.ref, url: src.url, similarity, chosen, grade_text: null, excerpt: excerptOf(a.uthmani) }
+}
+const hadithCandidate = (h, similarity, chosen) => ({
+  source_name: HADEETHENC_NAME.ar,
+  ref: h.attribution,
+  url: h.url,
+  similarity,
+  chosen,
+  grade_text: h.grade || null,
+  excerpt: excerptOf(h.hadeeth),
+})
+// Best first; on a tie the candidate the card was built from leads.
+const ranked = (list) =>
+  [...list]
+    .sort((a, b) => (b.similarity ?? 0) - (a.similarity ?? 0) || Number(b.chosen) - Number(a.chosen))
+    .slice(0, 5)
+    .map((candidate, i) => ({ rank: i + 1, ...candidate }))
+
+const quranCandidates = (quoted, lang, chosen, limit = 5) =>
+  retrieve('quran', quoted, limit).map(({ entry, similarity }) =>
+    quranCandidate(ayah(entry.surah, entry.number), lang, similarity, !!chosen && entry.surah === chosen.surah && entry.number === chosen.number),
+  )
+const hadithCandidates = (quoted, chosenId, limit = 5) =>
+  retrieve('hadith', quoted, limit).map(({ entry, similarity }) =>
+    hadithCandidate(entry.h, similarity, String(entry.h.id) === String(chosenId)),
+  )
+
+const DATA_VERSION = fs.existsSync(path.join(ROOT, 'data/VERSION'))
+  ? fs.readFileSync(path.join(ROOT, 'data/VERSION'), 'utf8').trim()
+  : `fixtures · quran ${quran.ayahs.length} · hadeethenc ${hadeethenc.hadeeths.length}`
+
+// Thresholds used by the mock rules. The real ones live in the backend's evidence_rules.
+const ACCEPT = 0.85
+
+/** F4: the source's wording, ready to paste. Never the wording as quoted. */
+function copyTextOf(c, lang) {
+  const src = c.source
+  if (!src) return null
+  if (src.kind === 'quran') return `﴿${src.text}﴾ [${src.quranRef[lang]}]`
+  const grade = c.grades[0]
+  const gradeLine = grade ? ` — ${grade.text} (${grade.source_name})` : ''
+  return `${src.text}\n${src.ref}${gradeLine}\n${src.url}`
+}
+
 // ── Card factory ──────────────────────────────────────────────────────────────────────────────
 const ACTION = {
   supported: 'adopt',
@@ -224,6 +319,8 @@ function card(partial) {
     timestamp: null,
     span: null,
     warnings: [],
+    copy_text: null,
+    explain: null,
     ...partial,
   }
 }
@@ -428,6 +525,196 @@ function buildCards(lang) {
   } else {
     console.warn('data/raw/open-hadith-data is missing: the grade_unavailable card is left out.')
   }
+
+  // ── F5: why each verdict was reached. Rule sentences are the tool's own words; every candidate
+  // comes from the retrieval above. ────────────────────────────────────────────────────────────
+  const HADITH_LIMITS = {
+    ar: 'لم نبحث خارج المصادر المعتمدة؛ قد يوجد الحديث بلفظ آخر في كتب أخرى.',
+    en: 'Nothing outside the approved sources was searched; the hadith may exist with other wording in other books.',
+  }
+  const explain = (c, e) => ({
+    rule_ar: e.rule[0],
+    rule_en: e.rule[1],
+    limits_ar: e.limits[0],
+    limits_en: e.limits[1],
+    similarity: c.similarity,
+    threshold: e.threshold ?? null,
+    candidates: ranked(e.candidates ?? []),
+    level_reason_ar: e.level[0],
+    level_reason_en: e.level[1],
+    level_reason_origin: e.origin ?? 'rule',
+    match_ms: e.ms,
+    data_version: DATA_VERSION,
+  })
+  const fmt = (n) => n.toFixed(2)
+  const quotedWords = (c) => words(c.text_as_quoted).length
+
+  cards.ayah.explain = explain(cards.ayah, {
+    rule: [
+      `تطابق لفظي كامل مع نص المصحف: ${quotedWords(cards.ayah)} كلمة متتالية في ${cards.ayah.source.ref}.`,
+      `Exact wording match with the Mushaf text: ${quotedWords(cards.ayah)} consecutive words in ${cards.ayah.source.ref}.`,
+    ],
+    limits: [
+      'طابق تبيّن اللفظ مع نص المصحف فقط؛ لا ينظر في صحة الاستدلال بالآية في سياق الكلام.',
+      'Tabayyun matched the wording against the Mushaf only; it does not assess whether the verse is used correctly in context.',
+    ],
+    candidates: quranCandidates(cards.ayah.text_as_quoted, lang, a1),
+    level: ['نص قرآني: من الأصول المستقرة.', 'Quranic text: stable, foundational content.'],
+    ms: 6,
+  })
+
+  cards.hadithPartial.explain = explain(cards.hadithPartial, {
+    rule: [
+      `أفضل مرشح بتشابه ${fmt(cards.hadithPartial.similarity)} (العتبة ${fmt(ACCEPT)})، والاقتباس ${quotedWords(cards.hadithPartial)} كلمات من نص أطول. حكمه «${hPartial.grade}» منقول من موسوعة الأحاديث النبوية.`,
+      `Best candidate at similarity ${fmt(cards.hadithPartial.similarity)} (threshold ${fmt(ACCEPT)}); the quote is ${quotedWords(cards.hadithPartial)} words of a longer text. Its grading “${hPartial.grade}” is copied from HadeethEnc.`,
+    ],
+    limits: [HADITH_LIMITS.ar, HADITH_LIMITS.en],
+    threshold: ACCEPT,
+    candidates: hadithCandidates(cards.hadithPartial.text_as_quoted, hPartial.id),
+    level: ['حديث منسوب صراحةً إلى النبي ﷺ: من الأصول المستقرة.', 'A hadith explicitly attributed to the Prophet: stable, foundational content.'],
+    ms: 212,
+  })
+
+  cards.ruling.explain = explain(cards.ruling, {
+    rule: [
+      'حكم من الأصول المستقرة، واستُرجعت له آية من المصحف بالموضوع لا باللفظ.',
+      'A stable foundational ruling; a verse was retrieved for it from the Mushaf by topic, not by wording.',
+    ],
+    limits: [
+      'الآية المعروضة مسترجَعة بالموضوع؛ لا يقرّر تبيّن وجه الدلالة، ولا يغني ذلك عن الرجوع إلى أهل العلم.',
+      'The verse shown was retrieved by topic; Tabayyun does not decide how it proves the ruling, and this does not replace consulting scholars.',
+    ],
+    candidates: [a2, ayah(2, 185), ayah(2, 184)].map((a, i) => quranCandidate(a, lang, null, i === 0)),
+    level: ['وجوب صيام رمضان من أركان الإسلام المعلومة.', 'The obligation of fasting Ramadan is one of the well-known pillars of Islam.'],
+    origin: 'model',
+    ms: 388,
+  })
+
+  cards.hadithTwoGrades.explain = explain(cards.hadithTwoGrades, {
+    rule: [
+      `تطابق لفظي كامل مع حديث في المصدر (تشابه ${fmt(1)}، العتبة ${fmt(ACCEPT)}). ورد له في المصدر حكمان، ويُعرضان معاً.`,
+      `Exact wording match with a hadith in the source (similarity ${fmt(1)}, threshold ${fmt(ACCEPT)}). The source carries two gradings for it; both are shown.`,
+    ],
+    limits: [
+      `${HADITH_LIMITS.ar} عند تعدد الأحكام لا يرجّح تبيّن بينها.`,
+      `${HADITH_LIMITS.en} When gradings differ, Tabayyun prefers none.`,
+    ],
+    threshold: ACCEPT,
+    candidates: hadithCandidates(cards.hadithTwoGrades.text_as_quoted, hB.id),
+    level: ['حديث منسوب صراحةً إلى النبي ﷺ: من الأصول المستقرة.', 'A hadith explicitly attributed to the Prophet: stable, foundational content.'],
+    ms: 240,
+  })
+
+  cards.attributed.explain = explain(cards.attributed, {
+    rule: [
+      'لم يُعثر على أي مرشح فوق حد الاسترجاع في المصادر المعتمدة. القاعدة عند غياب المصدر: الامتناع.',
+      'No candidate above the retrieval floor was found in the approved sources. The rule when there is no source: abstain.',
+    ],
+    limits: [
+      'البحث محصور في المصادر المعتمدة، وقد يكون القول في كتب لم تُفهرس. عدم العثور ليس حكماً ببطلان القول.',
+      'The search is limited to the approved sources; the saying may be in books that are not indexed. Not finding it is not a ruling that it is false.',
+    ],
+    threshold: ACCEPT,
+    level: ['قول منسوب إلى عالم: شرح واستدلال.', 'A saying attributed to a scholar: explanation and argumentation.'],
+    origin: 'model',
+    ms: 431,
+  })
+
+  cards.disputed.explain = explain(cards.disputed, {
+    rule: [
+      'صُنّفت المسألة خلافية (المستوى C)، وسقف هذا المستوى «يحتاج مزيد تحقق» مهما كانت نتيجة المطابقة.',
+      'The matter was classified as disputed (level C); that level is capped at “needs further verification” whatever the match result.',
+    ],
+    limits: [
+      'تبيّن لا يرجّح بين الأقوال في المسائل الخلافية ولا يفتي فيها؛ يُرجع فيها إلى أهل العلم.',
+      'Tabayyun prefers no opinion on disputed matters and issues no fatwa; they are referred to scholars.',
+    ],
+    level: [
+      'مسألة فقهية يختلف فيها أهل العلم؛ وعند الشك يُختار المستوى الأشد حساسية.',
+      'A fiqh matter on which scholars differ; when in doubt the more sensitive level is chosen.',
+    ],
+    origin: 'model',
+    ms: 9,
+  })
+
+  const misQuran = quranCandidates(cards.misattributed.text_as_quoted, lang, null, 2)
+  cards.misattributed.explain = explain(cards.misattributed, {
+    rule: [
+      `النص منسوب صراحةً إلى القرآن ولم يطابق أي آية (أعلى تشابه مع المصحف ${fmt(misQuran[0].similarity)})، ووُجد بتشابه ${fmt(1)} حديثاً في المصدر.`,
+      `The text is explicitly attributed to the Quran but matches no verse (highest similarity with the Mushaf ${fmt(misQuran[0].similarity)}); it was found as a hadith in the source at similarity ${fmt(1)}.`,
+    ],
+    limits: [
+      'قورن النص بالمصحف كاملاً وبالمصادر الحديثية المعتمدة. الحكم هنا على النسبة إلى القرآن، لا على صحة الحديث.',
+      'The text was compared with the whole Mushaf and the approved hadith sources. The verdict is about the attribution to the Quran, not about the authenticity of the hadith.',
+    ],
+    threshold: ACCEPT,
+    candidates: [...hadithCandidates(cards.misattributed.text_as_quoted, hMis.id, 3), ...misQuran].sort(
+      (a, b) => b.similarity - a.similarity,
+    ),
+    level: ['نص منسوب إلى القرآن: من الأصول المستقرة.', 'A text attributed to the Quran: stable, foundational content.'],
+    ms: 263,
+  })
+
+  cards.personal.explain = explain(cards.personal, {
+    rule: [
+      'صُنّف النص حالة شخصية (المستوى D): لا تُجرى مطابقة ولا يصدر حكم، ويُحال صاحبها إلى جهة فتوى مؤهلة.',
+      'The text was classified as a personal case (level D): nothing is matched and no verdict is issued; the person is referred to a qualified fatwa body.',
+    ],
+    limits: [
+      'تبيّن لا يتحقق من الحالات الشخصية ولا يفتي فيها.',
+      'Tabayyun does not verify personal cases and issues no fatwa on them.',
+    ],
+    level: [
+      'سؤال عن واقعة تخص السائل نفسه، ويترتب عليها حكم في حقه.',
+      'A question about the asker’s own situation, with a ruling that would apply to them personally.',
+    ],
+    origin: 'model',
+    ms: 4,
+  })
+
+  const requestCandidates = hadithCandidates(cards.request.text_as_quoted, null, 3)
+  cards.request.explain = explain(cards.request, {
+    rule: [
+      `طلب إنشاء دليل: تبيّن لا يولّد نصوصاً. أعلى تشابه بين الطلب ونصوص المصادر ${fmt(requestCandidates[0].similarity)}، وهو دون العتبة ${fmt(ACCEPT)}.`,
+      `A request to produce evidence: Tabayyun generates no texts. The highest similarity between the request and the source texts is ${fmt(requestCandidates[0].similarity)}, below the threshold ${fmt(ACCEPT)}.`,
+    ],
+    limits: [
+      'عدم العثور لا يثبت أن المعنى باطل؛ يثبت فقط أن تبيّن لم يجد في المصادر المعتمدة نصاً بهذا اللفظ.',
+      'Not finding a source does not prove the meaning false; it only shows that Tabayyun found no text with this wording in the approved sources.',
+    ],
+    threshold: ACCEPT,
+    candidates: requestCandidates,
+    level: ['طلب دليل: يُعامل معاملة الاستدلال.', 'An evidence request: treated as argumentation.'],
+    ms: 305,
+  })
+  cards.request.similarity = null
+
+  if (cards.bookHadith) {
+    const c = cards.bookHadith
+    cards.bookHadith.explain = explain(c, {
+      rule: [
+        `أفضل مرشح بتشابه ${fmt(c.similarity)}، دون عتبة القبول ${fmt(ACCEPT)}، ولا يحمل مصدره حكماً عليه؛ لذلك «يحتاج مزيد تحقق».`,
+        `Best candidate at similarity ${fmt(c.similarity)}, below the acceptance threshold ${fmt(ACCEPT)}, and its source carries no grading; hence “needs further verification”.`,
+      ],
+      limits: [
+        'وُجد النص في كتاب من كتب السنة بلا حكم مرفق. غياب الحكم في هذا المصدر لا يدل على صحة الحديث ولا على ضعفه.',
+        'The text was found in a hadith collection with no grading attached. A missing grading in this source says nothing about the hadith being authentic or weak.',
+      ],
+      threshold: ACCEPT,
+      candidates: [
+        { source_name: c.source.source_name, ref: c.source.ref, url: c.source.url, similarity: c.similarity, chosen: true, grade_text: null, excerpt: excerptOf(c.source.text) },
+        ...hadithCandidates(c.text_as_quoted, null, 4),
+      ],
+      level: ['حديث منسوب صراحةً إلى النبي ﷺ: من الأصول المستقرة.', 'A hadith explicitly attributed to the Prophet: stable, foundational content.'],
+      ms: 344,
+    })
+  }
+
+  // ── F4: copy_text, then drop the helper field that only the generator needs.
+  for (const c of Object.values(cards)) {
+    c.copy_text = copyTextOf(c, lang)
+    for (const src of [c.source, ...c.other_sources]) if (src) delete src.quranRef
+  }
   return cards
 }
 
@@ -567,6 +854,10 @@ const meta = {
     },
   ],
   limits: { max_text_chars: 60000, max_upload_mb: 50, max_media_minutes: 30 },
+  // Phase 2. app_url is null on purpose: the UI then uses window.location.origin.
+  features: { share_card: true, copy: true, explain: true },
+  app_url: null,
+  data_version: DATA_VERSION,
 }
 
 const fixtures = {

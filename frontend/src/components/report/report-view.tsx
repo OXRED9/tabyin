@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { prefersReducedMotion, useIsWide } from '@/hooks/use-media-query'
 import type { VerifyState } from '@/hooks/use-verify'
+import { featuresOf } from '@/lib/features'
 import { formatSeconds, safeHref } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import { countStates, sourcesUsed } from '@/lib/report'
@@ -28,6 +29,7 @@ interface ReportViewProps {
   onRemoveOverride: (cardId: string) => void
   onExportJson: () => void
   onExportHtml: () => void
+  onCopyReport?: () => void
   onVerifyAnother: () => void
 }
 
@@ -118,6 +120,7 @@ export function ReportView({
   onRemoveOverride,
   onExportJson,
   onExportHtml,
+  onCopyReport,
   onVerifyAnother,
 }: ReportViewProps) {
   const { t, pick } = useI18n()
@@ -194,6 +197,7 @@ export function ReportView({
   )
 
   const openReferral = useCallback(() => setReferralOpen(true), [])
+  const features = useMemo(() => featuresOf(meta), [meta])
 
   const setCardOpen = useCallback((cardId: string, open: boolean) => {
     setOpenIds((current) => {
@@ -239,6 +243,8 @@ export function ReportView({
         override={overrideByCard.get(card.id)}
         source={source}
         meta={meta}
+        features={features}
+        stageSeconds={summary?.stage_seconds}
         reviewerMode={reviewerMode}
         highlighted={flashCard === card.id}
         linked={activeId === card.id}
@@ -421,7 +427,12 @@ export function ReportView({
               </>
             ) : null}
             <div className="flex flex-col gap-3 sm:flex-row">
-              <ExportMenu onExportJson={onExportJson} onExportHtml={onExportHtml} align="start">
+              <ExportMenu
+                onExportJson={onExportJson}
+                onExportHtml={onExportHtml}
+                onCopyReport={onCopyReport}
+                align="start"
+              >
                 <Button type="button" variant="gold" size="xl" className="sm:px-6">
                   <Download aria-hidden="true" />
                   {t.header.export}

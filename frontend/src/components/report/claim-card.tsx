@@ -15,7 +15,9 @@ import {
 import { memo, useId, useState } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 
+import { CopySourceButton } from '@/components/report/copy-source-button'
 import { DiffView, ExactMatch } from '@/components/report/diff-view'
+import { ExplainPanel } from '@/components/report/explain-panel'
 import { ReviewerPanel } from '@/components/report/reviewer-panel'
 import { StateBadge } from '@/components/state-badge'
 import {
@@ -36,11 +38,13 @@ import { CLAIM_ICON, STATE_STYLE, isRisky } from '@/lib/states'
 import type {
   Card,
   ClaimStub,
+  Features,
   Grade,
   Meta,
   ReviewerOverride,
   SourceInfo,
   SourceRef,
+  StageSeconds,
 } from '@/lib/types'
 import { timestampLink } from '@/lib/video'
 import { cn } from '@/lib/utils'
@@ -307,6 +311,9 @@ export interface ClaimCardProps {
   override: ReviewerOverride | undefined
   source: SourceInfo | null
   meta: Meta | null
+  features: Features
+  /** Per-stage timing from the summary, once it has arrived (shown in the explain panel). */
+  stageSeconds: StageSeconds | undefined
   reviewerMode: boolean
   highlighted: boolean
   linked: boolean
@@ -324,6 +331,8 @@ export const ClaimCard = memo(function ClaimCard({
   override,
   source,
   meta,
+  features,
+  stageSeconds,
   reviewerMode,
   highlighted,
   linked,
@@ -348,6 +357,9 @@ export const ClaimCard = memo(function ClaimCard({
   const showDiff = hasDifferences(card.diff)
   const verse = meta?.abstention_verse ?? null
   const showReferral = card.referral || card.personal_case || card.disagreement_noted || state === 'not_found'
+  const copyable = features.copy && card.copy_text ? card.copy_text : null
+  // F5 replaces the old "technical details" item; that item stays as the fallback.
+  const explain = features.explain && card.explain ? card.explain : null
 
   // One line under the quoted text: reference first, then how it matched and how it is graded.
   const referenceBits: string[] = []
@@ -532,6 +544,11 @@ export const ClaimCard = memo(function ClaimCard({
                   />
                 </Button>
               </CollapsibleTrigger>
+              {copyable ? (
+                <span className="ms-auto flex flex-wrap items-center gap-2">
+                  <CopySourceButton text={copyable} kind={card.source?.kind ?? null} />
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
@@ -608,7 +625,19 @@ export const ClaimCard = memo(function ClaimCard({
               </Callout>
             ) : null}
 
-            <Accordion type="multiple" className="rounded-lg border px-3">
+            {explain ? (
+              <ExplainPanel card={card} explain={explain} stageSeconds={stageSeconds} override={override} />
+            ) : null}
+
+            <Accordion
+              type="multiple"
+              className={cn(
+                'rounded-lg border px-3',
+                // With the explain panel shown, a card with no commentary and no other sources
+                // has nothing left for this group.
+                explain && !card.source?.explanation && card.other_sources.length === 0 && 'hidden',
+              )}
+            >
               {card.source?.explanation ? (
                 <AccordionItem value="explanation">
                   <AccordionTrigger>
@@ -634,6 +663,7 @@ export const ClaimCard = memo(function ClaimCard({
                   </AccordionContent>
                 </AccordionItem>
               ) : null}
+              {explain ? null : (
               <AccordionItem value="technical">
                 <AccordionTrigger>{t.card.technical}</AccordionTrigger>
                 <AccordionContent>
@@ -657,6 +687,7 @@ export const ClaimCard = memo(function ClaimCard({
                   </dl>
                 </AccordionContent>
               </AccordionItem>
+              )}
             </Accordion>
 
             {reviewerMode ? (
