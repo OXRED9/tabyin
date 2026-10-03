@@ -1,6 +1,6 @@
 # Evaluation results
 
-Generated 2026-10-03T14:56:32+00:00 · 79 claims (0 reviewed by the Sharia reviewer so far) · 3 runs per system.
+Generated 2026-10-03T15:12:50+00:00 · 79 claims (0 reviewed by the Sharia reviewer so far) · 3 runs per system.
 
 | System | Accuracy | Fabricated attributions | Wrongly endorsed | Correct abstention | Seconds / claim |
 |---|---|---|---|---|---|

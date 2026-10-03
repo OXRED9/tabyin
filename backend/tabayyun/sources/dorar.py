@@ -28,6 +28,7 @@ from .cache import get_cache
 log = logging.getLogger("tabayyun.dorar")
 API_URL = "https://dorar.net/dorar_api.json"
 SOURCE_NAME = "الدرر السنية — الموسوعة الحديثية"
+SOURCE_NAME_EN = "Dorar.net — Hadith Encyclopedia"
 _COOLDOWN = 600.0
 _LABELS = {
     "الراوي": "narrator",

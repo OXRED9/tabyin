@@ -26,6 +26,7 @@ from .hadith_books import BOOKS, DATASET_URL
 HADEETHENC_NAME_AR = "موسوعة الأحاديث النبوية (HadeethEnc.com)"
 HADEETHENC_NAME_EN = "Encyclopedia of Translated Prophetic Hadiths (HadeethEnc.com)"
 BOOKS_NAME_AR = "كتب السنة — بيانات Open-Hadith-Data"
+BOOKS_NAME_EN = "Hadith collections — Open-Hadith-Data"
 
 _GRAM = 4
 _MAX_POSTINGS = 40  # 4-grams found in more narrations than this are formulas, not wording
@@ -272,4 +273,4 @@ def get_hadith_index() -> HadithIndex:
     return HadithIndex()
 
 
-__all__ = ["HadithCandidate", "HadithIndex", "get_hadith_index", "DATASET_URL", "HADEETHENC_NAME_AR", "HADEETHENC_NAME_EN"]
+__all__ = ["HadithCandidate", "HadithIndex", "get_hadith_index", "DATASET_URL", "HADEETHENC_NAME_AR", "HADEETHENC_NAME_EN", "BOOKS_NAME_AR", "BOOKS_NAME_EN"]

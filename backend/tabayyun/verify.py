@@ -42,8 +42,9 @@ from .schemas import (
 )
 from .sources import quranenc
 from .sources.dorar import SOURCE_NAME as DORAR_NAME
+from .sources.dorar import SOURCE_NAME_EN as DORAR_NAME_EN
 from .sources.dorar import DorarClient, DorarHit
-from .sources.hadith import HADEETHENC_NAME_AR, HADEETHENC_NAME_EN, HadithCandidate, HadithIndex, content_words
+from .sources.hadith import BOOKS_NAME_EN, HADEETHENC_NAME_AR, HADEETHENC_NAME_EN, HadithCandidate, HadithIndex, content_words
 from .sources.hadith_books import BOOKS
 from .sources.quran import QuranIndex, QuranMatch
 from .textalign import aligned_words, best_span, word_diff, words_with_offsets
@@ -245,34 +246,35 @@ async def verify_ayah(claim: RawClaim, cid: str, index: int, ctx: Context) -> Ca
 
 
 def _hadith_source(c: HadithCandidate, ctx: Context) -> SourceRef:
+    en = ctx.ui_lang == "en"
     translation = None
-    if c.en and (ctx.ui_lang == "en" or arabic_ratio(c.matched_span_text or "") < 0.5):
+    if c.en and (en or arabic_ratio(c.matched_span_text or "") < 0.5):
         translation = Translation(lang="en", text=c.en["hadeeth"], source_name=HADEETHENC_NAME_EN, source_url=c.en["url"])
-    return SourceRef(
-        kind="hadith",
-        source_name=c.source_name,
-        text=c.text,
-        ref=c.ref,
-        url=c.url,
-        attribution=c.attribution,
-        explanation=c.explanation,
-        translation=translation,
-    )
+    ref, url, name = c.ref, c.url, c.source_name
+    if en and c.corpus == "hadeethenc":
+        name = HADEETHENC_NAME_EN
+        if c.en:  # the source's own English takhrij line and page, verbatim
+            ref, url = (c.en.get("attribution") or "").strip() or ref, c.en.get("url") or url
+    elif en and c.corpus == "books" and c.book:
+        name, ref = BOOKS_NAME_EN, f"{BOOKS[c.book]['name_en']}, no. {c.number} (Open-Hadith-Data numbering)"
+    return SourceRef(kind="hadith", source_name=name, text=c.text, ref=ref, url=url, attribution=c.attribution, explanation=c.explanation, translation=translation)
 
 
-def _dorar_source(h: DorarHit) -> SourceRef:
+def _dorar_source(h: DorarHit, ctx: Context) -> SourceRef:
     parts = [f"الراوي: {h.narrator}" if h.narrator else "", f"المصدر: {h.book}" if h.book else "", f"الصفحة أو الرقم: {h.number}" if h.number else ""]
-    return SourceRef(kind="hadith", source_name=DORAR_NAME, text=h.text, ref=" · ".join(p for p in parts if p) or DORAR_NAME, url=h.url)
+    name = DORAR_NAME_EN if ctx.ui_lang == "en" else DORAR_NAME
+    return SourceRef(kind="hadith", source_name=name, text=h.text, ref=" · ".join(p for p in parts if p) or DORAR_NAME, url=h.url)
 
 
 def _pick_primary(strong: list[HadithCandidate]) -> HadithCandidate:
+    """Among the best-matching candidates prefer HadeethEnc (it carries a grading and an explanation),
+    and among its records the one with the most concise takhrij line; then the two Sahihs."""
     top = strong[0].similarity
     near_top = [c for c in strong if c.similarity >= top - 0.03]
-    for pred in (lambda c: c.corpus == "hadeethenc", lambda c: c.in_sahihayn_book):
-        for c in near_top:
-            if pred(c):
-                return c
-    return strong[0]
+    curated = [c for c in near_top if c.corpus == "hadeethenc"]
+    if curated:
+        return min(curated, key=lambda c: (len(c.attribution or "") > 40, -c.similarity, len(c.attribution or "")))
+    return next((c for c in near_top if c.in_sahihayn_book), strong[0])
 
 
 async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card:
@@ -323,7 +325,7 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
     grades: list[Grade] = []
     for c in strong:
         if c.corpus == "hadeethenc" and c.grade_text:
-            g = Grade(text=c.grade_text, source_name=HADEETHENC_NAME_AR, source_url=c.url)
+            g = Grade(text=c.grade_text, source_name=HADEETHENC_NAME_EN if ctx.ui_lang == "en" else HADEETHENC_NAME_AR, source_url=c.url)
             if all((g.text, g.source_name) != (x.text, x.source_name) for x in grades):
                 grades.append(g)
     # A Dorar grading belongs to one chain. When our source names the narrating Companion, gradings
@@ -335,7 +337,7 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
             book = " — ".join(p for p in (hit.book, hit.number) if p) or None
             if hit.narrator:
                 book = f"الراوي: {hit.narrator}" + (f" · {book}" if book else "")
-            g = Grade(text=hit.grade, scholar=hit.scholar, book=book, source_name=DORAR_NAME, source_url=hit.url)
+            g = Grade(text=hit.grade, scholar=hit.scholar, book=book, source_name=DORAR_NAME_EN if ctx.ui_lang == "en" else DORAR_NAME, source_url=hit.url)
             if all((g.text, g.scholar, g.book) != (x.text, x.scholar, x.book) for x in grades):
                 grades.append(g)
     grades = grades[:6]
@@ -376,7 +378,7 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
             if len(others) >= 4:
                 break
     elif dorar_strong:
-        source, diff = _dorar_source(dorar_strong[0][1]), dorar_strong[0][2]
+        source, diff = _dorar_source(dorar_strong[0][1], ctx), dorar_strong[0][2]
     elif best is not None:  # partial similarity only: closest text, clearly not asserted
         source, diff = _hadith_source(best, ctx), best.diff
 
