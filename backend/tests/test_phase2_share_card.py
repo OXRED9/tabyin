@@ -235,16 +235,19 @@ def test_not_found_shows_the_abstention_sentence_and_verse_and_no_source(report)
 def test_a_personal_case_gets_no_source_and_is_referred(report):
     card = by(report, personal_case=True)
     drawn = draw(card)
+    # the reason is the sentence under the state (said once); the referral stands in the source's place
     assert names(drawn) == ["state", "state-glyph", "verdict", "claim-label", "claim", "referral", "action"]
-    assert text_of(drawn, "verdict") == card.note_ar  # the reason
-    assert text_of(drawn, "referral") == TEXT["referral"][0]  # in the source's place
+    assert text_of(drawn, "verdict") == card.note_ar == TEXT["personal_case"][0]
+    assert text_of(drawn, "referral") == TEXT["referral"][0]
     assert text_of(drawn, "action") == ACTION_SENTENCE["refer_to_scholars"][0]
     # even if a source were attached to a personal case, it is not drawn
     forged = card.model_copy(update={"source": by(report, claim_type="hadith").source})
     assert draw(forged).block("source") is None
-    # a claim that needs review and has no source shows its reason and the referral, nothing quoted
-    plain = card.model_copy(update={"personal_case": False, "content_level": "C", "disagreement_noted": True})
-    assert names(draw(plain)) == names(drawn)
+    # a disputed matter with no source: its reason, then the referral — nothing quoted, no preference
+    disputed = card.model_copy(update={"personal_case": False, "content_level": "C", "disagreement_noted": True, "note_ar": "", "note_en": ""})
+    drawn = draw(disputed)
+    assert names(drawn) == ["state", "state-glyph", "claim-label", "claim", "reason-1", "referral", "action"]
+    assert text_of(drawn, "reason-1") == TEXT["disagreement"][0]
 
 
 def test_nothing_about_the_user_is_drawn(report):
@@ -368,7 +371,7 @@ def assert_inside_the_frame(drawn: Drawn, theme: str = "light") -> None:
     assert rows, "an empty card"
     for b in rows:
         assert top <= b.box[1] and b.box[3] <= bottom, f"{b.name} leaves the body ({top}–{bottom}): {b.box}"
-    for a, b in zip(rows, rows[1:]):
+    for a, b in zip(rows, rows[1:], strict=False):
         same_row = a.box[1] <= b.box[1] and b.box[3] <= a.box[3] or b.box[1] <= a.box[1] and a.box[3] <= b.box[3]
         assert same_row or a.box[3] <= b.box[1], f"{a.name} and {b.name} overlap: {a.box} {b.box}"
     paper, rule = rgb(THEMES[theme]["paper"]), rgb(THEMES[theme]["rule"])
@@ -430,8 +433,10 @@ def test_the_summary_sentence_has_a_clause_for_each_state_present():
     for en in (False, True):
         head, clauses = summary_parts(9, {"supported": 3, "supported_with_note": 1, "needs_review": 2, "not_found": 2, "contradicted": 1}, en)
         assert [s for s, _ in clauses] == ["supported", "supported_with_note", "needs_review", "not_found", "contradicted"]
-        assert head.endswith(":") and all(words.endswith("," if en else "،") for _s, words in clauses[:-1])
-        assert clauses[-1][1].startswith("and " if en else "و") and not clauses[-1][1].endswith(("،", ","))
+        joiner = "and " if en else "و"
+        assert head.endswith(":") and clauses[-1][1].startswith(joiner)
+        # the joiner belongs to the last clause only: the same count elsewhere reads without it
+        assert clauses[1][1].split()[0] == clauses[-1][1][len(joiner) :].split()[0]
         # one state only: no list, one clause that says so
         for total in (1, 2, 5):
             head, clauses = summary_parts(total, {"supported": total}, en)
@@ -448,19 +453,22 @@ def test_summary_card(report, size, theme, lang):
     drawn = draw_summary_card(summary, size=size, theme=theme, lang=lang, app_url=URL)
     assert drawn.image.size == SIZES[size]
     head, clauses = summary_parts(summary.total, {s.value: n for s, n in summary.by_state.items()}, lang == "en")
-    assert text_of(drawn, "summary-head") == head and text_of(drawn, "label") == TEXT["summary_title"][lang == "en"]
-    assert len(clauses) == len([n for n in summary.by_state.values() if n])
-    for state, words in clauses:
-        block = drawn.block(f"summary-{state}")
-        assert block.text == words and drawn.block(f"summary-glyph-{state}") is not None
-        assert rgb(STATE_TOKENS[theme][state][1]) in colours(drawn.image, block.ink)  # each clause in its state's ink
+    assert len(clauses) == len([n for n in summary.by_state.values() if n]) > 1
+    # one sentence: the head, then the clauses with a comma between them
+    comma = ", " if lang == "en" else "، "
+    assert text_of(drawn, "summary") == f"{head} " + comma.join(words for _state, words in clauses)
+    assert text_of(drawn, "label") == TEXT["summary_title"][lang == "en"]
+    seen = colours(drawn.image, drawn.block("summary").ink)
+    for state, _words in clauses:
+        assert drawn.block(f"ring-{state}") is not None  # its ring before each clause
+        assert rgb(STATE_TOKENS[theme][state][1]) in seen  # and each clause in its state's ink
     assert drawn.block("claim") is None  # no claim text on a summary
     assert_inside_the_frame(drawn, theme)
     assert png(render_summary_card(summary, size=size, theme=theme, lang=lang, app_url=URL)).size == SIZES[size]
 
 
 def test_a_summary_of_every_state_with_large_counts_stays_inside_the_frame():
-    summary = Summary(total=2468, by_state={s: n for s, n in zip(EvidenceState, (1200, 345, 678, 123, 122))}, mode="full", elapsed_seconds=1.0)
+    summary = Summary(total=2468, by_state=dict(zip(EvidenceState, (1200, 345, 678, 123, 122), strict=True)), mode="full", elapsed_seconds=1.0)
     for size in SIZES:
         for lang in ("ar", "en"):
             assert_inside_the_frame(draw_summary_card(summary, size=size, theme="light", lang=lang, app_url=URL, human_reviewed=True))

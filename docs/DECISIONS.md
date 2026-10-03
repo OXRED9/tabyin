@@ -274,11 +274,12 @@ touch how a religious text is shown and wait for Sulaiman.
     state set by a person; the card shows the state, «حالة معدَّلة بمراجعة بشرية» and the action that
     belongs to the reviewer's state. A reviewer's «لم يُعثر على مصدر موثوق» also hides the source
     the engine had matched (the abstention stands in its place).
-68. **A claim with nothing to quote shows the referral in the source's place.** For `needs_review`
-    without a source and for levels C and D the reason is already the sentence under the state (the
-    rule's note), so it is not repeated; between the hairlines stands «تبيّن لا يفتي ولا يرجّح؛ يُرجع
-    في هذه المسألة إلى أهل العلم.», then the action. A personal case never shows a source, even if
-    one is attached to the card.
+68. **A claim with nothing to quote shows its reason and the referral in the source's place.** For
+    `needs_review` without a source and for levels C and D, between the hairlines stand the reason
+    («هذه حالة شخصية…» or «مسألة خلافية: …») and «تبيّن لا يفتي ولا يرجّح؛ يُرجع في هذه المسألة إلى
+    أهل العلم.», then the action. The reason is not said twice: when it is already the sentence
+    under the state (a personal case's note is that very sentence), only the referral stands there.
+    A personal case never shows a source, even if one is attached to the card.
 69. **Only replaced words are underlined in the source's wording** — the `replace` steps of
     `card.diff`, as the page's collation marks them. A word the quotation left out from its middle is
     not marked (open: it could be). `card.diff` covers the matched span only and, for a verse, may
@@ -288,5 +289,5 @@ touch how a religious text is shown and wait for Sulaiman.
     0.86 of the portrait's (the claim's and the source's ranges are the same on both); a narration
     that must be cut starts at the quoted part when its opening would push that part off the card;
     the claim stays whole while at least one line of the source's wording fits, and gives up lines
-    after that. The summary card sets the sentence one clause to a line, and does not draw the title
-    of what was checked: `ShareCardRequest` does not carry it.
+    after that. The summary card does not draw the title of what was checked: `ShareCardRequest`
+    does not carry it.

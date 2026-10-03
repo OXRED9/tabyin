@@ -84,7 +84,9 @@ TEXT = {
     "no_grading": ("الحكم غير متاح من المصدر", "Grading not available from the source"),
     "one_grading": ("حكم واحد في المصدر", "one grading in the source"),
     "abstain": ("لا نُصدر حكماً بلا مصدر، ولا نولّد بديلاً.", "We issue no verdict without a source, and generate no substitute."),
-    # Stands in the source's place when nothing is quoted (no source, level C or D) — the client's `share.referral`.
+    # In the source's place when nothing is quoted (no source, level C or D): the reason, then the referral.
+    "personal_case": ("هذه حالة شخصية تستوجب فتوى من جهة مؤهلة", "This is a personal case that requires a fatwa from a qualified body"),
+    "disagreement": ("مسألة خلافية: يعرض تبيّن ما ورد في المصادر كما هو، دون ترجيح.", "A disputed matter: Tabayyun shows what the sources say as is, with no preference."),
     "referral": ("تبيّن لا يفتي ولا يرجّح؛ يُرجع في هذه المسألة إلى أهل العلم.", "Tabayyun issues no fatwa and prefers no opinion; this matter is for qualified scholars."),
     "overridden": ("حالة معدَّلة بمراجعة بشرية", "State changed by human review"),
     "check": ("تحقّق بنفسك على تبيّن", "Check it yourself on Tabayyun"),
@@ -193,6 +195,7 @@ class _W:
     ink: _Ink
     tie: bool = False
     space: float = 1.0  # what separates it from the word before it: 1 a space, 0 nothing, between: a thin gap
+    ring: str | None = None  # not a word: the ring glyph of this state, set in the line
 
 
 def _words(text: str, ink: _Ink) -> list[_W]:
@@ -203,14 +206,22 @@ def _lead(word: _W, rtl: bool) -> float:
     return _width(" ", word.ink.face, word.ink.size, rtl) * word.space
 
 
+def _ring_side(ink: _Ink) -> int:
+    return round(ink.size * 0.9)
+
+
+def _word_width(word: _W, rtl: bool) -> float:
+    return _ring_side(word.ink) if word.ring else _width(word.text, word.ink.face, word.ink.size, rtl)
+
+
 def _line_width(line: list[_W], rtl: bool) -> float:
-    return sum(_width(w.text, w.ink.face, w.ink.size, rtl) + (_lead(w, rtl) if i else 0.0) for i, w in enumerate(line))
+    return sum(_word_width(w, rtl) + (_lead(w, rtl) if i else 0.0) for i, w in enumerate(line))
 
 
 def _split_long(word: _W, max_width: float, rtl: bool) -> list[_W]:
     """A single word wider than the measure (a pasted address, a stretched word) is broken by
     characters, so that nothing can run out of the frame."""
-    if _width(word.text, word.ink.face, word.ink.size, rtl) <= max_width:
+    if _word_width(word, rtl) <= max_width:
         return [word]
     pieces: list[_W] = []
     rest = word.text
@@ -305,16 +316,17 @@ class _Chunk:
     ink: _Ink
     lead: float  # the space before it, in reading order
     index: int
+    ring: str | None = None
 
 
 def _chunks(line: list[_W], rtl: bool) -> list[_Chunk]:
     """Consecutive words set the same way are shaped as one string."""
     out: list[_Chunk] = []
     for i, word in enumerate(line):
-        if out and out[-1].ink == word.ink and word.space in (0, 1):
+        if out and not word.ring and not out[-1].ring and out[-1].ink == word.ink and word.space in (0, 1):
             out[-1].text += (" " if word.space else "") + word.text
         else:
-            out.append(_Chunk(word.text, word.ink, _lead(word, rtl) if i else 0.0, len(out)))
+            out.append(_Chunk(word.text, word.ink, _lead(word, rtl) if i else 0.0, len(out), word.ring))
     return out
 
 
@@ -418,12 +430,10 @@ class _Item:
 
     height: int
     draw: Callable[[int], None] | None = None
-    stretch: int = 0  # a gap may grow by this much when the card has room to spare
-    spring: float = 0.0  # its share of the room that is still left after that
 
 
-def _gap(height: int, stretch: int = 0, spring: float = 0.0) -> _Item:
-    return _Item(height, None, stretch, spring)
+def _gap(height: int) -> _Item:
+    return _Item(height)
 
 
 class _Sheet:
@@ -471,6 +481,13 @@ class _Sheet:
                 later = chunk if chunk.index > previous.index else previous
                 gap = later.lead if abs(chunk.index - previous.index) == 1 else _width(" ", chunk.ink.face, chunk.ink.size, rtl)
                 x += -gap if rtl else gap
+            if chunk.ring:  # sits on the line as the page sets it: a little below the baseline
+                side = _ring_side(chunk.ink)
+                left, top = round(x - side if rtl else x), y + round(chunk.ink.size * 0.14) - side
+                self.glyph(f"ring-{chunk.ring}", chunk.ring, left, top, side)
+                ink = _union(ink, (left, top, left + side, top + side))
+                x, previous = (x - side if rtl else x + side), chunk
+                continue
             direction = _direction(chunk.text) or ("rtl" if rtl else "ltr")
             font = _font(chunk.ink.face, chunk.ink.size)
             w = font.getlength(chunk.text, **_shaping(direction))
@@ -527,7 +544,7 @@ class _Sheet:
     def header(self, label: str) -> int:
         """Logotype in Naskh at the starting edge, the card's label in Plex at the other; a hairline
         under them. Returns the y where the body starts."""
-        base = FRAME + self.px(74)
+        base = FRAME + HAIRLINE + self.px(84)
         brand = _W(self.say("brand"), self.ink("naskh", 58))
         ink, end = self._line([brand], self.rtl, base)
         self.blocks.append(Block("logotype", ink, ink, brand.text))
@@ -538,25 +555,25 @@ class _Sheet:
         self.draw.text((x, base), text, fill=tag.fill, **kw)
         box = self.draw.textbbox((x, base), text, **kw)
         self.blocks.append(Block("label", _union(None, box), _union(None, box), text))
-        rule = base + self.px(28)
+        rule = base + self.px(39)
         self.hairline(rule)
-        return rule + HAIRLINE + self.px(30)
+        return rule + HAIRLINE + self.px(24)
 
     def footer(self, app_url: str) -> int:
         """Hairline; «تحقّق بنفسك على تبيّن» and the address beside its QR code; the transparency
         line. Returns the y where the body must end."""
-        bottom = self.H - FRAME - self.px(26)
+        bottom = self.H - FRAME - HAIRLINE - self.px(30)
         note = self.ink("plex", 22, "quiet")
         text = self.say("disclaimer")
         while note.size > 16 and _width(text, note.face, note.size, self.rtl) > self.width:
             note = replace(note, size=note.size - 1)
-        line = _para(_words(text, note), self.width, self.rtl, strut=(note.face, note.size), leading=1.45, max_lines=2)
+        line = _para(_words(text, note), self.width, self.rtl, strut=(note.face, note.size), leading=1.5, max_lines=2)
         top = bottom - line.height
         self.para("transparency", line, top)
 
         side = self.px(150)
         code = _qr(app_url, side, THEMES["light"]["ink"], self.dark)
-        qr_top = top - self.px(12) - side
+        qr_top = top - self.px(14) - side
         qr_x = self.left if self.rtl else self.right - code.width
         qr_y = qr_top + (side - code.height) // 2
         self.img.paste(code, (qr_x, qr_y))
@@ -579,24 +596,17 @@ class _Sheet:
         box = _union(None, self.draw.textbbox((x, base), shown, **kw))
         self.blocks.append(Block("address", (box[0], y, box[2], y + round(address.size * 1.5)), box, shown))
 
-        rule = qr_top - self.px(20) - HAIRLINE
+        rule = qr_top - self.px(22) - HAIRLINE
         self.hairline(rule)
-        return rule - self.px(18)
+        return rule - self.px(16)
 
-    def place(self, items: list[_Item], top: int, bottom: int) -> None:
-        """Draw the items down the body. Room to spare goes first into the gaps that may stretch,
-        then to the springs; without a spring it stays as paper above the footer."""
-        spare = max(0, bottom - top - sum(i.height for i in items))
-        stretch = sum(i.stretch for i in items)
-        share = min(1.0, spare / stretch) if stretch else 0.0
-        springs = sum(i.spring for i in items)
-        rest = (spare - stretch * share) / springs if springs else 0.0
-        y, extra = top, 0.0
+    def place(self, items: list[_Item], top: int) -> None:
+        """Draw the items down the body, one after another; room to spare stays as paper above the footer."""
+        y = top
         for it in items:
             if it.draw is not None:
-                it.draw(y + int(extra))
+                it.draw(y)
             y += it.height
-            extra += it.stretch * share + it.spring * rest
 
     def done(self, fit: dict | None = None) -> Drawn:
         return Drawn(self.img, self.blocks, self.frame, fit or {})
@@ -775,6 +785,9 @@ class _Claim:
             self.mode = "refer"
             self.verse = False
             self.words, self.span, self.marks = [], None, set()
+            said = self.verdict.rstrip(". ")
+            reasons = [sheet.say(key) for key, applies in (("personal_case", personal), ("disagreement", card.disagreement_noted)) if applies]
+            self.reasons = [r for r in reasons if r.rstrip(". ") != said]  # not twice, when it is already the sentence under the state
         else:
             self.mode = "source"
             self.verse = card.source.kind == "quran"
@@ -802,7 +815,7 @@ class _Claim:
 
         items = [_Item(size, draw)]
         if self.overridden:  # a person changed the state: said right after it, and no name
-            items += [_gap(sh.px(6)), sh.item("review-mark", sh.tool(sh.say("overridden"), sh.ink("plex", 26, "quiet"), max_lines=1))]
+            items += [_gap(sh.px(2)), sh.item("review-mark", sh.tool(sh.say("overridden"), sh.ink("plex", 26, "quiet"), max_lines=1))]
         return items
 
     def _wording(self, a: int, b: int, size: int) -> list[_W]:
@@ -838,7 +851,8 @@ class _Claim:
         comma = "," if sh.en else "،"
 
         def build(tokens: list[_W]) -> _Para:
-            return _para(tokens, sh.width, sh.reads_rtl(" ".join(w.text for w in tokens)), strut=("naskh", sh.px(36)), leading=1.6)
+            strut = ("naskh", sh.px(36)) if any(w.ink.face == "naskh" for w in tokens) else ("plex", sh.px(30))
+            return _para(tokens, sh.width, sh.reads_rtl(" ".join(w.text for w in tokens)), strut=strut, leading=1.6)
 
         ref_rtl = sh.reads_rtl(src.ref)
         lines, _cut = _clip(_wrap(_words(src.ref, ref), sh.width, ref_rtl), 2, sh.width, ref_rtl)
@@ -877,9 +891,9 @@ class _Claim:
 
         items = self._state_row()
         if self.verdict:
-            verdict = sh.tool(self.verdict, sh.ink("plex", 34), max_lines=verdict_lines or (3 if sh.k == 1.0 else 2))
+            verdict = sh.tool(self.verdict, sh.ink("plex", 34), leading=1.6, max_lines=verdict_lines or (3 if sh.k == 1.0 else 2))
             facts["verdict_cut"] = verdict.cut
-            items += [_gap(sh.px(12)), sh.item("verdict", verdict)]
+            items += [_gap(sh.px(10)), sh.item("verdict", verdict)]
 
         claim = _para(
             _words(self.claim, _Ink("naskh", claim_size, self.state_ink)), sh.width, self.claim_rtl,
@@ -887,7 +901,7 @@ class _Claim:
         )  # fmt: skip
         facts["claim_cut"] = self.claim_trimmed or claim.cut
         facts["claim_lines"] = len(claim.lines)
-        items += [_gap(sh.px(26), sh.px(30)), sh.item("claim-label", sh.tool(sh.say("claim"), label, leading=1.45)), sh.item("claim", claim)]
+        items += [_gap(sh.px(22)), sh.item("claim-label", sh.tool(sh.say("claim"), label)), sh.item("claim", claim)]
 
         body: _Para | None = None
         if isinstance(wording, tuple):
@@ -895,23 +909,27 @@ class _Claim:
             facts["source_lines"] = len(body.lines)
         elif isinstance(wording, str):
             body = sh.tool(sh.say(wording), sh.ink("plex", 28, "quiet"))
-        ruled = [_gap(sh.px(8)), _Item(HAIRLINE, sh.hairline), _gap(sh.px(6))]
+
+        def ruled(inside: list[_Item], pad: int) -> list[_Item]:
+            rule = _Item(HAIRLINE, sh.hairline)
+            return [rule, _gap(sh.px(pad)), *inside, _gap(sh.px(pad)), rule]
 
         if self.mode == "source":
-            items += [_gap(sh.px(22), sh.px(26)), sh.item("source-label", sh.tool(sh.say("source"), label, leading=1.45))]
+            items += [_gap(sh.px(20)), sh.item("source-label", sh.tool(sh.say("source"), label)), _gap(sh.px(6))]
             if body is not None:
-                items += ruled + [sh.item("source" if isinstance(wording, tuple) else "source-note", body), _gap(sh.px(6)), _Item(HAIRLINE, sh.hairline)]
+                items += ruled([sh.item("source" if isinstance(wording, tuple) else "source-note", body)], 6)
             if self.takhrij is not None:
                 items += [_gap(sh.px(12)), sh.item("takhrij", self.takhrij)]
-        elif self.mode == "abstain":
-            items += [_gap(sh.px(22), sh.px(26)), sh.item("abstention", sh.tool(sh.say("abstain"), sh.ink("plex", 30)))]
+        elif self.mode == "abstain":  # the tool abstains, and says so in a verse's words
+            inside = [sh.item("abstention", sh.tool(sh.say("abstain"), sh.ink("plex", 30), leading=1.6))]
             if body is not None:
-                items += ruled + [sh.item("abstention-verse", body), _gap(sh.px(6)), _Item(HAIRLINE, sh.hairline)]
-                items += [_gap(sh.px(10)), sh.item("abstention-ref", sh.tool(self.verse_ref, label, leading=1.45, max_lines=1))]
-        else:  # "refer": nothing is quoted — the reason is the sentence under the state; the referral stands here
-            items += [_gap(sh.px(22), sh.px(26)), _Item(HAIRLINE, sh.hairline), _gap(sh.px(14))]
-            items += [sh.item("referral", sh.tool(sh.say("referral"), sh.ink("plex", 30), max_lines=3)), _gap(sh.px(14)), _Item(HAIRLINE, sh.hairline)]
-        items += [_gap(sh.px(22), sh.px(26), spring=1), sh.item("action", sh.tool(self.action, sh.ink("plex600", 30), max_lines=2))]
+                inside += [sh.item("abstention-verse", body), sh.item("abstention-ref", sh.tool(self.verse_ref, label, max_lines=1))]
+            items += [_gap(sh.px(20)), *ruled(inside, 10)]
+        else:  # nothing is quoted: the reason and the referral stand where the source would
+            inside = [sh.item(f"reason-{i + 1}", sh.tool(reason, sh.ink("plex", 30), leading=1.6, max_lines=3)) for i, reason in enumerate(self.reasons)]
+            inside.append(sh.item("referral", sh.tool(sh.say("referral"), sh.ink("plex", 30), leading=1.6, max_lines=3)))
+            items += [_gap(sh.px(20)), *ruled(inside, 10)]
+        items += [_gap(sh.px(12)), sh.item("action", sh.tool(self.action, sh.ink("plex600", 30), leading=1.6, max_lines=2))]
         return items, facts
 
     # ---- fitting
@@ -1012,7 +1030,7 @@ def draw_claim_card(card: Card, *, size: str, theme: str, lang: str, app_url: st
     bottom = sheet.footer(app_url)
     claim = _Claim(sheet, card, state, bool(override_state and override_state != card.state), abstention_verse)
     items, facts = claim.fit(bottom - top)
-    sheet.place(items, top, bottom)
+    sheet.place(items, top)
     return sheet.done({**facts, "body": (top, bottom)})
 
 
@@ -1058,7 +1076,7 @@ def _total(n: int, en: bool) -> str:
 
 def summary_parts(total: int, counts: dict[str, int], en: bool) -> tuple[str, list[tuple[str, str]]]:
     """The summary sentence as its head and its clauses, one per state present: (state, words).
-    Joined in order they read as the page's sentence («سبعة استشهادات: أربعة مؤيَّدة، … وواحد بلا مصدر»)."""
+    Joined with commas they read as the page's sentence («سبعة استشهادات: أربعة مؤيَّدة، … وواحد بلا مصدر»)."""
     present = [s for s in STATES_FOR_SUMMARY if counts.get(s, 0) > 0]
     head = _total(total, en)
     if total == 0 or not present:
@@ -1072,7 +1090,6 @@ def summary_parts(total: int, counts: dict[str, int], en: bool) -> tuple[str, li
         if total == 1:
             return head, [(state, alone)]
         return head + "،", [(state, f"كلاهما {alone}" if total == 2 else f"كلها {all_of}")]
-    comma, last_joiner = (",", "and ") if en else ("،", "و")
     clauses: list[tuple[str, str]] = []
     for i, state in enumerate(present):
         n = counts[state]
@@ -1080,8 +1097,8 @@ def summary_parts(total: int, counts: dict[str, int], en: bool) -> tuple[str, li
             form = _EN_FORMS[state][0 if n == 1 else 1]
         else:
             form = _AR_FORMS[state][0 if n == 1 else 1 if n == 2 else 2]
-        final = i == len(present) - 1
-        clauses.append((state, (last_joiner if final else "") + f"{_number(n, en)} {form}" + ("" if final else comma)))
+        joiner = ("and " if en else "و") if i == len(present) - 1 else ""
+        clauses.append((state, f"{joiner}{_number(n, en)} {form}"))
     return head + ":", clauses
 
 
@@ -1091,26 +1108,19 @@ def draw_summary_card(summary: Summary, *, size: str, theme: str, lang: str, app
     bottom = sh.footer(app_url)
     counts = {state.value: n for state, n in summary.by_state.items()}
     head, clauses = summary_parts(summary.total, counts, sh.en)
-    type_size, glyph, gap = sh.px(44), sh.px(46), sh.px(18)
-    row = round(type_size * 1.65)
-
-    items = [_gap(0, spring=2), sh.item("summary-head", sh.tool(head, sh.ink("plex600", 44), leading=1.65))]
-    for state, words in clauses:
-        ink = _Ink("plex600", type_size, sh.states[state][1])
-        clause = _para(_words(words, ink), sh.width - glyph - gap, sh.rtl, strut=("plex600", type_size), leading=1.65, max_lines=1)
-
-        def draw(y: int, state: str = state, clause: _Para = clause) -> None:
-            x = sh.right - glyph if sh.rtl else sh.left
-            sh.glyph(f"summary-glyph-{state}", state, x, y + (row - glyph) // 2, glyph)
-            start = x - gap if sh.rtl else x + glyph + gap
-            ink_box, end = sh._line(clause.lines[0], sh.rtl, y + clause.baseline, start)
-            sh.blocks.append(Block(f"summary-{state}", (math.floor(min(start, end)), y, math.ceil(max(start, end)), y + row), ink_box, clause.text))
-
-        items.append(_Item(row, draw))
+    # A sentence with more than three clauses is set a step smaller on the square card.
+    ink = sh.ink("plex600", 38 if size == "square" and len(clauses) > 3 else 44)
+    words = _words(head, ink)
+    for i, (state, text) in enumerate(clauses):  # each clause in its state's ink behind its ring, and never broken
+        clause_ink = replace(ink, fill=sh.states[state][1])
+        words.append(_W("", clause_ink, ring=state))
+        words += [_W(w, clause_ink, tie=True, space=1 if j else 0.7) for j, w in enumerate(text.split())]
+        if i < len(clauses) - 1:
+            words.append(_W("," if sh.en else "،", ink, tie=True, space=0))
+    items = [sh.item("summary", _para(words, sh.width, sh.rtl, strut=(ink.face, ink.size), leading=1.75))]
     if human_reviewed:  # some counted states were set by a human reviewer; no name is drawn
-        items += [_gap(sh.px(16)), sh.item("review-mark", sh.tool(sh.say("overridden"), sh.ink("plex", 26, "quiet"), max_lines=1))]
-    items.append(_gap(0, spring=3))
-    sh.place(items, top, bottom)
+        items += [_gap(sh.px(12)), sh.item("review-mark", sh.tool(sh.say("overridden"), sh.ink("plex", 26, "quiet"), max_lines=1))]
+    sh.place(items, top)
     return sh.done({"body": (top, bottom)})
 
 

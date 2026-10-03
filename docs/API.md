@@ -296,8 +296,8 @@ blocks, top to bottom:
 | «النص المتداول» | the claim in Naskh, in the state's ink, underlined in the state's colour — as the passage looks on the page | `card.text_as_quoted`, cut at 240 characters at a word boundary with «…» |
 | «في المصدر» | the source's own wording between two hairlines: Amiri Quran inside ﴿ ﴾ for a verse, Amiri for anything else. Words that differ from the claim are underlined in the state's colour | `card.source.text`; the underlined words are the source side of `card.diff`'s `replace` steps |
 | Takhrij line | the reference, a dash, then: **one grading** — «its first line, verbatim» in Naskh, the muhaddith when the source names one, and the grading's source; **several gradings** — their count («3 أحكام في المصادر»), so that none is singled out; **none** — «الحكم غير متاح من المصدر» when `grade_unavailable`, otherwise the name of the source the text was retrieved from. A grading is never shortened | `card.source.ref`, `card.grades[].text` / `.scholar` / `.source_name`, `card.grade_unavailable`, `card.source.source_name` |
-| …instead, `not_found` | «لا نُصدر حكماً بلا مصدر، ولا نولّد بديلاً.», then the abstention verse between the hairlines and its reference. A source the card may carry is not drawn | `meta.abstention_verse` |
-| …instead, no source (`needs_review`, level C) or level D | nothing is quoted. The reason is the verdict sentence above; between the hairlines stands the referral: «تبيّن لا يفتي ولا يرجّح؛ يُرجع في هذه المسألة إلى أهل العلم.» A personal case (level D) never shows a source | fixed |
+| …instead, `not_found` | between two hairlines: «لا نُصدر حكماً بلا مصدر، ولا نولّد بديلاً.», the abstention verse inside ﴿ ﴾ and its reference. A source the card may carry is not drawn | `meta.abstention_verse` |
+| …instead, no source (`needs_review`, level C) or level D | nothing is quoted. Between two hairlines: the reason — «هذه حالة شخصية تستوجب فتوى من جهة مؤهلة» for a personal case, «مسألة خلافية: يعرض تبيّن ما ورد في المصادر كما هو، دون ترجيح.» for a disputed matter, left out when it is already the verdict sentence above — then the referral: «تبيّن لا يفتي ولا يرجّح؛ يُرجع في هذه المسألة إلى أهل العلم.» A personal case (level D) never shows a source | `card.personal_case`, `card.disagreement_noted` |
 | Action | the canonical action of the drawn state, as a sentence: «الإجراء المقترح: …» | `STATE_ACTION[override_state ?? card.state]` |
 | Footer | a hairline; «تحقّق بنفسك على تبيّن», the app address without its scheme, and its QR code; the transparency line | app URL |
 
@@ -320,8 +320,8 @@ at 0.86 of the portrait's. If the card still does not hold everything at the sma
   characters gives up lines so that the wording keeps at least one.
 
 **The summary card** (`kind = "summary"`) has the same frame, header (label «خلاصة التحقق») and
-footer. It shows the report's summary sentence in Plex 600 — «سبعة استشهادات:» and then one clause
-per state present, each on its line with its ring glyph and in its state's ink («اثنان مؤيَّدان،» …
-«وواحد مخالف للمصدر»), the same wording as the page's summary. `human_reviewed` adds «حالة معدَّلة
-بمراجعة بشرية». No claim text. The title of what was checked (§8) is not drawn by the server:
-the request does not carry it.
+footer. It shows the report's summary sentence in Plex 600, the same wording as the page's summary:
+«خمسة استشهادات:» and then one clause per state present, each in its state's ink behind its ring
+glyph and never broken across lines («واحد مؤيَّد،» … «وواحد مخالف للمصدر»). `human_reviewed` adds
+«حالة معدَّلة بمراجعة بشرية». No claim text. The title of what was checked (§8) is not drawn by the
+server: the request does not carry it.
