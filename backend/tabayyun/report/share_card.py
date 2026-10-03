@@ -83,6 +83,10 @@ TEXT = {
     "source": ("في المصدر", "In the source"),
     # the same block for a ruling or statement that points at its evidence (match_kind "referenced")
     "evidence": ("الدليل المشار إليه في المصادر", "The evidence referred to, in the sources"),
+    # under its takhrij line, always: an image of a ruling beside a text must not read as the tool's verdict
+    "caveat": ("عرض هذا النص لا يعني ترجيحاً ولا حكماً من تبيّن.", "Showing this text is neither a preference nor a ruling by Tabayyun."),
+    # before its reference in the summary's list, so that the grading is not read as the ruling's
+    "evidence_row": ("الدليل المشار إليه:", "Evidence referred to:"),
     "no_grading": ("الحكم غير متاح من المصدر", "Grading not available from the source"),
     "one_grading": ("حكم واحد في المصدر", "one grading in the source"),
     "abstain": ("لا نُصدر حكماً بلا مصدر، ولا نولّد بديلاً.", "We issue no verdict without a source, and generate no substitute."),
@@ -974,6 +978,8 @@ class _Claim:
                 items += ruled([sh.item("source" if isinstance(wording, tuple) else "source-note", body)], 6)
             if self.takhrij is not None:
                 items += [_gap(sh.px(12)), sh.item("takhrij", self.takhrij)]
+            if self.card.match_kind == "referenced":  # never dropped: the wording above gives way for it
+                items += [_gap(sh.px(4)), sh.item("caveat", sh.tool(sh.say("caveat"), sh.ink("plex", 26, "quiet")))]
         elif self.mode == "abstain":  # the tool abstains, and says so in a verse's words
             inside = [sh.item("abstention", sh.tool(sh.say("abstain"), sh.ink("plex", 30), leading=1.6))]
             if body is not None:
@@ -1198,25 +1204,29 @@ class _Row:
 
     def _reference(self, card: Card, width: int) -> _Para | None:
         """The reference and, for a narration, the grading word verbatim — on one line. The reference
-        gives way («…»), the grading never does: one that cannot stand whole is counted instead."""
+        gives way («…»), the grading never does: one that cannot stand whole is counted instead. The
+        evidence a ruling points at is named as such, so its grading is not read as the ruling's."""
         sh = self.sh
         if self.state == "not_found" or card.source is None or card.personal_case or card.content_level == ContentLevel.D:
             return None
         quiet = sh.ink("plex", 24, "quiet")
+        before = _words(sh.say("evidence_row"), quiet) if card.match_kind == "referenced" else []
+        rtl = sh.reads_rtl(" ".join([w.text for w in before] + [card.source.ref]))
         grades = [g for g in card.grades if g.text.strip()]
-        if len(grades) == 1:
-            tail = "«" + " ".join(grades[0].text.strip().splitlines()[0].split()) + "»"
-            if _width(tail, quiet.face, quiet.size, True) > width * 0.6:
-                tail = sh.say("one_grading")
+        if len(grades) == 1:  # verbatim; counted when the line cannot hold it whole beside a little of the reference
+            tails = ["«" + " ".join(grades[0].text.strip().splitlines()[0].split()) + "»", sh.say("one_grading")]
         elif grades:
-            tail = _grades_count(len(grades), sh.en)
+            tails = [_grades_count(len(grades), sh.en)]
         else:
-            tail = sh.say("no_grading") if card.grade_unavailable else ""
-        rtl = sh.reads_rtl(f"{card.source.ref} {tail}")
-        after = [_W(w, quiet, tie=True) for w in (["—"] if card.source.ref.strip() and tail else []) + tail.split()]
-        room = width - _line_width(after, rtl) - (_lead(after[0], rtl) if after else 0)
+            tails = [sh.say("no_grading") if card.grade_unavailable else ""]
+        for tail in tails:
+            after = [_W(w, quiet, tie=True) for w in (["—"] if card.source.ref.strip() and tail else []) + tail.split()]
+            used = _line_width(before, rtl) + _line_width(after, rtl) + sum(_lead(part[0], rtl) for part in (before, after) if part)
+            if width - used >= width * 0.2:
+                break
+        room = max(width - used, 1)
         lines, _cut = _clip(_wrap(_words(card.source.ref, quiet), room, rtl), 1, room, rtl)
-        words = (lines[0] if lines else []) + after
+        words = before + (lines[0] if lines else []) + after
         return _para(words, width, rtl, strut=(quiet.face, quiet.size), leading=1.45, max_lines=1) if words else None
 
     def draw(self, y: int) -> None:

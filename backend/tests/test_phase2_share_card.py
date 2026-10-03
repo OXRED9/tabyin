@@ -307,9 +307,13 @@ def test_the_evidence_a_ruling_points_at_is_shown_under_its_own_label_and_nothin
     solid = rgb(STATE_TOKENS["light"]["needs_review"][0])
     for size in SIZES:
         drawn = draw(card, size=size)
-        assert names(drawn) == ["state", "state-glyph", "verdict", "claim-label", "claim", "source-label", "source", "takhrij", "action"]
+        assert names(drawn) == ["state", "state-glyph", "verdict", "claim-label", "claim", "source-label", "source", "takhrij", "caveat", "action"]
         assert text_of(drawn, "state") == STATE_SHORT["needs_review"][0]  # the state is not raised
         assert text_of(drawn, "source-label") == "الدليل المشار إليه في المصادر"
+        # directly under the takhrij line, the caveat — whole, in the tool's quiet voice
+        assert text_of(drawn, "caveat") == "عرض هذا النص لا يعني ترجيحاً ولا حكماً من تبيّن."
+        takhrij, caveat = drawn.block("takhrij"), drawn.block("caveat")
+        assert 0 <= caveat.box[1] - takhrij.box[3] <= 8 and rgb(THEMES["light"]["quiet"]) in colours(drawn.image, caveat.ink)
         # the source's wording, its reference and its grading, as for any source
         shown = text_of(drawn, "source").strip("﴿﴾…").split()
         assert shown and " ".join(shown[:-1]) in " ".join(card.source.text.split())
@@ -317,7 +321,10 @@ def test_the_evidence_a_ruling_points_at_is_shown_under_its_own_label_and_nothin
         assert solid not in colours(drawn.image, drawn.block("source").ink)  # nothing was quoted: nothing is underlined
         assert text_of(drawn, "action") == ACTION_SENTENCE["refer_to_scholars"][0]
         assert_inside_the_frame(drawn)
-    assert text_of(draw(card, lang="en"), "source-label") == "The evidence referred to, in the sources"
+    english = draw(card, lang="en")
+    assert text_of(english, "source-label") == "The evidence referred to, in the sources"
+    assert text_of(english, "caveat") == "Showing this text is neither a preference nor a ruling by Tabayyun."
+    assert draw(in_state(card, "supported").model_copy(update={"match_kind": "exact"})).block("caveat") is None  # no other card carries it
     assert text_of(draw(in_state(card, "supported").model_copy(update={"match_kind": "exact"})), "source-label") == TEXT["source"][0]  # any other card: «في المصدر»
 
     # a weak grading is drawn verbatim like any other (the word is read from the data, by the engine's own reading of it)
@@ -327,11 +334,34 @@ def test_the_evidence_a_ruling_points_at_is_shown_under_its_own_label_and_nothin
     assert text_of(drawn, "takhrij") == f"{card.source.ref} — «{weak.splitlines()[0]}»، {grade.source_name}"
     assert text_of(drawn, "state") == STATE_SHORT["needs_review"][0] and text_of(drawn, "source-label") == TEXT["evidence"][0]
 
-    # in the summary's list its reference line is that source's reference, as for any card
+    # the longest evidence, reference, grading and claim: the source's text gives way, the caveat is never dropped
+    record = max(hadith.hadeethenc.values(), key=lambda r: len(r["hadeeth"]))
+    reference = max((r["attribution"] for r in hadith.hadeethenc.values() if r.get("attribution")), key=len)
+    grading = max((r["grade"].splitlines()[0] for r in hadith.hadeethenc.values() if r.get("grade")), key=len)
+    longest = card.model_copy(update={
+        "text_as_quoted": " ".join([RULING] * 12),
+        "source": card.source.model_copy(update={"text": record["hadeeth"], "ref": reference}),
+        "grades": [grade.model_copy(update={"text": grading})],
+    })  # fmt: skip
+    for size in SIZES:
+        for lang in ("ar", "en"):
+            drawn = draw(longest, size=size, lang=lang)
+            assert_inside_the_frame(drawn)
+            assert text_of(drawn, "caveat") == TEXT["caveat"][lang == "en"] and drawn.fit["source"] in ("cut", "omitted")
+            assert f"«{grading}»" in text_of(drawn, "takhrij") or TEXT["one_grading"][lang == "en"] in text_of(drawn, "takhrij")
+
+    # in the summary's list its reference is named as the evidence referred to, so its grading is not read as the ruling's
     summary = Summary(total=1, by_state={EvidenceState.needs_review: 1}, mode="full", elapsed_seconds=1.0)
     row = draw_summary(summary, cards=[card])
     assert text_of(row, "row-1-state") == STATE_SHORT["needs_review"][0]
-    assert text_of(row, "row-1-ref") == f"{card.source.ref} — «{grade.text}»"
+    assert text_of(row, "row-1-ref") == f"الدليل المشار إليه: {card.source.ref} — «{grade.text}»"
+    assert text_of(draw_summary(summary, cards=[card], lang="en"), "row-1-ref").startswith("Evidence referred to: ")
+    for size in SIZES:  # the longest one too: on one line, inside the frame, the grading whole or counted
+        row = draw_summary(summary, cards=[longest], size=size)
+        ref = text_of(row, "row-1-ref")
+        assert_inside_the_frame(row)
+        assert ref.startswith("الدليل المشار إليه: ") and len(row.block("row-1-ref").text.splitlines()) == 1
+        assert ref.endswith(f"«{grading}»") or ref.endswith(TEXT["one_grading"][0])
 
 
 def test_nothing_about_the_user_is_drawn(report):
