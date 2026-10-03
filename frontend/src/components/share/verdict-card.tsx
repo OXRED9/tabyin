@@ -1,49 +1,49 @@
-import { Check, OctagonX, PencilLine, TriangleAlert, X } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode, Ref } from 'react'
 
+import { StateGlyph } from '@/components/state-glyph'
 import type { Dictionary } from '@/lib/dictionary'
-import { STATES_BY_RISK } from '@/lib/states'
+import { diffCoversSource, hasDifferences } from '@/lib/diff'
 import {
   CARD_HEIGHT,
   CARD_PALETTE,
   CARD_WIDTH,
   displayUrl,
   firstSentence,
-  hostnameOf,
+  keepWords,
   qrPath,
   truncateClaim,
 } from '@/lib/share-card'
 import type { CardPalette as Palette, CardSize, CardTheme } from '@/lib/share-card'
+import { ACTION_OF_STATE } from '@/lib/states'
+import { summaryParts } from '@/lib/summary'
 import type { Card, EvidenceState, UiLang, VerseRef } from '@/lib/types'
 
 /*
- * The verdict card template. It is a fixed 1080px-wide block styled entirely with inline pixel
- * values and its own palette, so the PNG looks the same whatever the page theme, zoom or viewport
- * is. The layout follows the server-side renderer (`POST /api/share-card`): header band, state
- * pill, the quoted text with a state-coloured bar on its start edge, the verdict line in the
- * state's ink, labelled reference / grading / source, then the footer with the QR code on the end
- * side and the transparency line centred at the bottom.
+ * The verdict card («بطاقة تثبّت»), v2 — docs/DESIGN.md §8. It is the one piece of Tabayyun that
+ * travels without the app, so it answers, in this order, what someone who sees only the image
+ * asks: what is this about (the words as they circulate), is it right (the state and one plain
+ * sentence), what does the source say (its wording, its reference, the grading in the source's
+ * word), what should I do with it (the suggested action), can I check (the address, its QR code,
+ * the transparency line).
  *
- * Never drawn: a date or time, a reviewer's name, a video link or timestamp, anything about the user.
+ * It speaks the page's language: paper, hairlines, ink. No band, no pill, no shadow. The claim is
+ * set as the passage is on the page (Naskh, the state's ink, an underline in the state's
+ * colour); gold appears only in the verified ring.
+ *
+ * The template is a fixed 1080px-wide block styled with inline pixel values and its own copy of
+ * the tokens, so the PNG looks the same whatever the page's theme, zoom or viewport is. The same
+ * content, in the same order, is drawn on the server (`POST /api/share-card`) as the fallback.
+ *
+ * Never drawn: a date or time, a reviewer's name, a link to the clip, anything about the user.
  */
 
-/** Solid pill colour (white text and icon on it) and the ink used for the verdict line. */
-const STATE_COLOURS: Record<EvidenceState, { pill: string; ink: Record<CardTheme, string>; icon: LucideIcon }> = {
-  supported: { pill: '#1e7f4e', ink: { light: '#17613c', dark: '#6fd3a2' }, icon: Check },
-  supported_with_note: { pill: '#4f8a22', ink: { light: '#3c6417', dark: '#b4de8e' }, icon: PencilLine },
-  needs_review: { pill: '#a86c12', ink: { light: '#7a4e08', dark: '#f0c56a' }, icon: TriangleAlert },
-  not_found: { pill: '#c8463c', ink: { light: '#a8322a', dark: '#f4928a' }, icon: X },
-  contradicted: { pill: '#8b2020', ink: { light: '#8b2020', dark: '#f08a8a' }, icon: OctagonX },
-}
-
-// Latin is IBM Plex Sans, as in the server-side twin (which draws Latin with the Plex Arabic TTF).
-const FONT: Record<UiLang, string> = {
+const UI_FONT: Record<UiLang, string> = {
   ar: '"IBM Plex Sans Arabic", "IBM Plex Sans", "Noto Sans Arabic", system-ui, sans-serif',
   en: '"IBM Plex Sans", "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, sans-serif',
 }
-const QURAN_FONT = '"Amiri Quran", "Amiri", "Scheherazade New", "Traditional Arabic", serif'
+const NASKH_FONT = '"Amiri", "Amiri Quran", "Scheherazade New", "Noto Naskh Arabic", "Traditional Arabic", serif'
+const QURAN_FONT = '"Amiri Quran", "Amiri", "Scheherazade New", "Noto Naskh Arabic", "Traditional Arabic", serif'
 
 /**
  * Font sizes are whole pixels. html-to-image redraws text at floor(size) − 0.1px, so a fractional
@@ -58,20 +58,29 @@ const clamp = (lines: number): CSSProperties => ({
   overflow: 'hidden',
 })
 
-function Mark({ size }: { size: number }) {
-  return (
-    <svg viewBox="0 0 32 32" width={size} height={size} aria-hidden="true" style={{ flex: 'none' }}>
-      <rect x="13" y="13" width="15" height="15" rx="4.5" fill="#ffffff" fillOpacity="0.2" stroke="#ffffff" strokeOpacity="0.65" strokeWidth="2.4" />
-      <rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="#ffffff" strokeWidth="2.8" />
-      <rect x="12.4" y="12.4" width="7.4" height="7.4" rx="2.4" fill="#c9a227" />
-    </svg>
-  )
+/** The ring glyphs read the page's CSS variables: the card sets its own, for its own theme. */
+const glyphColours = (palette: Palette) =>
+  ({
+    '--gold': palette.gold,
+    '--supported': palette.states.supported.solid,
+    '--noted': palette.states.supported_with_note.solid,
+    '--review': palette.states.needs_review.solid,
+    '--missing': palette.states.not_found.solid,
+    '--contra': palette.states.contradicted.solid,
+  }) as CSSProperties
+
+function Glyph({ state, size }: { state: EvidenceState; size: number }) {
+  return <StateGlyph state={state} style={{ width: size, height: size, flex: 'none' }} />
 }
 
-function Qr({ value, size, quiet }: { value: string; size: number; quiet: boolean }) {
+function Rule({ palette }: { palette: Palette }) {
+  return <div style={{ flex: 'none', height: 2, background: palette.rule }} />
+}
+
+function Qr({ value, size, palette, tile }: { value: string; size: number; palette: Palette; tile: boolean }) {
   const code = useMemo(() => qrPath(value), [value])
   // Dark theme: the code sits on a white tile with a quiet zone, so any scanner reads it.
-  const margin = quiet ? 3 : 0
+  const margin = tile ? 3 : 0
   const box = code.size + margin * 2
   return (
     <svg
@@ -81,22 +90,10 @@ function Qr({ value, size, quiet }: { value: string; size: number; quiet: boolea
       shapeRendering="crispEdges"
       role="img"
       aria-label={value}
-      style={{ flex: 'none', background: '#ffffff', borderRadius: quiet ? 4 : 0 }}
+      style={{ flex: 'none', background: '#ffffff' }}
     >
-      <path d={code.path} fill="#0f1f1b" />
+      <path d={code.path} fill={tile ? '#11221e' : palette.ink} />
     </svg>
-  )
-}
-
-function Field({ label, children, k, palette, lines = 1, lang, dir, align }: { label: string; children: ReactNode; k: number; palette: Palette; lines?: number; lang?: string; dir?: 'rtl' | 'ltr' | 'auto'; align: 'left' | 'right' }) {
-  return (
-    <div style={{ minWidth: 0 }}>
-      <div style={{ fontSize: whole(25 * k), lineHeight: 1.5, color: palette.label }}>{label}</div>
-      {/* Aligned to the card's start edge whatever the value's own direction (a domain is LTR). */}
-      <div lang={lang} dir={dir} style={{ fontSize: whole(32 * k), lineHeight: 1.55, fontWeight: 600, textAlign: align, ...clamp(lines) }}>
-        {children}
-      </div>
-    </div>
   )
 }
 
@@ -109,10 +106,25 @@ interface Shell {
   nodeRef?: Ref<HTMLDivElement>
 }
 
-/** The frame every card shares: page, rounded card, header band, body, footer. */
-function Frame({ size, theme, lang, t, appUrl, nodeRef, label, children, bodyRef, alt, fitSteps = 0 }: Shell & { label: string; children: ReactNode; bodyRef?: Ref<HTMLDivElement>; alt: string; fitSteps?: number }) {
+/** The square card has less height for the same content: everything on it is set a step smaller. */
+const scaleOf = (size: CardSize) => (size === 'square' ? 0.86 : 1)
+
+/** The frame every card shares: paper, one hairline frame, the logotype, the body, the footer. */
+function Frame({
+  size,
+  theme,
+  lang,
+  t,
+  appUrl,
+  nodeRef,
+  label,
+  children,
+  bodyRef,
+  alt,
+  fit,
+}: Shell & { label: string; children: ReactNode; bodyRef?: Ref<HTMLDivElement>; alt: string; fit?: string }) {
   const palette = CARD_PALETTE[theme]
-  const square = size === 'square'
+  const k = scaleOf(size)
   const dir = lang === 'ar' ? 'rtl' : 'ltr'
   return (
     <div
@@ -123,18 +135,20 @@ function Frame({ size, theme, lang, t, appUrl, nodeRef, label, children, bodyRef
       dir={dir}
       data-card-size={size}
       data-card-theme={theme}
-      data-fit-steps={fitSteps}
+      data-fit={fit}
       style={{
         width: CARD_WIDTH,
         height: CARD_HEIGHT[size],
         boxSizing: 'border-box',
-        padding: 48,
-        background: palette.page,
-        color: palette.text,
-        fontFamily: FONT[lang],
+        padding: 36,
+        background: palette.paper,
+        color: palette.ink,
+        fontFamily: UI_FONT[lang],
         fontFeatureSettings: 'normal',
+        fontWeight: 400,
         letterSpacing: 0,
         textAlign: 'start',
+        ...glyphColours(palette),
       }}
     >
       <div
@@ -144,62 +158,185 @@ function Frame({ size, theme, lang, t, appUrl, nodeRef, label, children, bodyRef
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          borderRadius: 44,
-          background: palette.card,
-          border: `2px solid ${palette.border}`,
+          border: `2px solid ${palette.rule}`,
+          padding: `${whole(34 * k)}px ${whole(52 * k)}px ${whole(30 * k)}px`,
         }}
       >
-        <div
-          style={{
-            flex: 'none',
-            height: 150,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 24,
-            padding: '0 56px',
-            background: palette.header,
-            color: '#ffffff',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <Mark size={84} />
-            <span style={{ fontSize: lang === 'ar' ? 62 : 52, fontWeight: 700, lineHeight: 1.2 }}>{t.appName}</span>
-          </div>
-          <span style={{ fontSize: 33, fontWeight: 500, opacity: 0.88 }}>{label}</span>
+        <div style={{ flex: 'none', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 24, paddingBottom: whole(16 * k) }}>
+          <span style={{ fontFamily: NASKH_FONT, fontSize: whole(58 * k), lineHeight: 1.25 }}>{t.appName}</span>
+          <span style={{ fontSize: whole(28 * k), lineHeight: 1.4, color: palette.quiet }}>{label}</span>
         </div>
+        <Rule palette={palette} />
 
         <div
           ref={bodyRef}
-          style={{
-            flex: 1,
-            minHeight: 0,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            padding: `${square ? 40 : 44}px 56px 0`,
-          }}
+          data-card-body=""
+          style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', paddingTop: whole(24 * k) }}
         >
           {children}
         </div>
 
-        <div style={{ flex: 'none', padding: `0 56px ${square ? 26 : 30}px` }}>
-          <div style={{ height: 2, background: palette.border }} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 32, padding: `${square ? 22 : 26}px 0 ${square ? 18 : 26}px` }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: square ? 32 : 36, fontWeight: 600, lineHeight: 1.5 }}>{t.share.footer}</div>
-              <div dir="ltr" style={{ fontSize: square ? 27 : 30, lineHeight: 1.5, color: palette.link, textAlign: lang === 'ar' ? 'right' : 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {displayUrl(appUrl)}
-              </div>
+        <Rule palette={palette} />
+        <div style={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 32, paddingTop: whole(22 * k) }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: whole(30 * k), fontWeight: 600, lineHeight: 1.5 }}>{t.share.footer}</div>
+            <div
+              dir="ltr"
+              style={{
+                fontSize: whole(30 * k),
+                lineHeight: 1.5,
+                color: palette.green,
+                textAlign: lang === 'ar' ? 'right' : 'left',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {displayUrl(appUrl)}
             </div>
-            <Qr value={appUrl} size={square ? 124 : 156} quiet={theme === 'dark'} />
           </div>
-          <div style={{ fontSize: square ? 20 : 21, lineHeight: 1.5, color: palette.label, textAlign: 'center' }}>{t.transparency}</div>
+          <Qr value={appUrl} size={whole(150 * k)} palette={palette} tile={theme === 'dark'} />
+        </div>
+        <div style={{ flex: 'none', paddingTop: whole(14 * k), fontSize: whole(22 * k), lineHeight: 1.5, color: palette.quiet }}>
+          {t.transparency}
         </div>
       </div>
     </div>
   )
 }
+
+// ── Fitting ───────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * How far the card has had to give way. Type is reduced before anything is cut: the claim from 44
+ * down to 34 and the source from 46 (a verse) or 40 down to 30, in steps of 2. Only then is text
+ * cut, always at a word boundary and with «…»: the verdict to two lines, then the words of the
+ * source around the quotation, then (a narration only) the end of the quoted part, then the claim.
+ * A verse is never cut inside the quoted span: once the claim has given up its lines, the verse's
+ * type goes below its range (30 down to 22) rather than its words, and if the span cannot be set
+ * even so, the card gives the verse's reference alone and says where the verse is read whole
+ * (docs/DECISIONS.md, 65).
+ */
+interface Fit {
+  claim: number
+  source: number
+  verdictLines: 2 | 3
+  /** The share of the source's words around the quotation that is kept. */
+  around: number
+  /** The share of the quoted span that is kept (a narration only). */
+  span: number
+  /** The share of the claim's words that is kept. */
+  claimKept: number
+  /** False only for a verse whose quoted span does not fit the card at all. */
+  sourceShown: boolean
+}
+
+const FIRST_FIT = (verse: boolean): Fit => ({
+  claim: 44,
+  source: verse ? 46 : 40,
+  verdictLines: 3,
+  around: 1,
+  span: 1,
+  claimKept: 1,
+  sourceShown: true,
+})
+
+/** What this card's source allows to be cut. */
+interface Give {
+  /** There are words of the source around the quotation. */
+  around: boolean
+  /** The quoted part itself may be cut at its end (a narration). */
+  span: boolean
+  /** The source is a verse: it is shown whole or by its reference alone. */
+  verse: boolean
+}
+
+function tighten(fit: Fit, give: Give): Fit | null {
+  if (fit.claim > 34 || fit.source > 30) {
+    return { ...fit, claim: Math.max(34, fit.claim - 2), source: Math.max(30, fit.source - 2) }
+  }
+  if (fit.verdictLines === 3) return { ...fit, verdictLines: 2 }
+  if (give.around && fit.around > 0) return { ...fit, around: fit.around > 0.1 ? fit.around * 0.75 : 0 }
+  if (give.span && fit.span > 0.2) return { ...fit, span: fit.span * 0.85 }
+  if (fit.claimKept > 0.35) return { ...fit, claimKept: fit.claimKept * 0.85 }
+  if (give.verse && fit.sourceShown) {
+    if (fit.source > 22) return { ...fit, source: fit.source - 2 }
+    // The verse's place is free again: the claim is set anew before it gives way.
+    return { ...fit, sourceShown: false, claimKept: 1 }
+  }
+  return null
+}
+
+/** The source's words as the card shows them: each with whether it differs from the claim. */
+interface SourceWord {
+  text: string
+  differs: boolean
+  /** Part of what the claim quoted (false for the words of the source around the quotation). */
+  quoted: boolean
+}
+
+/** The source's words, and whether the source goes on before or after them. */
+interface SourceText {
+  words: SourceWord[]
+  before: boolean
+  after: boolean
+}
+
+const squash = (text: string) => text.replace(/\s+/g, ' ').trim()
+/** A sentence without its closing mark, to tell whether two say the same thing. */
+const plain = (text: string) => squash(text).replace(/[.؟?!،,؛;:]+$/u, '')
+
+/**
+ * What the card sets under «في المصدر». With no differences it is the source's text as it is.
+ * With differences it is the source's side of the collation, differing words marked: the whole
+ * text when the collation covers it, otherwise the part that was compared (a narration without
+ * its chain, say), with «…» where the source goes on.
+ */
+function sourceText(source: Card['source'], diff: Card['diff']): SourceText {
+  if (!source) return { words: [], before: false, after: false }
+  const whole = squash(source.text)
+  if (!hasDifferences(diff)) {
+    return { words: whole.split(' ').map((text) => ({ text, differs: false, quoted: true })), before: false, after: false }
+  }
+  const words = diff.flatMap((op) =>
+    op.source
+      ? squash(op.source)
+          .split(' ')
+          .map((text) => ({ text, differs: op.op === 'replace', quoted: op.op !== 'insert' }))
+      : [],
+  )
+  if (diffCoversSource(diff, source.text)) return { words, before: false, after: false }
+  const part = words.map((word) => word.text).join(' ')
+  const at = whole.indexOf(part)
+  return { words, before: at > 0, after: at !== -1 && at + part.length < whole.length }
+}
+
+/** The first and last words of the quoted span (the whole text when nothing marks one). */
+function quotedSpan(words: SourceWord[]): [number, number] {
+  const first = words.findIndex((word) => word.quoted)
+  if (first === -1) return [0, words.length - 1]
+  let last = words.length - 1
+  while (!words[last].quoted) last -= 1
+  return [first, last]
+}
+
+/**
+ * Cut the source to what the fit allows. The words around the quoted span go first, those
+ * furthest from it before those next to it; a narration's quoted part is then cut at its end.
+ * «…» stands on each side that was cut.
+ */
+function fitSource(text: SourceText, fit: Fit): SourceText {
+  const { words } = text
+  if (words.length === 0 || (fit.around >= 1 && fit.span >= 1)) return text
+  const [first, last] = quotedSpan(words)
+  const length = last - first + 1
+  const kept = fit.span >= 1 ? length : Math.max(Math.min(6, length), Math.floor(length * fit.span))
+  const start = first - Math.floor(first * fit.around)
+  const end = kept < length ? first + kept : last + 1 + Math.floor((words.length - 1 - last) * fit.around)
+  return { words: words.slice(start, end), before: text.before || start > 0, after: text.after || end < words.length }
+}
+
+// ── One claim's card ──────────────────────────────────────────────────────────────────────────
 
 export interface ClaimCardImageProps extends Shell {
   card: Card
@@ -208,176 +345,283 @@ export interface ClaimCardImageProps extends Shell {
   verse: VerseRef | null
 }
 
-/** One claim's verdict. If the content does not fit, the type steps down until it does. */
 export function ClaimCardImage({ card, overrideState, verse, ...shell }: ClaimCardImageProps) {
   const { size, theme, lang, t } = shell
   const palette = CARD_PALETTE[theme]
+  const k = scaleOf(size)
   const state = overrideState ?? card.state
-  const colours = STATE_COLOURS[state]
-  const Icon = colours.icon
-  const ink = colours.ink[theme]
-  const square = size === 'square'
-
-  const claim = truncateClaim(card.text_as_quoted)
-  const note = lang === 'ar' ? card.note_ar || card.note_en : card.note_en || card.note_ar
-  const verdict = firstSentence(note) || (state === 'not_found' ? t.card.abstention : '')
-  const domain = hostnameOf(card.source?.url)
-  const grade = card.grades[0] ?? null
-  const more = card.grades.length - 1
-  const notFound = state === 'not_found'
+  const colours = palette.states[state]
   const align = lang === 'ar' ? 'right' : 'left'
+  // A reviewer's state comes without the rule's sentence, which explains the engine's state and
+  // could contradict the reviewer's, and with the action that belongs to it. A reviewer's «لم
+  // يُعثر» also hides the source the engine had matched. A personal case never shows a source.
+  const reviewed = !!overrideState && overrideState !== card.state
+  const source = card.personal_case || (reviewed && state === 'not_found') ? null : card.source
+  const quranSource = source?.kind === 'quran'
+  // A verse is set in the Mushaf's face and is never cut: the source's own verse, or the verse
+  // the card abstains with when there is no source.
+  const isVerse = quranSource || (!source && state === 'not_found')
 
-  // Type scale: smaller on the square card, smaller again for a long claim, and one more step
-  // each time the body still overflows (measured below). Nothing is ever clipped: the body's
-  // children are `flex: none`, so content that does not fit overflows where it can be measured.
-  const length = Array.from(claim).length
-  const base = (square ? 0.84 : 1) * (length > 150 ? 0.86 : length > 80 ? 0.93 : 1)
-  const [steps, setSteps] = useState(0)
-  const body = useRef<HTMLDivElement | null>(null)
-  const k = base * (1 - steps * 0.07)
+  const note = lang === 'ar' ? card.note_ar || card.note_en : card.note_en || card.note_ar
+  const verdict = reviewed ? '' : firstSentence(note) || (state === 'not_found' ? t.card.abstention : '')
+  const action = reviewed ? ACTION_OF_STATE[state] : card.action
+  // The reason a claim has nothing to quote, unless the sentence under the state already says it.
+  const said = (sentence: string) => plain(sentence) === plain(verdict)
+  const reasons = [card.personal_case ? t.card.personalCase : '', card.disagreement_noted ? t.card.disagreement : ''].filter(
+    (reason) => reason && !said(reason),
+  )
+  // One grading is drawn in the source's words; a grading too long for its line is counted, never cut.
+  const gradeLine = card.grades.length === 1 ? card.grades[0].text.split('\n')[0].trim() : ''
+  const grade = gradeLine && Array.from(gradeLine).length <= 60 ? card.grades[0] : null
+  const wholeSource = useMemo(() => sourceText(source, card.diff), [source, card.diff])
 
-  const fitKey = `${card.id}|${state}|${size}|${lang}`
+  // The card gives way a step at a time until its body no longer overflows (measured below).
+  // Nothing is clipped on the way: the body's children are `flex: none`, so what does not fit
+  // overflows where it can be measured.
+  // A face that arrives after the card was fitted changes every measure: fit again.
+  const [faces, setFaces] = useState(0)
+  useEffect(() => {
+    const refit = () => setFaces((n) => n + 1)
+    document.fonts.addEventListener('loadingdone', refit)
+    return () => document.fonts.removeEventListener('loadingdone', refit)
+  }, [])
+  const fitKey = `${card.id}|${state}|${size}|${lang}|${faces}`
+  const [fit, setFit] = useState(() => FIRST_FIT(isVerse))
   const [fitted, setFitted] = useState(fitKey)
   if (fitted !== fitKey) {
     setFitted(fitKey)
-    setSteps(0)
+    setFit(FIRST_FIT(isVerse))
   }
+  const canTrimAround = useMemo(() => {
+    const [first, last] = quotedSpan(wholeSource.words)
+    return first > 0 || last < wholeSource.words.length - 1
+  }, [wholeSource])
+  const canCutSpan = !!source && !quranSource
+  const body = useRef<HTMLDivElement | null>(null)
   useLayoutEffect(() => {
     const element = body.current
-    if (element && element.scrollHeight > element.clientHeight + 1 && steps < 6) setSteps(steps + 1)
-  }, [steps, fitKey, theme])
+    // Measured, not derived: the body is asked whether its content overflows it.
+    if (element && element.scrollHeight > element.clientHeight + 1) {
+      setFit((current) => tighten(current, { around: canTrimAround, span: canCutSpan, verse: quranSource }) ?? current)
+    }
+  }, [fit, fitKey, canTrimAround, canCutSpan, quranSource, theme])
+
+  const claimFull = truncateClaim(card.text_as_quoted)
+  const claimWords = claimFull.split(' ').length
+  const claim = fit.claimKept >= 1 ? claimFull : keepWords(claimFull, Math.max(5, Math.floor(claimWords * fit.claimKept)))
+  const shown = fitSource(wholeSource, fit)
+  const label = (text: string) => (
+    <div style={{ flex: 'none', fontSize: whole(26 * k), lineHeight: 1.5, color: palette.quiet }}>{text}</div>
+  )
 
   return (
-    <Frame {...shell} label={t.share.cardLabel} bodyRef={body} alt={t.share.alt(t.states[state])} fitSteps={steps}>
-      <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 * k }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 18 * k,
-            padding: `${18 * k}px ${34 * k}px`,
-            borderRadius: 999,
-            background: colours.pill,
-            color: '#ffffff',
-            fontSize: whole(35 * k),
-            fontWeight: 700,
-            lineHeight: 1.4,
-          }}
-        >
-          <Icon size={36 * k} strokeWidth={2.6} aria-hidden="true" style={{ flex: 'none' }} />
-          {t.states[state]}
-        </div>
-        {overrideState && overrideState !== card.state ? (
-          <div style={{ fontSize: whole(23 * k), fontWeight: 600, color: palette.label }}>{t.share.humanReview}</div>
-        ) : null}
+    <Frame
+      {...shell}
+      label={t.share.cardLabel}
+      bodyRef={body}
+      alt={t.share.alt(t.states[state])}
+      fit={`${fit.claim}/${fit.source}/${fit.verdictLines}/${fit.around.toFixed(2)}/${fit.span.toFixed(2)}/${fit.claimKept.toFixed(2)}/${fit.sourceShown ? 'text' : 'reference'}`}
+    >
+      {/* Is it right? The state, then one plain sentence. */}
+      <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: whole(20 * k) }}>
+        <Glyph state={state} size={whole(64 * k)} />
+        <div style={{ minWidth: 0, fontSize: whole(52 * k), fontWeight: 600, lineHeight: 1.3, color: colours.ink }}>{t.states[state]}</div>
       </div>
-
-      <div style={{ flex: 'none', marginTop: 26 * k, fontSize: whole(25 * k), lineHeight: 1.5, color: palette.label }}>{t.share.asQuoted}</div>
-      <div style={{ flex: 'none', display: 'flex', alignItems: 'stretch', gap: 24 * k, marginTop: 8 * k }}>
-        <div style={{ flex: 'none', width: 9, borderRadius: 9, background: colours.pill }} />
-        {/* The text hugs the bar whichever script it is in, as in the server-side render. */}
-        <div dir="auto" style={{ flex: 1, minWidth: 0, fontSize: whole(42 * k), fontWeight: 600, lineHeight: 1.65, textAlign: align, ...clamp(square ? 4 : 6) }}>
-          {claim}
-        </div>
-      </div>
-
+      {reviewed ? (
+        <div style={{ flex: 'none', fontSize: whole(26 * k), lineHeight: 1.5, color: palette.quiet }}>{t.share.humanReview}</div>
+      ) : null}
       {verdict ? (
-        <div style={{ flex: 'none', marginTop: 22 * k, fontSize: whole(31 * k), fontWeight: 600, lineHeight: 1.6, color: ink, ...clamp(3) }}>{verdict}</div>
+        <div style={{ flex: 'none', marginTop: whole(10 * k), fontSize: whole(34 * k), lineHeight: 1.6, ...clamp(fit.verdictLines) }}>{verdict}</div>
       ) : null}
 
-      {notFound ? (
-        verse ? (
-          <div style={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 * k, textAlign: 'center', padding: `${12 * k}px 0` }}>
-            {/* It may grow into the free space but never shrinks: if it does not fit, the type steps down. */}
-            <div data-quran lang="ar" dir="rtl" style={{ fontFamily: QURAN_FONT, fontSize: whole(44 * k), lineHeight: 2.1, fontWeight: 400 }}>
-              ﴿{verse.text}﴾
+      {/* What is this about? The words as they circulate, set as the passage is on the page. */}
+      <div style={{ flex: 'none', marginTop: whole(22 * k) }}>{label(t.share.circulating)}</div>
+      <div
+        dir="auto"
+        style={{
+          flex: 'none',
+          fontFamily: NASKH_FONT,
+          fontSize: whole(fit.claim * k),
+          lineHeight: 1.9,
+          color: colours.ink,
+          textAlign: align,
+          textDecorationLine: 'underline',
+          textDecorationColor: colours.solid,
+          textDecorationThickness: 3,
+          textUnderlineOffset: '0.32em',
+        }}
+      >
+        {claim}
+      </div>
+
+      {/* What does the source say? Its own wording, its reference, the grading in its word. */}
+      {source ? (
+        <>
+          <div style={{ flex: 'none', marginTop: whole(20 * k), paddingBottom: whole(6 * k) }}>{label(t.card.inSource)}</div>
+          <Rule palette={palette} />
+          {fit.sourceShown ? (
+            <div
+              data-quran={quranSource ? '' : undefined}
+              lang="ar"
+              dir="rtl"
+              style={{
+                flex: 'none',
+                padding: `${whole(6 * k)}px 0`,
+                fontFamily: quranSource ? QURAN_FONT : NASKH_FONT,
+                fontSize: whole(fit.source * k),
+                lineHeight: quranSource ? 2.2 : 2,
+                textAlign: align,
+              }}
+            >
+              {quranSource ? '﴿' : null}
+              {shown.before ? '… ' : null}
+              {shown.words.map((word, i) => (
+                <span
+                  key={i}
+                  style={
+                    word.differs
+                      ? { textDecorationLine: 'underline', textDecorationColor: colours.solid, textDecorationThickness: 3, textUnderlineOffset: '0.3em' }
+                      : undefined
+                  }
+                >
+                  {word.text}
+                  {i < shown.words.length - 1 || shown.after ? ' ' : null}
+                </span>
+              ))}
+              {shown.after ? '…' : null}
+              {quranSource ? '﴾' : null}
             </div>
-            <div style={{ fontSize: whole(25 * k), color: palette.label }}>{lang === 'ar' ? verse.ref : verse.ref_en || verse.ref}</div>
+          ) : (
+            // A verse is not cut to fit: the card names it, and it is read whole in the Mushaf.
+            <div style={{ flex: 'none', padding: `${whole(10 * k)}px 0`, fontSize: whole(30 * k), lineHeight: 1.6 }}>
+              {t.share.verseInMushaf}
+            </div>
+          )}
+          <Rule palette={palette} />
+          <div style={{ flex: 'none', marginTop: whole(12 * k), fontSize: whole(30 * k), lineHeight: 1.6 }}>
+            <span dir="auto">{source.ref}</span>
+            {grade ? (
+              <>
+                {' — '}
+                <span lang="ar" style={{ fontFamily: NASKH_FONT, fontSize: whole(36 * k) }}>
+                  «{gradeLine}»
+                </span>
+                <span style={{ fontSize: whole(26 * k), color: palette.quiet }}>
+                  {t.report.summary.comma}
+                  {grade.scholar ? `${grade.scholar}${t.report.summary.comma}` : ''}
+                  {grade.source_name}
+                </span>
+              </>
+            ) : card.grades.length > 0 ? (
+              <span style={{ fontSize: whole(26 * k), color: palette.quiet }}>
+                {' — '}
+                {t.card.gradesCount(card.grades.length)}
+              </span>
+            ) : card.grade_unavailable ? (
+              <span style={{ fontSize: whole(26 * k), color: palette.quiet }}>
+                {' — '}
+                {t.card.gradeUnavailable}
+              </span>
+            ) : (
+              <span style={{ fontSize: whole(26 * k), color: palette.quiet }}>
+                {' — '}
+                {source.source_name}
+              </span>
+            )}
           </div>
-        ) : null
+        </>
+      ) : state === 'not_found' ? (
+        // Nothing to quote: the tool abstains, and says so in a verse's words.
+        <div style={{ flex: 'none', marginTop: whole(20 * k) }}>
+          <Rule palette={palette} />
+          <div style={{ padding: `${whole(10 * k)}px 0` }}>
+            <div style={{ fontSize: whole(30 * k), lineHeight: 1.6 }}>{t.card.abstention}</div>
+            {verse ? (
+              <>
+                <div data-quran="" lang="ar" dir="rtl" style={{ fontFamily: QURAN_FONT, fontSize: whole(fit.source * k), lineHeight: 2.2, textAlign: align }}>
+                  ﴿{verse.text}﴾
+                </div>
+                <div style={{ fontSize: whole(26 * k), lineHeight: 1.5, color: palette.quiet }}>
+                  {lang === 'ar' ? verse.ref : verse.ref_en || verse.ref}
+                </div>
+              </>
+            ) : null}
+          </div>
+          <Rule palette={palette} />
+        </div>
       ) : (
-        <div style={{ flex: 'none', marginTop: 22 * k, display: 'flex', flexDirection: 'column', gap: 12 * k }}>
-          {card.source ? (
-            <Field label={t.share.reference} k={k} palette={palette} lines={2} dir="auto" align={align}>
-              {card.source.ref}
-            </Field>
-          ) : null}
-          {grade ? (
-            <Field label={t.share.grading} k={k} palette={palette} lines={2} lang="ar" dir="auto" align={align}>
-              {grade.text}
-              {more > 0 ? (
-                <>
-                  {' '}
-                  <span dir="ltr">(+{more})</span>
-                </>
-              ) : null}
-              <span style={{ fontWeight: 400, fontSize: whole(24 * k), color: palette.label }}> · {grade.source_name}</span>
-            </Field>
-          ) : card.grade_unavailable ? (
-            <Field label={t.share.grading} k={k} palette={palette} align={align}>
-              {t.card.gradeUnavailable}
-            </Field>
-          ) : null}
-          {domain ? (
-            <Field label={t.share.source} k={k} palette={palette} dir="ltr" align={align}>
-              {domain}
-            </Field>
-          ) : null}
+        // No source to show (a disputed matter, a personal case, something to review): the reason
+        // and the referral stand where the source would.
+        <div style={{ flex: 'none', marginTop: whole(20 * k) }}>
+          <Rule palette={palette} />
+          <div style={{ padding: `${whole(10 * k)}px 0`, fontSize: whole(30 * k), lineHeight: 1.6 }}>
+            {reasons.map((reason) => (
+              <div key={reason}>{reason}</div>
+            ))}
+            <div>{t.share.referral}</div>
+          </div>
+          <Rule palette={palette} />
         </div>
       )}
+
+      {/* What should I do with it? */}
+      <div style={{ flex: 'none', marginTop: whole(12 * k), paddingBottom: whole(16 * k), fontSize: whole(30 * k), fontWeight: 600, lineHeight: 1.6 }}>
+        {t.actionSentences[action]}
+      </div>
     </Frame>
   )
 }
+
+// ── The summary card ──────────────────────────────────────────────────────────────────────────
 
 export interface SummaryCardImageProps extends Shell {
   total: number
   counts: Record<EvidenceState, number>
   /** True when some of the counted states were set by a human reviewer. */
   reviewed: boolean
+  /** The title of what was checked, when the report has one. */
+  title: string | null
 }
 
-/** The whole report in numbers: the total and one row per state. No claim text. */
-export function SummaryCardImage({ total, counts, reviewed, ...shell }: SummaryCardImageProps) {
+/** The whole report in one sentence, each clause in its state's ink with its ring. No claim text. */
+export function SummaryCardImage({ total, counts, reviewed, title, ...shell }: SummaryCardImageProps) {
   const { size, theme, t } = shell
   const palette = CARD_PALETTE[theme]
-  const square = size === 'square'
-  const rows = STATES_BY_RISK.filter((state) => counts[state] > 0)
-  const k = square ? (rows.length > 3 ? 0.66 : 0.82) : 1
+  const k = scaleOf(size)
+  const { head, tail, clauses } = summaryParts(t, total, counts)
+  // A sentence with all five clauses on the square card is set a step smaller.
+  const sentence = whole((size === 'square' && clauses.length > 3 ? 38 : 44) * k)
 
   return (
     <Frame {...shell} label={t.share.summaryLabel} alt={t.share.altSummary}>
-      <div style={{ textAlign: 'center' }}>
-        <div dir="ltr" style={{ fontSize: whole(150 * k), fontWeight: 700, lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' }}>{total}</div>
-        <div style={{ fontSize: whole(36 * k), fontWeight: 600, lineHeight: 1.5, color: palette.label }}>{t.share.citationsNoun(total)}</div>
-        {reviewed ? <div style={{ fontSize: whole(23 * k), fontWeight: 600, color: palette.label }}>{t.share.humanReview}</div> : null}
+      <div style={{ flex: 'none', fontSize: sentence, fontWeight: 600, lineHeight: 1.75 }}>
+        {head}
+        {tail}
+        {clauses.map((clause) => (
+          <span key={clause.state}>
+            {clause.lead}
+            <span style={{ color: palette.states[clause.state].ink, whiteSpace: 'nowrap' }}>
+              <StateGlyph
+                state={clause.state}
+                style={{ display: 'inline-block', width: whole(sentence * 0.9), height: whole(sentence * 0.9), verticalAlign: '-0.14em', marginInlineEnd: whole(8 * k) }}
+              />
+              {clause.joiner}
+              {clause.text}
+            </span>
+          </span>
+        ))}
       </div>
-      <div style={{ marginTop: 28 * k, display: 'flex', flexDirection: 'column', gap: 14 * k }}>
-        {rows.map((state) => {
-          const colours = STATE_COLOURS[state]
-          const Icon = colours.icon
-          return (
-            <div
-              key={state}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 20 * k,
-                padding: `${13 * k}px ${26 * k}px`,
-                borderRadius: 24 * k,
-                background: palette.row,
-              }}
-            >
-              <span style={{ flex: 'none', width: 50 * k, height: 50 * k, borderRadius: 999, background: colours.pill, color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon size={30 * k} strokeWidth={2.8} aria-hidden="true" />
-              </span>
-              <span style={{ flex: 1, minWidth: 0, fontSize: whole(33 * k), fontWeight: 600, lineHeight: 1.5 }}>{t.states[state]}</span>
-              <span dir="ltr" style={{ flex: 'none', fontSize: whole(38 * k), fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                {counts[state]}
-              </span>
-            </div>
-          )
-        })}
-      </div>
+      {reviewed ? (
+        <div style={{ flex: 'none', marginTop: whole(12 * k), fontSize: whole(26 * k), lineHeight: 1.5, color: palette.quiet }}>{t.share.humanReview}</div>
+      ) : null}
+      {title ? (
+        <div style={{ flex: 'none', marginTop: whole(28 * k) }}>
+          <div style={{ fontSize: whole(26 * k), lineHeight: 1.5, color: palette.quiet }}>{t.share.checked}</div>
+          <div dir="auto" style={{ fontFamily: NASKH_FONT, fontSize: whole(40 * k), lineHeight: 1.9, textAlign: shell.lang === 'ar' ? 'right' : 'left', ...clamp(3) }}>
+            {title}
+          </div>
+        </div>
+      ) : null}
     </Frame>
   )
 }

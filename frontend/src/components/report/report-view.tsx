@@ -578,6 +578,7 @@ export function ReportView({
                     counts,
                     total: ordered.length,
                     reviewed: overrides.some((o) => o.state !== o.original_state),
+                    title: source?.title ?? null,
                   })
                 }
               >

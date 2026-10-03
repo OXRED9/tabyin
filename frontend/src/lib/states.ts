@@ -1,4 +1,4 @@
-import type { Card, ContentLevel, EvidenceState, ReviewerOverride } from './types'
+import type { Action, Card, ContentLevel, EvidenceState, ReviewerOverride } from './types'
 
 /** Riskiest first: the order of «الأهم أولاً» in the phone's list of notes. */
 export const STATES_BY_RISK: EvidenceState[] = [
@@ -8,6 +8,18 @@ export const STATES_BY_RISK: EvidenceState[] = [
   'supported_with_note',
   'supported',
 ]
+
+/**
+ * The action that belongs to each state (the rules' own pairing, in their order). The engine sends
+ * a card's action itself; this is only for a state a human reviewer has set, on the verdict card.
+ */
+export const ACTION_OF_STATE: Record<EvidenceState, Action> = {
+  supported: 'adopt',
+  supported_with_note: 'correct_wording',
+  needs_review: 'refer_to_scholars',
+  not_found: 'remove_or_request_source',
+  contradicted: 'remove_and_warn',
+}
 
 /** Reading order for the summary sentence, as in the pitch deck. */
 export const STATES_FOR_SUMMARY: EvidenceState[] = [

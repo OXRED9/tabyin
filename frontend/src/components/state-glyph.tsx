@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react'
+
 import type { EvidenceState } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -12,9 +14,12 @@ const RING = <circle cx="10" cy="10" r="7.25" />
 export function StateGlyph({
   state,
   className,
+  style,
 }: {
   state: EvidenceState | 'pending'
   className?: string
+  /** For the verdict card, which is sized in pixels and not by classes. */
+  style?: CSSProperties
 }) {
   return (
     <svg
@@ -26,6 +31,7 @@ export function StateGlyph({
       aria-hidden="true"
       data-glyph={state}
       className={cn('size-5 shrink-0', className)}
+      style={style}
     >
       {state === 'supported' ? (
         <>

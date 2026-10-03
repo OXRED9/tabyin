@@ -13,49 +13,71 @@ import type { EvidenceState } from './types'
 export type CardSize = 'portrait' | 'square'
 export type CardTheme = 'light' | 'dark'
 
+/**
+ * The card's colours are the page's tokens (docs/DESIGN.md §2), fixed here: the card's theme is
+ * chosen in the dialog, not taken from the page, and the PNG must look the same anywhere.
+ */
 export interface CardPalette {
-  page: string
-  card: string
-  border: string
-  text: string
-  label: string
-  header: string
-  link: string
-  row: string
+  paper: string
+  ink: string
+  quiet: string
+  green: string
+  rule: string
+  gold: string
+  /** Each state's solid (glyph, underline) and ink (words). */
+  states: Record<EvidenceState, { solid: string; ink: string }>
 }
 
-/** The card has its own palette: its theme is chosen in the dialog, not taken from the page. */
 export const CARD_PALETTE: Record<CardTheme, CardPalette> = {
   light: {
-    page: '#f5f6f4',
-    card: '#ffffff',
-    border: '#e1e6e2',
-    text: '#0f1f1b',
-    label: '#55655f',
-    header: '#1b6b5e',
-    link: '#1b6b5e',
-    row: '#eef2ef',
+    paper: '#ffffff',
+    ink: '#11221e',
+    quiet: '#4f615b',
+    green: '#1b6b5e',
+    rule: '#d3ddd9',
+    gold: '#c9a227',
+    states: {
+      supported: { solid: '#1b6b5e', ink: '#14584d' },
+      supported_with_note: { solid: '#6e7b1e', ink: '#56611a' },
+      needs_review: { solid: '#a66a00', ink: '#7a4e00' },
+      not_found: { solid: '#b5524a', ink: '#8f3b34' },
+      contradicted: { solid: '#8c1d18', ink: '#73130f' },
+    },
   },
   dark: {
-    page: '#0b1210',
-    card: '#15201e',
-    border: '#263632',
-    text: '#eef3f1',
-    label: '#a3b4ae',
-    header: '#1c6d60',
-    link: '#6cc5b0',
-    row: '#1d2b28',
+    paper: '#10231e',
+    ink: '#e7efeb',
+    quiet: '#9db1aa',
+    green: '#7dbfb0',
+    rule: '#24392f',
+    gold: '#d9b648',
+    states: {
+      supported: { solid: '#6fc3a9', ink: '#9ad9c5' },
+      supported_with_note: { solid: '#b3c25a', ink: '#cbd784' },
+      needs_review: { solid: '#e0a63a', ink: '#efc670' },
+      not_found: { solid: '#e08a80', ink: '#f0aca4' },
+      contradicted: { solid: '#e0605a', ink: '#f4a29d' },
+    },
   },
 }
 
 export const CARD_WIDTH = 1080
 export const CARD_HEIGHT: Record<CardSize, number> = { portrait: 1350, square: 1080 }
 
-/** The claim as quoted, cut to 240 characters with «…». */
+/** Cut a text to at most `max` characters, at a word boundary, with «…». */
 export function truncateClaim(text: string, max = 240): string {
   const clean = text.replace(/\s+/g, ' ').trim()
   const chars = Array.from(clean)
-  return chars.length > max ? `${chars.slice(0, max).join('').trimEnd()}…` : clean
+  if (chars.length <= max) return clean
+  const cut = chars.slice(0, max).join('')
+  const boundary = cut.lastIndexOf(' ')
+  return `${(boundary > max * 0.6 ? cut.slice(0, boundary) : cut).trimEnd()}…`
+}
+
+/** Keep the first `count` words of a text, with «…» when something was cut. */
+export function keepWords(text: string, count: number): string {
+  const words = text.replace(/\s+/g, ' ').trim().split(' ')
+  return words.length <= count ? words.join(' ') : `${words.slice(0, Math.max(1, count)).join(' ')}…`
 }
 
 /** The verdict line: the first sentence of the rule's note. */

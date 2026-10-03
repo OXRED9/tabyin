@@ -27,7 +27,15 @@ import { cn } from '@/lib/utils'
 
 export type ShareTarget =
   | { kind: 'claim'; card: Card; overrideState: EvidenceState | null }
-  | { kind: 'summary'; summary: Summary; counts: Record<EvidenceState, number>; total: number; reviewed: boolean }
+  | {
+      kind: 'summary'
+      summary: Summary
+      counts: Record<EvidenceState, number>
+      total: number
+      reviewed: boolean
+      /** The title of what was checked, when the report has one. */
+      title: string | null
+    }
 
 function Choice<T extends string>({
   label,
@@ -118,7 +126,7 @@ export default function ShareCardDialog({
   const produce = async (): Promise<Blob> => {
     try {
       if (!node.current) throw new Error('template not mounted')
-      return await renderCardPng(node.current, size, CARD_PALETTE[theme].page)
+      return await renderCardPng(node.current, size, CARD_PALETTE[theme].paper)
     } catch {
       const payload: ShareCardRequest =
         target.kind === 'claim'
@@ -210,7 +218,13 @@ export default function ShareCardDialog({
                   verse={meta?.abstention_verse ?? null}
                 />
               ) : (
-                <SummaryCardImage {...shell} total={target.total} counts={target.counts} reviewed={target.reviewed} />
+                <SummaryCardImage
+                  {...shell}
+                  total={target.total}
+                  counts={target.counts}
+                  reviewed={target.reviewed}
+                  title={target.title}
+                />
               )}
             </div>
           </div>
