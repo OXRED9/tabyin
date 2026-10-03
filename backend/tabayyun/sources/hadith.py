@@ -27,9 +27,13 @@ HADEETHENC_NAME_AR = "موسوعة الأحاديث النبوية (HadeethEnc.c
 HADEETHENC_NAME_EN = "Encyclopedia of Translated Prophetic Hadiths (HadeethEnc.com)"
 BOOKS_NAME_AR = "كتب السنة — بيانات Open-Hadith-Data"
 
+_GRAM = 4
+_MAX_POSTINGS = 40  # 4-grams found in more narrations than this are formulas, not wording
+
 _STOP = {
     "من", "في", "علي", "عن", "ان", "الي", "ما", "لا", "قال", "هو", "هذا", "يا", "او", "ثم", "قد", "كان",
     "الله", "رسول", "النبي", "له", "به", "لم", "اذا", "حتي", "بن", "ابن", "ابي", "ابو", "حدثنا", "اخبرنا",
+    "عنه", "عنها", "عنهما", "رضي", "يقول", "سمعت", "انه", "ان", "عليه", "وسلم", "صلي", "روي", "رواه",
 }  # fmt: skip
 
 
@@ -56,6 +60,11 @@ class HadithCandidate:
     coverage: float = 0.0  # share of the candidate's words covered by the matched span
 
 
+def content_words(norm_tokens: list[str]) -> int:
+    """Words that carry a narration's wording (not chain/introduction formulas)."""
+    return len({t for t in norm_tokens if len(t) >= 2 and t not in _STOP})
+
+
 def _fts_query(tokens: list[str], limit: int = 36) -> str | None:
     seen: list[str] = []
     for t in tokens:
@@ -79,11 +88,17 @@ class HadithIndex:
         self._mem = sqlite3.connect(":memory:", check_same_thread=False)
         self._mem.execute('CREATE VIRTUAL TABLE ar USING fts5(norm, tokenize="unicode61 remove_diacritics 0")')
         self._mem.execute('CREATE VIRTUAL TABLE en USING fts5(norm, tokenize="porter unicode61")')
+        self._he_words: dict[int, list[str]] = {}
+        self._he_grams: dict[int, list[int]] = {}
         path = data_dir / "hadeethenc.json"
         if path.exists():
             for rec in json.loads(path.read_text(encoding="utf-8"))["hadeeths"]:
                 rid = int(rec["id"])
                 self.hadeethenc[str(rid)] = rec
+                words = normalize_ar(rec["hadeeth"]).split()
+                self._he_words[rid] = words
+                for pos in range(len(words) - _GRAM + 1):
+                    self._he_grams.setdefault(hash(tuple(words[pos : pos + _GRAM])), []).append((rid << 16) | min(pos, 0xFFFF))
                 self._mem.execute("INSERT INTO ar (rowid, norm) VALUES (?,?)", (rid, normalize_ar(rec["hadeeth"], drop_honorifics=True)))
                 if rec.get("en", {}).get("hadeeth"):
                     self._mem.execute("INSERT INTO en (rowid, norm) VALUES (?,?)", (rid, normalize_latin(rec["en"]["hadeeth"])))
@@ -194,6 +209,52 @@ class HadithIndex:
             out.append(c)
         out.sort(key=lambda c: (-c.similarity, c.lexical_rank))
         return out[:k]
+
+    def find_quotes_in(self, norm: list[str], *, min_words: int = 6, max_gap: int = 6) -> list[tuple[int, int, str]]:
+        """Scan a word list for verbatim HadeethEnc narrations (no model, no network).
+
+        Returns (start_word, end_word, hadeethenc_id). Runs start from a distinctive 4-gram, are
+        extended in both directions, and runs of the same narration separated by a few words
+        (an honorific written differently, a dropped word) are merged.
+        """
+        runs: list[tuple[int, int, int]] = []
+        n = len(norm)
+        i = 0
+        floor = 0
+        while i <= n - _GRAM:
+            posts = self._he_grams.get(hash(tuple(norm[i : i + _GRAM])))
+            if not posts or len(posts) > _MAX_POSTINGS:
+                i += 1
+                continue
+            best: tuple[int, int, int, int] | None = None
+            for packed in posts:
+                rid, pos = packed >> 16, packed & 0xFFFF
+                words = self._he_words[rid]
+                if words[pos : pos + _GRAM] != norm[i : i + _GRAM]:
+                    continue
+                fwd = _GRAM
+                while i + fwd < n and pos + fwd < len(words) and norm[i + fwd] == words[pos + fwd]:
+                    fwd += 1
+                back = 0
+                while i - back - 1 >= floor and pos - back - 1 >= 0 and norm[i - back - 1] == words[pos - back - 1]:
+                    back += 1
+                if best is None or fwd + back > best[0]:
+                    best = (fwd + back, i - back, i + fwd, rid)
+            if best is None:
+                i += 1
+                continue
+            _length, start, end, rid = best
+            if runs and runs[-1][2] == rid and start - runs[-1][1] <= max_gap:
+                runs[-1] = (runs[-1][0], end, rid)
+            else:
+                runs.append((start, end, rid))
+            floor = end
+            i = end
+        return [
+            (start, end, str(rid))
+            for start, end, rid in runs
+            if end - start >= min_words and content_words(normalize_ar(" ".join(norm[start:end]), drop_honorifics=True).split()) >= 4
+        ]
 
     def topic_search(self, text: str, *, k: int = 5) -> list[HadithCandidate]:
         """BM25 over HadeethEnc narrations for a topic or ruling statement (no alignment score)."""

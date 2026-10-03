@@ -1,0 +1,19 @@
+# Local run:  cp .env.example .env  &&  docker compose up --build  →  http://localhost:8080
+services:
+  tabayyun:
+    build: .
+    image: tabayyun:latest
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    volumes:
+      # Cache of responses from approved sources (Dorar, QuranEnc). No user input is stored.
+      - tabayyun-cache:/app/data/cache
+    restart: unless-stopped
+
+volumes:
+  tabayyun-cache:

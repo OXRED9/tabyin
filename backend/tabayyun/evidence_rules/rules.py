@@ -48,8 +48,11 @@ def decide_ayah(
     similarity: float,
     quoted_words: int,
     explicit_attribution: bool,
+    machine_transcribed: bool = False,
     t: Thresholds = THRESHOLDS,
 ) -> Decision:
+    """``machine_transcribed``: the text came from speech recognition, so a wording difference may
+    be the transcriber's, not the speaker's — the speaker is never said to have altered a verse."""
     if not found:
         return Decision(
             S.not_found,
@@ -69,10 +72,20 @@ def decide_ayah(
         return Decision(
             S.supported_with_note,
             "ayah.near",
-            "النص قريب من آية في المصحف مع اختلاف في اللفظ؛ يُصحَّح اللفظ وفق نص المصحف المعروض.",
-            "The text is close to a verse of the Mushaf but the wording differs; correct it to the Mushaf text shown.",
+            "النص قريب من آية في المصحف مع اختلاف في اللفظ؛ يُصحَّح اللفظ وفق نص المصحف المعروض."
+            + (" (قد يكون الاختلاف من التفريغ الآلي.)" if machine_transcribed else ""),
+            "The text is close to a verse of the Mushaf but the wording differs; correct it to the Mushaf text shown."
+            + (" (The difference may come from the machine transcript.)" if machine_transcribed else ""),
         )
     if similarity >= t.ayah_partial:
+        if explicit_attribution and machine_transcribed:
+            return Decision(
+                S.needs_review,
+                "ayah.altered_transcript",
+                "لفظ التفريغ الآلي يخالف نص المصحف، وقد يكون الخطأ من التفريغ لا من المتحدث؛ النص الصحيح معروض، ويُراجَع المقطع عند موضعه.",
+                "The machine transcript differs from the Mushaf; the error may be the transcription's rather than the speaker's. The correct text is shown; check the recording at this point.",
+                referral=False,
+            )
         if explicit_attribution:
             return Decision(
                 S.contradicted,

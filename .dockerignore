@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+!.env.example
+**/node_modules
+frontend/dist
+backend/.venv
+**/__pycache__
+data/cache
+data/raw/open-hadith-data
+data/hadith_books.sqlite
+data/hadeethenc.json
+docs/screenshots
+eval/results

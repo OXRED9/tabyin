@@ -12,7 +12,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 
 from .config import settings
 from .extract import RawClaim, merge_claims
-from .extract.lexical import extract_by_markers, scan_hadith, scan_quran
+from .extract.lexical import extract_by_markers, scan_hadith, scan_hadith_verbatim, scan_quran
 from .extract.llm_extractor import extract_with_llm
 from .ingest.document import Document, IngestError
 from .llm.base import LLMError
@@ -119,6 +119,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
             await put(("claims", {"claims": [s.model_dump(mode="json") for s in stubs]}))
 
         quick = await asyncio.to_thread(scan_quran, doc, quran)
+        quick = merge_claims(quick, await asyncio.to_thread(scan_hadith_verbatim, doc, hadith, [(c.start, c.end) for c in quick]))
         if quick:
             await put(stage("match", "start", done=0, total=len(quick)))
             await announce(quick)

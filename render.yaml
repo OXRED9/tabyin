@@ -1,0 +1,20 @@
+# Render Blueprint — one Docker web service. Secrets are entered in the Render dashboard, never here.
+services:
+  - type: web
+    name: tabayyun
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-opus-5
+      - key: TRANSCRIPTION_PROVIDER
+        value: auto
+      - key: EXAMPLE_VIDEO_URL
+        sync: false

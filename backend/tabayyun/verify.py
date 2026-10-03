@@ -43,10 +43,10 @@ from .schemas import (
 from .sources import quranenc
 from .sources.dorar import SOURCE_NAME as DORAR_NAME
 from .sources.dorar import DorarClient, DorarHit
-from .sources.hadith import HADEETHENC_NAME_AR, HADEETHENC_NAME_EN, HadithCandidate, HadithIndex
+from .sources.hadith import HADEETHENC_NAME_AR, HADEETHENC_NAME_EN, HadithCandidate, HadithIndex, content_words
 from .sources.hadith_books import BOOKS
 from .sources.quran import QuranIndex, QuranMatch
-from .textalign import aligned_words, best_span, word_diff
+from .textalign import aligned_words, best_span, word_diff, words_with_offsets
 
 log = logging.getLogger("tabayyun.verify")
 QURAN_SOURCE_AR = "المصحف الشريف — نص مصحف المدينة النبوية (Tanzil)"
@@ -156,16 +156,61 @@ def _quran_source(m: QuranMatch, ctx: Context, translation: Translation | None) 
     )
 
 
+_PREFIX_LENGTHS = (5, 7, 9, 12, 16, 20, 26, 34, 45)
+
+
+def _trim_claim(claim: RawClaim, words: list[tuple[int, int, str, str]], n: int) -> None:
+    """Shorten an open-ended quotation to its first ``n`` words (offsets stay consistent)."""
+    end = words[n - 1][1]
+    claim.end = claim.start + end
+    claim.quote = claim.quote[:end]
+
+
+def _refine_open_quote(claim: RawClaim, score) -> None:
+    """A quotation found after a marker in unpunctuated text (a transcript) has no reliable end.
+    Keep the longest prefix that still matches a source; ``score(text) -> similarity``."""
+    words = words_with_offsets(claim.quote)
+    if claim.origin != "marker" or len(words) <= _PREFIX_LENGTHS[0]:
+        return
+    best_n, best_sim = len(words), score(claim.quote)
+    if best_sim >= 0.95:
+        return
+    for n in _PREFIX_LENGTHS:
+        if n >= len(words):
+            break
+        sim = score(claim.quote[: words[n - 1][1]])
+        if sim >= 0.80 and (best_sim < 0.80 or n > best_n or best_n == len(words)):
+            best_n, best_sim = n, sim
+        elif best_sim < 0.80 and sim > best_sim + 0.02:
+            best_n, best_sim = n, sim
+    if best_n < len(words):
+        _trim_claim(claim, words, best_n)
+
+
+def _machine_transcribed(ctx: Context) -> bool:
+    return (ctx.doc.source.transcript_origin or "") in ("cloud-stt", "local-stt", "auto-captions")
+
+
 async def verify_ayah(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card:
     m: QuranMatch | None = claim.prematched  # type: ignore[assignment]
     if m is None:
-        m = await asyncio.to_thread(ctx.quran.match, claim.quote)
+
+        def match_refined() -> QuranMatch | None:
+            def score(text: str) -> float:
+                found = ctx.quran.match(text)
+                return found.similarity if found else 0.0
+
+            _refine_open_quote(claim, score)
+            return ctx.quran.match(claim.quote)
+
+        m = await asyncio.to_thread(match_refined)
     decision = decide_ayah(
         found=m is not None,
         exact=bool(m and m.kind == "exact"),
         similarity=m.similarity if m else 0.0,
         quoted_words=m.quoted_words if m else 0,
         explicit_attribution=claim.explicit_attribution,
+        machine_transcribed=_machine_transcribed(ctx),
     )
     if m is None or decision.state == EvidenceState.not_found:
         return _base_card(claim, cid, index, decision, ctx, similarity=m.similarity if m else None, certainty=Certainty.not_applicable)
@@ -227,9 +272,16 @@ def _pick_primary(strong: list[HadithCandidate]) -> HadithCandidate:
 
 async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card:
     t = THRESHOLDS
-    q_orig, q_norm = aligned_words(claim.quote, drop_honorifics=True)
     english = arabic_ratio(claim.quote) < 0.5
-    quoted_words = len(claim.quote.split()) if english else len(q_norm)
+    if not english:
+
+        def score(text: str) -> float:
+            top = ctx.hadith.search(text, k=1)
+            return top[0].similarity if top else 0.0
+
+        await asyncio.to_thread(_refine_open_quote, claim, score)
+    q_orig, q_norm = aligned_words(claim.quote, drop_honorifics=True)
+    quoted_words = len(claim.quote.split()) if english else min(len(q_norm), content_words(q_norm) + 1)
 
     local_task = asyncio.to_thread(ctx.hadith.search, claim.quote, k=40)
     dorar_task = ctx.dorar.search(claim.quote) if (ctx.dorar.reachable and not english) else asyncio.sleep(0, result=None)
@@ -269,9 +321,15 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
             g = Grade(text=c.grade_text, source_name=HADEETHENC_NAME_AR, source_url=c.url)
             if all((g.text, g.source_name) != (x.text, x.source_name) for x in grades):
                 grades.append(g)
-    for _score, hit, _diff in dorar_strong[:6]:
+    # A Dorar grading belongs to one chain. When our source names the narrating Companion, gradings
+    # of the same wording through a different Companion are left out rather than shown out of context.
+    source_head = normalize_ar(primary.text[:260]) if primary is not None else ""
+    same_chain = [x for x in dorar_strong if x[1].narrator and normalize_ar(x[1].narrator) in source_head]
+    for _score, hit, _diff in (same_chain or dorar_strong)[:6]:
         if hit.grade:
             book = " — ".join(p for p in (hit.book, hit.number) if p) or None
+            if hit.narrator:
+                book = f"الراوي: {hit.narrator}" + (f" · {book}" if book else "")
             g = Grade(text=hit.grade, scholar=hit.scholar, book=book, source_name=DORAR_NAME, source_url=hit.url)
             if all((g.text, g.scholar, g.book) != (x.text, x.scholar, x.book) for x in grades):
                 grades.append(g)

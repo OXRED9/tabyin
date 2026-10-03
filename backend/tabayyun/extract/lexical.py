@@ -8,9 +8,9 @@ from __future__ import annotations
 import re
 
 from ..ingest.document import Document
-from ..normalize import arabic_ratio
+from ..normalize import arabic_ratio, normalize_ar
 from ..schemas import Certainty, ClaimType, ContentLevel
-from ..sources.hadith import HadithIndex
+from ..sources.hadith import HadithIndex, content_words
 from ..sources.quran import QuranIndex
 from ..textalign import words_with_offsets
 from .models import RawClaim
@@ -34,17 +34,21 @@ def _plain(text: str) -> tuple[str, list[int]]:
 
 # All patterns below are written in the folded spelling produced by _plain().
 _HONORIFIC = r"(?:\s*(?:صلي\s+الله\s+عليه\s+و\s?(?:اله\s+و\s?)?سلم|ﷺ|عليه\s+(?:الصلاه\s+و\s?)?السلام|تعالي|سبحانه(?:\s+وتعالي)?|عز\s+وجل|جل\s+وعلا|تبارك\s+وتعالي))*"
+# "Strong" markers introduce a quotation directly; "weak" ones only when a colon or an opening
+# quotation mark follows ("ورد في القرآن: …"), otherwise they are ordinary prose.
+_OPEN = r"(?:\s*[:：]\s*|\s*(?=[«“\"﴿(]))"
 _AYAH_MARKER = re.compile(
-    r"(?:قال\s+الله|يقول\s+الله|قال\s+تعالي|يقول\s+تعالي|قال\s+سبحانه|قال\s+ربنا|يقول\s+ربنا|قوله\s+(?:تعالي|سبحانه|عز\s+وجل)|في\s+قوله"
-    r"|(?:جاء|ورد|كما)\s+في\s+القران(?:\s+الكريم)?|في\s+القران(?:\s+الكريم)?|في\s+كتاب\s+الله|الايه(?:\s+الكريمه)?"
-    r"|allah\s+(?:says|said)|the\s+qur'?an\s+says|in\s+the\s+qur'?an)" + _HONORIFIC + r"\s*[:،,]?\s*",
+    r"(?:(?:قال\s+الله|يقول\s+الله|قال\s+تعالي|يقول\s+تعالي|قال\s+سبحانه|قال\s+ربنا|يقول\s+ربنا|قوله\s+(?:تعالي|سبحانه|عز\s+وجل)"
+    r"|allah\s+(?:says|said)|the\s+qur'?an\s+says)" + _HONORIFIC + r"\s*[:،,]?\s*"
+    r"|(?:(?:جاء|ورد|كما)\s+)?في\s+(?:القران(?:\s+الكريم)?|كتاب\s+الله|الايه(?:\s+الكريمه)?|قوله)" + _HONORIFIC + _OPEN + r"|in\s+the\s+qur'?an" + _OPEN + r")",
     re.IGNORECASE,
 )
 _HADITH_MARKER = re.compile(
-    r"(?:(?:قال|يقول)\s+(?:رسول\s+الله|النبي|الرسول|المصطفي|نبينا)|عن\s+(?:النبي|رسول\s+الله)[^.:؟!\n]{0,60}?(?:قال|انه\s+قال)"
-    r"|ان\s+(?:النبي|رسول\s+الله)[^.:؟!\n]{0,60}?قال|(?:جاء|ورد|كما)?\s*في\s+الحديث(?:\s+(?:الشريف|الصحيح|القدسي|النبوي))?"
-    r"|حديث\s+(?:النبي|رسول\s+الله)|قال\s+عليه\s+(?:الصلاه\s+و\s?)?السلام|قال\s+صلي\s+الله\s+عليه\s+وسلم"
-    r"|the\s+prophet[^.:\n]{0,60}?said|messenger\s+of\s+allah[^.:\n]{0,60}?said)" + _HONORIFIC + r"\s*[:،,]?\s*",
+    r"(?:(?:(?:قال|يقول)\s+(?:رسول\s+الله|النبي|الرسول|المصطفي|نبينا)|عن\s+(?:النبي|رسول\s+الله)[^.:؟!\n]{0,60}?(?:قال|انه\s+قال)"
+    r"|سمعت\s+(?:النبي|رسول\s+الله)[^.:؟!\n]{0,40}?يقول"
+    r"|ان\s+(?:النبي|رسول\s+الله)[^.:؟!\n]{0,60}?قال|قال\s+عليه\s+(?:الصلاه\s+و\s?)?السلام|قال\s+صلي\s+الله\s+عليه\s+وسلم"
+    r"|the\s+prophet[^.:\n]{0,60}?said|messenger\s+of\s+allah[^.:\n]{0,60}?said)" + _HONORIFIC + r"\s*[:،,]?\s*"
+    r"|(?:(?:جاء|ورد|كما)\s+)?في\s+الحديث(?:\s+(?:الشريف|الصحيح|القدسي|النبوي))?" + _OPEN + r"|حديث\s+(?:النبي|رسول\s+الله)" + _HONORIFIC + _OPEN + r")",
     re.IGNORECASE,
 )
 _REQUEST = re.compile(
@@ -117,6 +121,35 @@ def scan_quran(doc: Document, quran: QuranIndex) -> list[RawClaim]:
     return claims
 
 
+def scan_hadith_verbatim(doc: Document, hadith: HadithIndex, exclude: list[tuple[int, int]] | None = None, *, min_words: int = 6) -> list[RawClaim]:
+    """Find verbatim HadeethEnc narrations anywhere in the document (no model involved).
+
+    ``exclude``: character spans already identified as Quran text. Narrations often quote verses,
+    so a run only counts if enough of it lies outside those spans.
+    """
+    text = doc.full_text
+    words = words_with_offsets(text)
+    exclude = exclude or []
+    claims: list[RawClaim] = []
+    for w_start, w_end, _hid in hadith.find_quotes_in([w[3] for w in words], min_words=min_words):
+        outside = [w for w in words[w_start:w_end] if not any(s <= w[0] < e for s, e in exclude)]
+        if len(outside) < min_words or content_words([w[3] for w in outside]) < 4:
+            continue
+        start, end = words[w_start][0], words[w_end - 1][1]
+        before, _ = _plain(text[max(0, start - 120) : start])
+        claims.append(
+            RawClaim(
+                type=ClaimType.hadith,
+                quote=text[start:end],
+                start=start,
+                end=end,
+                explicit_attribution=bool(_HADITH_MARKER.search(before)) or "رسول الله" in before or "النبي" in before,
+                origin="hadith_scan",
+            )
+        )
+    return claims
+
+
 def extract_by_markers(doc: Document) -> list[RawClaim]:
     """Citations introduced by an explicit marker, requests for evidence, and personal-case questions."""
     text = doc.full_text
@@ -155,6 +188,8 @@ def scan_hadith(doc: Document, hadith: HadithIndex, taken: list[tuple[int, int]]
         sentence = m.group(0).strip()
         if len(sentence.split()) < 6 or arabic_ratio(sentence) < 0.5:
             continue
+        if content_words(normalize_ar(sentence, drop_honorifics=True).split()) < 4:
+            continue  # a chain of narrators or an introduction, not a narration's wording
         start = m.start() + (len(m.group(0)) - len(m.group(0).lstrip()))
         end = start + len(sentence)
         if any(s < end and start < e for s, e in taken):
