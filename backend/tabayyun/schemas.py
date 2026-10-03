@@ -92,6 +92,35 @@ class SourceRef(BaseModel):
     translation: Translation | None = None
 
 
+class ExplainCandidate(BaseModel):
+    rank: int
+    source_name: str
+    ref: str
+    url: str | None = None
+    similarity: float | None = None  # None when retrieved by topic rather than by wording
+    chosen: bool = False
+    grade_text: str | None = None  # verbatim, when the corpus carries one
+    excerpt: str = ""
+
+
+class Explain(BaseModel):
+    """F5 — why this verdict. Every sentence here is produced by rules from retrieval facts; the only
+    model-written text is ``level_reason_*`` when ``level_reason_origin == "model"``."""
+
+    rule_ar: str
+    rule_en: str
+    limits_ar: str
+    limits_en: str
+    similarity: float | None = None
+    threshold: float | None = None
+    candidates: list[ExplainCandidate] = Field(default_factory=list)
+    level_reason_ar: str = ""
+    level_reason_en: str = ""
+    level_reason_origin: Literal["rule", "model"] = "rule"
+    match_ms: int = 0
+    data_version: str = ""
+
+
 class Timestamp(BaseModel):
     start: float
     end: float | None = None
@@ -136,6 +165,8 @@ class Card(BaseModel):
     span: Span | None = None
     position: int = 0  # character offset in the whole text: the chronological sort key
     warnings: list[str] = Field(default_factory=list)
+    copy_text: str | None = None  # F4: the source's wording, ready to paste (never the user's)
+    explain: Explain | None = None  # F5
 
     @model_validator(mode="after")
     def _supported_requires_source(self) -> "Card":
@@ -180,6 +211,7 @@ class Summary(BaseModel):
     llm_provider: str | None = None
     warnings: list[str] = Field(default_factory=list)
     elapsed_seconds: float
+    stage_seconds: dict[str, float] = Field(default_factory=dict)  # ingest / extract / match / total
 
 
 class VerifyRequest(BaseModel):

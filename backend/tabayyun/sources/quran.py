@@ -208,6 +208,17 @@ class QuranIndex:
             return None
 
         # 2) Fuzzy: seed candidate windows from shared n-grams and rare words, then align.
+        best: QuranMatch | None = None
+        for score, start, end in self._fuzzy_spans(stream, q_norm):
+            if best is None or score > best.similarity + 1e-9:
+                best = self._build(stream, start, end, q_orig, q_norm, "fuzzy", score)
+        if best and best.similarity >= 0.999:
+            best.kind = "exact" if best.quoted_words >= MIN_EXACT_WORDS else "fuzzy"
+        return best
+
+    def _fuzzy_spans(self, stream: _Stream, q_norm: list[str]) -> list[tuple[float, int, int]]:
+        """(similarity, start, end) of the best-aligned span in every seeded window, in seed order."""
+        n = len(q_norm)
         seeds: dict[int, int] = defaultdict(int)  # anchor (stream position of the quote's first word) -> votes
         for i in range(n - 1):
             hits = stream.bigrams.get((q_norm[i], q_norm[i + 1]), ())
@@ -225,21 +236,41 @@ class QuranIndex:
             for a, _sc in sorted(scores.items(), key=lambda kv: -kv[1])[:12]:
                 seeds[self.ayah_start_clean[a] // 4] += 1
 
-        best: QuranMatch | None = None
+        spans: list[tuple[float, int, int]] = []
         slack = max(4, n // 3)
         for bucket, _votes in sorted(seeds.items(), key=lambda kv: -kv[1])[:_MAX_SEEDS]:
             anchor = bucket * 4
             lo = max(0, anchor - slack)
             hi = min(len(stream.words), anchor + n + slack + 4)
-            window = stream.words[lo:hi]
-            span = best_span(q_norm, window)
-            if span is None:
+            span = best_span(q_norm, stream.words[lo:hi])
+            if span is not None:
+                spans.append((span.score, lo + span.start, lo + span.end))
+        return spans
+
+    def candidates(self, quoted: str, k: int = 5) -> list[QuranMatch]:
+        """The ``k`` closest places in the Mushaf, best first — what the explainability panel lists."""
+        q_orig, q_norm = aligned_words(quoted)
+        if not q_norm:
+            return []
+        by_place: dict[tuple[int, int], QuranMatch] = {}
+
+        def keep(m: QuranMatch) -> None:
+            key = (m.surah, m.ayah_start)
+            if key not in by_place or m.similarity > by_place[key].similarity:
+                by_place[key] = m
+
+        n = len(q_norm)
+        for stream in (self.clean, self.uthmani):
+            if n >= MIN_EXACT_WORDS:
+                for pos in stream.trigrams.get((q_norm[0], q_norm[1], q_norm[2]), ()):
+                    if stream.words[pos : pos + n] == q_norm:
+                        keep(self._build(stream, pos, pos + n, q_orig, q_norm, "exact", 1.0))
+            if by_place:
                 continue
-            if best is None or span.score > best.similarity + 1e-9:
-                best = self._build(stream, lo + span.start, lo + span.end, q_orig, q_norm, "fuzzy", span.score)
-        if best and best.similarity >= 0.999:
-            best.kind = "exact" if best.quoted_words >= MIN_EXACT_WORDS else "fuzzy"
-        return best
+            if n >= MIN_EXACT_WORDS:
+                for score, start, end in sorted(self._fuzzy_spans(stream, q_norm), key=lambda x: -x[0])[: k * 2]:
+                    keep(self._build(stream, start, end, q_orig, q_norm, "fuzzy", score))
+        return sorted(by_place.values(), key=lambda m: (-m.similarity, m.surah, m.ayah_start))[:k]
 
     def _build(self, stream: _Stream, start: int, end: int, q_orig: list[str], q_norm: list[str], kind: str, score: float) -> QuranMatch:
         first = stream.ayah_of[start]

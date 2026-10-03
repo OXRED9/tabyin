@@ -91,6 +91,10 @@ async def extract_with_llm(doc: Document, llm: LLMRouter, *, max_claims: int) ->
                     search_query=c.search_query.strip(),
                     evidence_ref=c.evidence_ref.strip(),
                     origin="llm",
+                    # quoted verses and narrations are level A by rule; for the rest the level is the model's
+                    level_reason_ar="" if kind in (ClaimType.ayah, ClaimType.hadith) else c.level_reason_ar.strip(),
+                    level_reason_en="" if kind in (ClaimType.ayah, ClaimType.hadith) else c.level_reason_en.strip(),
+                    level_reason_origin="rule" if kind in (ClaimType.ayah, ClaimType.hadith) else "model",
                 )
             )
         return claims

@@ -14,6 +14,7 @@ main{max-width:860px;margin:0 auto;padding:32px 24px}h1{font-size:24px;margin:0;
 .card{background:#fff;border:1px solid #E3E7E4;border-inline-start:5px solid var(--c);border-radius:12px;padding:16px 20px;margin:12px 0;break-inside:avoid}
 .state{color:var(--c);font-weight:700}.row{margin:6px 0}.label{color:#4B5A56;font-size:12px;display:block}
 .quote{font-size:17px}.src{background:#F6F7F5;border-radius:8px;padding:8px 12px}.ins{background:#FCEFC7}.del{background:#FBD9D5;text-decoration:line-through}
+.why{border-top:1px solid #E3E7E4;padding-top:8px}.why ol{margin:4px 0;padding-inline-start:20px}
 .override{background:#FFF6DA;border:1px dashed #C9A227;border-radius:8px;padding:6px 10px;font-size:13px;margin-top:8px}
 a{color:#1B6B5E;word-break:break-all}footer{margin-top:32px;font-size:12px;color:#4B5A56}
 @media print{body{background:#fff}main{padding:0}.card{border-color:#ccc}}
@@ -80,6 +81,24 @@ def _card_html(card: Card, override: dict | None, en: bool) -> str:
         meta.append(f'{L("القطعية", "Certainty")}: {escape(certainty)}')
     meta.append(f'{L("الإجراء", "Action")}: {escape(_t(ACTION[card.action.value], en))}')
     rows.append(f'<div class="row muted">{" · ".join(meta)}</div>')
+    if card.explain:
+        e = card.explain
+        items = [f'<div>{escape(e.rule_en if en else e.rule_ar)}</div>']
+        if e.candidates:
+            lis = "".join(
+                f'<li>{"✓ " if c.chosen else ""}{escape(c.ref)} — {escape(c.source_name)}'
+                f'{(" · " + L("تشابه", "similarity") + f" {c.similarity:.2f}") if c.similarity is not None else ""}'
+                f'{(" · " + escape(c.grade_text.splitlines()[0])) if c.grade_text else ""}</li>'
+                for c in e.candidates
+            )
+            items.append(f'<div class="muted">{L("المرشحون المسترجَعون", "Retrieved candidates")}:</div><ol class="muted">{lis}</ol>')
+        reason = e.level_reason_en if en else e.level_reason_ar
+        if reason:
+            who = L("سبب التصنيف (من النموذج اللغوي)", "Level reason (from the language model)") if e.level_reason_origin == "model" else L("سبب التصنيف", "Level reason")
+            items.append(f'<div class="muted">{who}: {escape(reason)}</div>')
+        items.append(f'<div class="muted">{L("نسخة البيانات", "Data snapshot")}: {escape(e.data_version)}</div>')
+        items.append(f'<div><strong>{L("حدود هذا الحكم", "Limits of this verdict")}:</strong> {escape(e.limits_en if en else e.limits_ar)}</div>')
+        rows.append(f'<div class="row why"><span class="label">{L("لماذا هذا الحكم؟", "Why this verdict?")}</span>{"".join(items)}</div>')
     if override:
         rows.append(
             f'<div class="override"><strong>{L("حالة معدَّلة بمراجعة بشرية", "State changed by human review")}</strong> — '

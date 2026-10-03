@@ -41,7 +41,7 @@ class ScriptedProvider:
 
 
 def claim(**kw) -> LLMClaim:
-    base = dict(type="ruling", quote="", attributed_to="", explicit_attribution=False, content_level="A", certainty="definitive", search_query="", evidence_ref="")
+    base = dict(type="ruling", quote="", attributed_to="", explicit_attribution=False, content_level="A", certainty="definitive", search_query="", evidence_ref="", level_reason_ar="مسألة من المعلوم من الدين", level_reason_en="A matter known to be settled")
     return LLMClaim(**{**base, **kw})
 
 

@@ -9,8 +9,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import time
 from dataclasses import dataclass
 
+from .config import settings
+from .dataversion import get_data_version
 from .evidence_rules import (
     THRESHOLDS,
     Decision,
@@ -24,6 +27,7 @@ from .evidence_rules import (
     decide_request,
     decide_ruling,
 )
+from .evidence_rules.explain import LEVEL_REASONS, Facts, describe
 from .extract.models import JUDGEMENT_SCHEMA, LLMJudgement, RawClaim
 from .extract.prompts import JUDGE_SYSTEM
 from .ingest.document import Document
@@ -36,6 +40,8 @@ from .schemas import (
     ClaimType,
     ContentLevel,
     EvidenceState,
+    Explain,
+    ExplainCandidate,
     Grade,
     SourceRef,
     Translation,
@@ -119,9 +125,86 @@ async def judge(ctx: Context, task: str, claim_text: str, texts: list[str]) -> i
     return result.best_index
 
 
+# Rules under which the shown source is only "the closest text", not asserted to be what was quoted:
+# there is no "correct text" to copy for those.
+_NO_COPY_RULES = {"hadith.partial", "hadith.too_short", "ayah.partial_unattributed", "ayah.below_threshold", "ayah.none", "hadith.none", "quote.none"}
+
+
+def _excerpt(text: str, limit: int = 160) -> str:
+    text = " ".join(text.split())
+    return text if len(text) <= limit else text[:limit].rsplit(" ", 1)[0] + "…"
+
+
+def _copy_text(card: Card, quran_match: QuranMatch | None, ctx: Context) -> str | None:
+    """F4 — the source's own wording with its reference (and grading), ready to paste."""
+    src = card.source
+    if src is None or card.rule_id.partition("+")[0] in _NO_COPY_RULES:
+        return None
+    en = ctx.ui_lang == "en"
+    if src.kind == "quran" and quran_match is not None:
+        m = quran_match
+        ayat = str(m.ayah_start) if m.ayah_start == m.ayah_end else f"{m.ayah_start}-{m.ayah_end}"
+        place = f"{m.surah_name_en} {m.surah}:{ayat}" if en else f"{m.surah_name_ar}: {ayat}"
+        return f"﴿{src.text}﴾ [{place}]"
+    lines = [src.text.strip(), src.ref]
+    for g in card.grades[:3]:
+        who = " — ".join(x for x in (g.scholar, g.book) if x)
+        label = "Grading" if en else "الحكم"
+        lines.append(f"{label}: {g.text.strip()}" + (f" — {who}" if who else "") + f" ({g.source_name})")
+    if card.grade_unavailable:
+        lines.append("Grading not available from the source" if en else "الحكم غير متاح من المصدر")
+    lines.append(src.url)
+    return "\n".join(lines)
+
+
+def _level_reason(claim: RawClaim) -> tuple[str, str, str]:
+    if claim.level_reason_origin == "model" and (claim.level_reason_ar or claim.level_reason_en):
+        return claim.level_reason_ar or claim.level_reason_en, claim.level_reason_en or claim.level_reason_ar, "model"
+    if claim.type in (ClaimType.ayah, ClaimType.hadith):
+        key = "quoted_text"
+    elif claim.type == ClaimType.request:
+        key = "request"
+    elif claim.content_level == ContentLevel.D:
+        key = "personal_pattern"
+    else:
+        key = "default"
+    return (*LEVEL_REASONS[key], "rule")
+
+
+def _explain(card: Card, claim: RawClaim, facts: Facts, candidates: list[ExplainCandidate], ctx: Context) -> Explain:
+    """F5 — the rule in words, the candidates it weighed, and what the verdict does not establish."""
+    facts.level = card.content_level
+    if facts.similarity is None:
+        facts.similarity = card.similarity
+    if card.grades and facts.grade_text is None:
+        facts.grade_text, facts.grade_source, facts.grade_count = card.grades[0].text, card.grades[0].source_name, len(card.grades)
+    facts.machine_transcribed = _machine_transcribed(ctx)
+    facts.dorar_reachable = ctx.dorar.status != "unreachable"
+    rule = describe(card.rule_id, facts)
+    reason_ar, reason_en, origin = _level_reason(claim)
+    for rank, c in enumerate(candidates, start=1):
+        c.rank = rank
+    return Explain(
+        rule_ar=rule.rule_ar,
+        rule_en=rule.rule_en,
+        limits_ar=rule.limits_ar,
+        limits_en=rule.limits_en,
+        similarity=facts.similarity,
+        threshold=rule.threshold,
+        candidates=candidates[:5],
+        level_reason_ar=reason_ar,
+        level_reason_en=reason_en,
+        level_reason_origin=origin,  # type: ignore[arg-type]
+        data_version=get_data_version(),
+    )
+
+
 def _base_card(claim: RawClaim, cid: str, index: int, decision: Decision, ctx: Context, **kw) -> Card:
+    candidates: list[ExplainCandidate] = kw.pop("candidates", None) or []
+    facts: Facts = kw.pop("facts", None) or Facts()
+    quran_match: QuranMatch | None = kw.pop("quran_match", None)
     span, ts = ctx.doc.locate(claim.start, claim.end)
-    return Card(
+    card = Card(
         id=cid,
         index=index,
         claim_type=claim.type,
@@ -145,6 +228,11 @@ def _base_card(claim: RawClaim, cid: str, index: int, decision: Decision, ctx: C
         position=claim.start,
         **kw,
     )
+    if settings.features_copy:
+        card.copy_text = _copy_text(card, quran_match, ctx)
+    if settings.features_explain:
+        card.explain = _explain(card, claim, facts, candidates, ctx)
+    return card
 
 
 # --------------------------------------------------------------------------- ayah
@@ -218,8 +306,24 @@ async def verify_ayah(claim: RawClaim, cid: str, index: int, ctx: Context) -> Ca
         explicit_attribution=claim.explicit_attribution,
         machine_transcribed=_machine_transcribed(ctx),
     )
+    facts = Facts(similarity=m.similarity if m else None, quoted_words=m.quoted_words if m else len(claim.quote.split()))
+    candidates: list[ExplainCandidate] = []
+    if settings.features_explain:
+        en = ctx.ui_lang == "en"
+        for c in await asyncio.to_thread(ctx.quran.candidates, claim.quote, 5):
+            candidates.append(
+                ExplainCandidate(
+                    rank=0,
+                    source_name=QURAN_SOURCE_EN if en else QURAN_SOURCE_AR,
+                    ref=c.ref_en if en else c.ref_ar,
+                    url=c.url,
+                    similarity=c.similarity,
+                    chosen=bool(m and decision.state != EvidenceState.not_found and (c.surah, c.ayah_start) == (m.surah, m.ayah_start)),
+                    excerpt=_excerpt(c.uthmani_text),
+                )
+            )
     if m is None or decision.state == EvidenceState.not_found:
-        return _base_card(claim, cid, index, decision, ctx, similarity=m.similarity if m else None, certainty=Certainty.not_applicable)
+        return _base_card(claim, cid, index, decision, ctx, similarity=m.similarity if m else None, certainty=Certainty.not_applicable, facts=facts, candidates=candidates)
 
     translation = None
     if ctx.ui_lang == "en":
@@ -239,6 +343,7 @@ async def verify_ayah(claim: RawClaim, cid: str, index: int, ctx: Context) -> Ca
         source=_quran_source(m, ctx, translation),
         diff=None if kind == "exact" else m.diff,
         certainty=Certainty.definitive if kind == "exact" else Certainty.not_applicable,
+        facts=facts, candidates=candidates, quran_match=m,
     )  # fmt: skip
 
 
@@ -356,8 +461,32 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
         quoted_words=quoted_words,
         grading_source_reachable=ctx.dorar.status != "unreachable",
     )
+    facts = Facts(similarity=round(similarity, 4) if (found or cands) else None, quoted_words=quoted_words, in_sahihayn=in_sahihayn)
+    if not found and cands:
+        facts.similarity = cands[0].similarity
+    candidates: list[ExplainCandidate] = []
+    if settings.features_explain:
+        if dorar_strong and primary is None:
+            hit = dorar_strong[0][1]
+            src = _dorar_source(hit, ctx)
+            candidates.append(ExplainCandidate(rank=0, source_name=src.source_name, ref=src.ref, url=src.url, similarity=round(dorar_strong[0][0], 4), chosen=True, grade_text=hit.grade, excerpt=_excerpt(hit.text)))
+        seen_books: set[str] = set()
+        for c in ([primary] if primary else []) + [c for c in cands if c is not primary]:
+            label = c.book or c.key  # one row per book, so the list shows breadth rather than five versions from one book
+            if label in seen_books:
+                continue
+            seen_books.add(label)
+            src = _hadith_source(c, ctx)
+            candidates.append(
+                ExplainCandidate(
+                    rank=0, source_name=src.source_name, ref=src.ref, url=src.url, similarity=c.similarity,
+                    chosen=c is primary and decision.state != EvidenceState.not_found, grade_text=c.grade_text, excerpt=_excerpt(c.matched_span_text or c.text),
+                )
+            )  # fmt: skip
+            if len(candidates) >= 5:
+                break
     if decision.state == EvidenceState.not_found:
-        return _base_card(claim, cid, index, decision, ctx, similarity=round(similarity, 4) if found else None, certainty=Certainty.not_applicable)
+        return _base_card(claim, cid, index, decision, ctx, similarity=round(similarity, 4) if found else None, certainty=Certainty.not_applicable, facts=facts, candidates=candidates)
 
     note_ar, note_en = decision.note_ar, decision.note_en
     source: SourceRef | None = None
@@ -397,6 +526,7 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
         grades=grades,
         diff=diff if kind != "exact" or (diff and any(d.op != "equal" for d in diff)) else None,
         certainty=Certainty.not_applicable,
+        facts=facts, candidates=candidates,
     )  # fmt: skip
 
 
@@ -408,10 +538,11 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
     level = claim.content_level
     certainty = Certainty.ijtihadi if level in (ContentLevel.C, ContentLevel.D) or claim.certainty == Certainty.not_applicable else claim.certainty
     if level == ContentLevel.D:
-        return _base_card(claim, cid, index, decide_ruling(level=level, explicit_text_found=False), ctx, certainty=certainty)
+        return _base_card(claim, cid, index, decide_ruling(level=level, explicit_text_found=False), ctx, certainty=certainty, facts=Facts(quoted_words=len(claim.quote.split())))
 
     query = claim.search_query or claim.quote
     candidates: list[tuple[str, SourceRef, list[Grade]]] = []
+    evidence_match: QuranMatch | None = None
     m = _EVIDENCE_REF.match(claim.evidence_ref or "")
     if m and level == ContentLevel.A:
         ref = (int(m.group(1)), int(m.group(2)))
@@ -421,6 +552,7 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
             if _shared_vocabulary(f"{claim.quote} {query}", clean)[0] >= 1:
                 qm = ctx.quran.match(clean)
                 if qm is not None:
+                    evidence_match = qm
                     candidates.append((clean, _quran_source(qm, ctx, None), []))
     for c in await asyncio.to_thread(ctx.hadith.topic_search, f"{query} {claim.quote}", k=5):
         if classify_grade(c.grade_text) == GradeCategory.accepted:
@@ -454,7 +586,17 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
         kw = dict(other_sources=[chosen[1]])
     if not ctx.llm_enabled and decision.state != EvidenceState.supported:
         decision.warnings.append("lexical_only")
-    return _base_card(claim, cid, index, decision, ctx, certainty=certainty, **kw)
+    considered = [
+        ExplainCandidate(
+            rank=0, source_name=src.source_name, ref=src.ref, url=src.url, similarity=None,
+            chosen=chosen is not None and src is chosen[1] and decision.state == EvidenceState.supported,
+            grade_text=grades[0].text if grades else None, excerpt=_excerpt(src.text),
+        )
+        for _text, src, grades in candidates
+    ]  # fmt: skip
+    considered.sort(key=lambda c: not c.chosen)
+    quran_match = evidence_match if (chosen and chosen[1].kind == "quran") else None
+    return _base_card(claim, cid, index, decision, ctx, certainty=certainty, facts=Facts(quoted_words=len(claim.quote.split())), candidates=considered, quran_match=quran_match, **kw)
 
 
 # --------------------------------------------------------------------------- attributed quotes
@@ -481,13 +623,23 @@ async def verify_quote(claim: RawClaim, cid: str, index: int, ctx: Context) -> C
     if decision.rule_id.startswith("quote.misattributed"):
         decision.note_ar += " المصدر يرويه حديثاً عن النبي ﷺ."
         decision.note_en += " The source reports it as a hadith of the Prophet ﷺ."
-    return _base_card(claim, cid, index, decision, ctx, **kw)
+    listed: list[ExplainCandidate] = []
+    for c in cands[:5]:
+        src = _hadith_source(c, ctx)
+        listed.append(
+            ExplainCandidate(
+                rank=0, source_name=src.source_name, ref=src.ref, url=src.url, similarity=c.similarity,
+                chosen=c is best and decision.state != EvidenceState.not_found, grade_text=c.grade_text, excerpt=_excerpt(c.matched_span_text or c.text),
+            )
+        )  # fmt: skip
+    facts = Facts(similarity=best.similarity if best else None, quoted_words=len(claim.quote.split()))
+    return _base_card(claim, cid, index, decision, ctx, facts=facts, candidates=listed, **kw)
 
 
 # --------------------------------------------------------------------------- dispatch
 
 
-async def verify_claim(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card:
+async def _dispatch(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card:
     if claim.type == ClaimType.ayah:
         return await verify_ayah(claim, cid, index, ctx)
     if claim.type == ClaimType.hadith:
@@ -497,3 +649,11 @@ async def verify_claim(claim: RawClaim, cid: str, index: int, ctx: Context) -> C
     if claim.type == ClaimType.request:
         return _base_card(claim, cid, index, decide_request(), ctx, certainty=Certainty.not_applicable)
     return await verify_statement(claim, cid, index, ctx)
+
+
+async def verify_claim(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card:
+    started = time.perf_counter()
+    card = await _dispatch(claim, cid, index, ctx)
+    if card.explain is not None:
+        card.explain.match_ms = int((time.perf_counter() - started) * 1000)
+    return card

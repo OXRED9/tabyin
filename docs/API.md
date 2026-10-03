@@ -167,3 +167,95 @@ Body: a `Report` (`{ source, segments, cards, summary, generated_at, reviewer_ov
 by the client, including reviewer overrides
 (`{ card_id, original_state, state, note, reviewer, at }`). Returns a standalone printable HTML
 document (`text/html`). Nothing is stored. JSON export is done entirely client-side.
+
+---
+
+# Phase 2 additions (F3 verdict card · F4 copy · F5 explainability)
+
+Each feature has a flag in `.env` (`FEATURES_SHARE_CARD`, `FEATURES_COPY`, `FEATURES_EXPLAIN`,
+default `true`). The UI hides a feature whose flag is off; the API then omits its data.
+
+## `GET /api/meta` — new keys
+
+```json
+{
+  "features": { "share_card": true, "copy": true, "explain": true },
+  "app_url": "https://…",            // PUBLIC_URL; null → the UI uses window.location.origin
+  "data_version": "2026.10.03 · quran 6236 · hadeethenc 3574 · books 58802"
+}
+```
+
+## `Card` — new fields
+
+```ts
+interface Card {
+  // …existing fields…
+  copy_text: string | null;   // F4. The *source's* wording, ready to paste. Never the user's wording.
+                              //   ayah:   ﴿<Uthmani text>﴾ [<surah>: <ayah>]
+                              //   hadith: <source text>\n<reference> — <grading verbatim> (<grading source>)\n<url>
+                              //   null when the card has no source (not_found, requests, personal cases)
+  explain: Explain | null;    // F5. null when FEATURES_EXPLAIN is off
+}
+
+interface Explain {
+  rule_ar: string; rule_en: string;       // the rule that fired, in words, with its numbers
+  limits_ar: string; limits_en: string;   // "حدود هذا الحكم" — generated from the rule, never by a model
+  similarity: number | null;              // 0..1
+  threshold: number | null;               // the threshold the similarity was compared with, if any
+  candidates: ExplainCandidate[];         // up to 5 retrieved candidates, best first
+  level_reason_ar: string; level_reason_en: string;   // one line: why this content level
+  level_reason_origin: "rule" | "model";  // "model" = the LLM classifier's own words (label it as such)
+  match_ms: number;                       // retrieval + decision time for this claim
+  data_version: string;                   // same string as meta.data_version
+}
+
+interface ExplainCandidate {
+  rank: number;               // 1-based
+  source_name: string;
+  ref: string;
+  url: string | null;
+  similarity: number | null;  // null when the candidate was retrieved by topic, not by wording
+  chosen: boolean;            // the candidate the card's source came from
+  grade_text: string | null;  // verbatim, when the corpus carries one
+  excerpt: string;            // first ~160 characters of the candidate's verbatim text
+}
+```
+
+## `Summary` — new field
+
+```ts
+stage_seconds: { ingest: number; extract: number; match: number; total: number }
+```
+
+## `POST /api/share-card` → `image/png` (F3 server-side fallback)
+
+Used only when client-side rendering fails. Nothing is stored; no timestamp or identifier is drawn.
+
+```json
+{
+  "kind": "claim | summary",
+  "size": "portrait | square",          // 1080×1350 | 1080×1080
+  "theme": "light | dark",
+  "lang": "ar | en",
+  "card": Card,                          // kind = "claim"
+  "override_state": "…EvidenceState… | null",   // a reviewer's state, drawn with a "human review" mark and no name
+  "summary": Summary                     // kind = "summary"
+}
+```
+
+### What a verdict card shows (client and server render the same content)
+
+| Element | Source |
+|---|---|
+| Brand header | logo mark, «تبيّن», «بطاقة تثبّت» / "Verification card" |
+| State badge | colour + icon + word (`override_state ?? card.state`); «حالة معدَّلة بمراجعة بشرية» when overridden |
+| Claim | `card.text_as_quoted`, truncated to 240 characters with «…» |
+| Verdict line | first sentence of `note_ar` / `note_en` |
+| Reference | `card.source.ref` |
+| Grading | `card.grades[0].text` verbatim + its `source_name`; «+N» when there are more; «الحكم غير متاح من المصدر» when `grade_unavailable` |
+| Source domain | hostname of `card.source.url` |
+| `not_found` | the abstention line + `meta.abstention_verse` (text and reference) instead of reference/grading |
+| Footer | «تحقّق بنفسك على تبيّن» + app URL + QR code of the app URL + the transparency line |
+
+Never drawn: date or time, reviewer name, video URL or timestamp, anything about the user.
+A summary card shows the total and the count per state (colour + icon + word), no claim text.

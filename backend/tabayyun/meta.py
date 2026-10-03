@@ -6,6 +6,7 @@ import json
 from functools import lru_cache
 
 from .config import settings
+from .dataversion import get_data_version
 from .sources.hadith import get_hadith_index
 from .sources.quran import get_quran_index
 
@@ -63,6 +64,9 @@ def load_terms() -> list[dict]:
 @lru_cache(maxsize=1)
 def build_meta() -> dict:
     return {
+        "features": {"share_card": settings.features_share_card, "copy": settings.features_copy, "explain": settings.features_explain},
+        "app_url": settings.public_url.rstrip("/") if settings.public_url else None,
+        "data_version": get_data_version(),
         "terms": load_terms(),
         "abstention_verse": _verse(ABSTENTION_VERSE),
         "motto_verse": _verse(MOTTO_VERSE),

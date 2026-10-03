@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     rate_limit_requests: int = 30
     rate_limit_window_seconds: int = 600
 
+    # --- Phase 2 feature flags (a feature that is not finished is switched off, not half-shipped) ---
+    features_share_card: bool = True  # F3: shareable verdict card
+    features_copy: bool = True  # F4: one-click copy of the correct text
+    features_explain: bool = True  # F5: "why this verdict?" panel
+    # Public base URL of this deployment, printed (and QR-encoded) on verdict cards.
+    public_url: str | None = None
+
     # --- Optional demo content (no religious text is hard-coded; see /api/meta) ---
     example_video_url: str | None = None
 

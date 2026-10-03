@@ -59,6 +59,11 @@ source databases. "" for the other types.
 states it explicitly, give it as "surah_number:ayah_number" (digits only). This is only a pointer: \
 the system looks the verse up in the Mushaf and checks it; do not write the verse text. Otherwise "".
 
+- level_reason_ar / level_reason_en: one short line (under 20 words each, Arabic and English) saying \
+why you chose this content_level. It is shown to the user as the classifier's reason, so describe \
+the kind of content ("a question about the asker's own divorce", "a matter the schools differ on"); \
+do not state a ruling in it.
+
 Rules:
 - Report only religious content. Ignore everything else. If there is none, return an empty list.
 - Do not invent items. Do not split one quotation into several items. Do not merge distinct ones.

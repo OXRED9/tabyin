@@ -84,6 +84,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         except IngestError as e:
             await put(("error", error_event(e.code, "ingest")))
             return
+        t_ingest = time.monotonic()
         await put(("source", doc.source.model_dump()))
         await put(("segments", {"segments": [s.model_dump() for s in doc.segments]}))
         await put(stage("ingest", "done"))
@@ -159,6 +160,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
 
         merged = merge_claims(quick, rest)
         new = [c for c in merged if all(c is not q for q in quick)][: max(0, settings.max_claims - len(quick))]
+        t_extract = time.monotonic()
         await put(stage("extract", "done"))
 
         # ---- 3. match (+ 4. rules, applied inside verify_claim)
@@ -188,6 +190,12 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
             llm_provider=llm.last_provider if mode == "full" else None,
             warnings=warnings,
             elapsed_seconds=round(time.monotonic() - started, 2),
+            stage_seconds={
+                "ingest": round(t_ingest - started, 2),
+                "extract": round(t_extract - t_ingest, 2),
+                "match": round(time.monotonic() - t_extract, 2),
+                "total": round(time.monotonic() - started, 2),
+            },
         )
         await put(("summary", summary.model_dump(mode="json")))
         await put(stage("report", "done"))

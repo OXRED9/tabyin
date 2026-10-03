@@ -24,6 +24,9 @@ class RawClaim:
     evidence_ref: str = ""  # an LLM-*proposed* "surah:ayah" for a ruling; only ever used to look the text up
     origin: Literal["quran_scan", "marker", "hadith_scan", "llm"] = "llm"
     closed: bool = False  # a marker quotation delimited by quotation marks or Quranic brackets
+    level_reason_ar: str = ""  # one line: why this content level (the classifier's own words when origin == "model")
+    level_reason_en: str = ""
+    level_reason_origin: Literal["rule", "model"] = "rule"
     prematched: object | None = field(default=None, repr=False)  # a QuranMatch found during the scan
 
 
@@ -39,6 +42,8 @@ class LLMClaim(BaseModel):
     certainty: Literal["definitive", "ijtihadi", "not_applicable"]
     search_query: str
     evidence_ref: str
+    level_reason_ar: str
+    level_reason_en: str
 
 
 class LLMClaims(BaseModel):
@@ -61,8 +66,10 @@ CLAIMS_SCHEMA: dict = {
                     "certainty": {"type": "string", "enum": ["definitive", "ijtihadi", "not_applicable"]},
                     "search_query": {"type": "string"},
                     "evidence_ref": {"type": "string"},
+                    "level_reason_ar": {"type": "string"},
+                    "level_reason_en": {"type": "string"},
                 },
-                "required": ["type", "quote", "attributed_to", "explicit_attribution", "content_level", "certainty", "search_query", "evidence_ref"],
+                "required": ["type", "quote", "attributed_to", "explicit_attribution", "content_level", "certainty", "search_query", "evidence_ref", "level_reason_ar", "level_reason_en"],
                 "additionalProperties": False,
             },
         }
