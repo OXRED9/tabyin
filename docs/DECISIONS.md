@@ -449,3 +449,29 @@ ruling points at).
     pointing, 6 s for choosing alternatives. A text with no source takes 14–19 s (was 22 s) — the pointing
     call runs to its limit on such texts — and other narrations 4–6 s.
 
+
+Decided in the frontend for the polish round after the daily-use review at 390px (4 October).
+
+102. **The head of a report takes the height it needs, while running and when done.** No height is
+     reserved any more: the summary starts at the sheet's top padding and the rule follows it. The
+     price is one movement when a report completes — the page under the head moves by the
+     difference between the progress line (112px on a phone) and the sentence (89–185px). What the
+     final sentence needs is not known until the last card arrives, so reserving it while streaming
+     would only move the same shift earlier. Measured on the phone profile: CLS 0.004 → 0.057,
+     score unchanged (91).
+103. **A note says its one sentence once.** The line beside a note's state is a reference; without a
+     source it shows the start of the note only while the note is collapsed, and a disputed matter
+     or a personal case shows the claim type alone. The open note keeps the backend's note text and
+     drops the notice that repeated it (it stands in only when a note does not already say it). The
+     mock's notes for levels C and D are now the backend's own sentences. The verdict card is
+     unchanged: it still sets the reason under the state's sentence, as its server twin does.
+104. **Several gradings are led by one line and folded.** Every distinct wording, in the order the
+     sources give them, joined by the Arabic comma, then their count; the line opens the full list
+     (each grading with its scholar, book and link, and the sentence that none is preferred). One
+     grading is shown as before. The count is in the page's digits.
+105. **«ما معنى هذه الحالات؟»** opens a dialog from the report's head and from the first screen: the
+     five states, each with one sentence of what it means and what it does not, then what Tabayyun
+     does not do and the transparency line. The Arabic sentences are new wording,
+     `TODO-SULAIMAN-REVIEW` (`legend` in the dictionary).
+106. **The logo is a link home**: a plain click returns to the first screen without a page load (the
+     report stays in the local history); a modified click opens the app afresh.
