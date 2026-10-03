@@ -475,3 +475,27 @@ Decided in the frontend for the polish round after the daily-use review at 390px
      `TODO-SULAIMAN-REVIEW` (`legend` in the dictionary).
 106. **The logo is a link home**: a plain click returns to the first screen without a page load (the
      report stays in the local history); a modified click opens the app afresh.
+
+Decided in the frontend for the four additions of 4 October (F2 in the note, the error report, the
+gradings beside the state, verifying after «لصق»).
+
+107. **«الثابت في الباب» stands between the suggested action and the buttons**, in the open note and
+     the sheet only: its title, one sentence saying the narrations are retrieved on the same subject
+     and are not a corrected version of the text, then each narration (three lines, «عرض النص
+     كاملاً»), its reference as the link, its grading verbatim with its source, and a copy button
+     that copies the text with its reference, grading and address. It is shown only when
+     `features.alternatives` is `true` and the list is not empty. The mock has one such card, a
+     stand-in for a hadith the sources do not carry, with two narrations the fixtures already used.
+     It has no weak-graded one: the approved data in the repository holds no weak grading to copy.
+108. **«أبلغ عن خطأ» makes no request.** The dialog shows the report as it will go — the quoted
+     words, the state, the rule id, the reference, the data version, the address, and what the
+     reader writes — and hands it to the reader's mail or WhatsApp (when `meta.feedback` names an
+     address), the share sheet, or the clipboard. For a missed citation the report names what was
+     checked only when it is a link or has a title; a pasted text is never put in it.
+109. **A hadith that is not «له مرجعية» carries its gradings beside its state** — the collapsed
+     note, the phone's list row, the summary card's row and the shared text: «حكمه في المصادر:
+     «…»، «…»», every distinct wording, in place of the reference with one grading. In the 22rem
+     margin a long state word can push the wording past the cut; the full line is the note's title
+     and its second line when open.
+110. **The «لصق» button verifies what it pastes**, when it is text of ten characters or more; a
+     picture still goes to the reader, which asks first. A keyboard paste and typing start nothing.
