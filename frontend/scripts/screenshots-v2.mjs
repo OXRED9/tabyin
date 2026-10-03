@@ -225,6 +225,32 @@ const STATES = {
     await session.context.close()
   },
 
+  // F2 «الثابت في الباب»: a hadith with no reference, and under its note the accepted narrations
+  // retrieved on the same subject, each with its reference, its grading and a copy button.
+  alternatives: async (width, file) => {
+    const session = await openReport(width)
+    await openNote(session, 'c11')
+    const section = session.page.getByTestId('alternatives')
+    await section.waitFor()
+    await section.scrollIntoViewIfNeeded()
+    await session.page.waitForTimeout(300)
+    await session.page.screenshot({ path: file, fullPage: !session.sheet })
+    await session.context.close()
+  },
+
+  // «أبلغ عن خطأ»: the report as it will be sent, the reader's own words, and the ways to send it.
+  // `feedback=1` gives mock mode placeholder addresses, so both buttons show.
+  'report-error': async (width, file) => {
+    const session = await openReport(width, { query: '&feedback=1' })
+    const { page } = session
+    await openNote(session, 'c9')
+    await page.locator('[data-note-sheet="c9"]').getByTestId('report-error').click()
+    await page.getByTestId('report-error-dialog').waitFor()
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: file })
+    await session.context.close()
+  },
+
   // «ما معنى هذه الحالات؟»: the five states, each with what it means and what it does not.
   legend: async (width, file) => {
     const { context, page } = await openReport(width)
@@ -294,6 +320,8 @@ const ONLY_AT = {
   'share-dialog-text': [390],
   referenced: [390, 1440],
   legend: [390],
+  alternatives: [390, 1440],
+  'report-error': [390],
   'gradings-folded': [390],
   'gradings-open': [390],
 }

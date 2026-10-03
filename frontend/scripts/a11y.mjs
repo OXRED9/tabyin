@@ -116,6 +116,7 @@ function measureContrast() {
  *   report     every note open, every «لماذا هذا الحكم؟» open
  *   dialog     the referral dialog
  *   legend     «ما معنى هذه الحالات؟», opened from the report's head
+ *   report-error   «أبلغ عن خطأ» on a claim (from its sheet on a phone), with addresses to send to
  *   share      the share dialog on a claim (`card`: the state of the claim whose card is drawn)
  *   share-summary   the share dialog on the summary
  *   sheet      (below 1024px) a note open as a bottom sheet
@@ -148,7 +149,7 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
       : ''
     : single
       ? `&scenario=fabrication&autorun=1&speed=10&install=${state === 'single-ios' ? 'ios' : '1'}`
-      : `&scenario=video&autorun=1&speed=${state === 'running' ? 1 : 10}`
+      : `&scenario=video&autorun=1&speed=${state === 'running' ? 1 : 10}${state === 'report-error' ? '&feedback=1' : ''}`
   await page.goto(`${BASE}/?mock=1&theme=${theme}&lang=${lang}${route}`)
   await page.evaluate(() => document.fonts.ready)
 
@@ -183,7 +184,7 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     }
     if (viewport !== DESKTOP) {
       // Below 1024px a note does not open in place: one is opened as a bottom sheet.
-      if (state === 'sheet' || state === 'share-phone') {
+      if (state === 'sheet' || state === 'share-phone' || state === 'report-error') {
         await page.locator(mobile ? 'li[data-note="c2"] button' : '[data-margin] [data-note="c2"] > button').click()
         await page.locator('[data-note-sheet="c2"]').waitFor()
       }
@@ -214,6 +215,12 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     if (shareAs === 'text') {
       await page.getByTestId('share-as').getByRole('button', { name: t.asText, exact: true }).click()
       await page.getByTestId('share-text').waitFor()
+    }
+    if (state === 'report-error') {
+      // «أبلغ عن خطأ» on a claim, with the mock's placeholder addresses so every way to send shows.
+      const note = mobile ? page.locator('[data-note-sheet="c2"]') : page.locator('[data-margin] [data-note]').first()
+      await note.getByTestId('report-error').click()
+      await page.getByTestId('report-error-dialog').waitFor()
     }
     if (state === 'legend') {
       await page.getByTestId('legend-link').first().click()
@@ -275,6 +282,10 @@ for (const theme of ['light', 'dark']) {
   await audit(`states legend · ${theme} · ar`, { theme, state: 'legend' })
 }
 await audit('states legend · light · en · 390px', { lang: 'en', viewport: MOBILE, state: 'legend' })
+for (const theme of ['light', 'dark']) {
+  await audit(`report an error · ${theme} · ar`, { theme, state: 'report-error' })
+}
+await audit('report an error · light · en · 390px', { lang: 'en', viewport: MOBILE, state: 'report-error' })
 await audit('share dialog, verse card · light · ar', { state: 'share', card: 'supported' })
 await audit('share dialog, contradicted card · dark · en', { state: 'share', card: 'contradicted', theme: 'dark', lang: 'en' })
 await audit('share dialog, card with a note · light · ar', { state: 'share', card: 'supported_with_note' })
