@@ -267,6 +267,8 @@ export interface Features {
   share_card: boolean
   copy: boolean
   explain: boolean
+  /** F1 (image input). The backend does not offer it yet: off unless it says `true`. */
+  image: boolean
 }
 
 export interface ReviewerOverride {

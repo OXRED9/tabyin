@@ -10,7 +10,12 @@
  *   a link containing "tiktok"  → a download error; one containing "fail" → a fetch error
  * `?scenario=video|text|fabrication|lexical|no_claims|error|tiktok` forces one, `?speed=4`
  * replays faster, and `?off=copy,explain,share_card` turns Phase 2 feature flags off (the cards
- * then come without that feature's data, as from the real API).
+ * then come without that feature's data, as from the real API). `?image=1` turns the image-input
+ * flag on, as a backend that offers it would.
+ *
+ * `?mock=1&scenario=<name>&autorun=1` submits that scenario's input on load, with no click, so
+ * the page reaches its report by itself (for audits of the report page; `&speed=` still applies).
+ * It works in the production build too, and does nothing without `mock`.
  *
  * The religious texts come from `fixtures.json`, generated from the repository's source data by
  * `scripts/build-fixtures.mjs`. None is written here.
@@ -68,8 +73,8 @@ const ERRORS: Record<string, ApiError> = {
     fatal: true,
     message_ar: 'تعذّر فتح هذا المقال',
     message_en: 'This article could not be opened',
-    hint_ar: 'قد يمنع الموقع القراءة الآلية. انسخ نص المقال والصقه في تبويب «نص».',
-    hint_en: 'The site may block automated reading. Copy the article text and paste it in the “Text” tab.',
+    hint_ar: 'قد يمنع الموقع القراءة الآلية. انسخ نص المقال والصقه في الحقل.',
+    hint_en: 'The site may block automated reading. Copy the article text and paste it in the field.',
   },
   llm: {
     code: 'llm_unavailable',
@@ -133,7 +138,40 @@ export async function mockMeta(): Promise<Meta> {
   const off = flagsOff()
   return {
     ...(fixtures.meta as Meta),
-    features: { share_card: !off.has('share_card'), copy: !off.has('copy'), explain: !off.has('explain') },
+    features: {
+      share_card: !off.has('share_card'),
+      copy: !off.has('copy'),
+      explain: !off.has('explain'),
+      image: params().has('image'),
+    },
+  }
+}
+
+/** A greeting with no citation in it: what the `no_claims` scenario is run on. */
+const NO_CLAIMS_TEXT = 'مرحباً، كيف حالك اليوم؟'
+
+/**
+ * `?mock=1&scenario=<name>&autorun=1`: the input that scenario stands for. The shell submits it
+ * on load. Null without `autorun=1`.
+ */
+export function mockAutorunInput(): VerifyInput | null {
+  const query = params()
+  if (query.get('autorun') !== '1') return null
+  const name = (query.get('scenario') ?? 'video') as ScenarioName
+  const textOf = (scenario: Scenario) => scenario.segments.map((segment) => segment.text).join('\n')
+  switch (name) {
+    case 'video':
+      return { input_type: 'video_url', url: scenarios.video.source.url ?? '' }
+    case 'tiktok':
+      return { input_type: 'video_url', url: 'https://www.tiktok.com/@tabayyun/video/1' }
+    case 'error':
+      return { input_type: 'article_url', url: 'https://example.com/fail' }
+    case 'fabrication':
+      return { input_type: 'text', text: textOf(scenarios.fabrication) }
+    case 'no_claims':
+      return { input_type: 'text', text: NO_CLAIMS_TEXT }
+    default:
+      return { input_type: 'text', text: textOf(scenarios.text) }
   }
 }
 

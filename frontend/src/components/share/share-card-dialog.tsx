@@ -1,4 +1,4 @@
-import { Copy, Download, LoaderCircle, Share2 } from 'lucide-react'
+import { Copy, Download, Share2 } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -42,8 +42,8 @@ function Choice<T extends string>({
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-      <div role="group" aria-label={label} className="flex rounded-lg bg-muted p-1">
+      <p className="text-sm text-quiet">{label}</p>
+      <div role="group" aria-label={label} className="flex gap-2">
         {options.map((option) => (
           <button
             key={option.value}
@@ -51,15 +51,15 @@ function Choice<T extends string>({
             aria-pressed={value === option.value}
             onClick={() => onChange(option.value)}
             className={cn(
-              'flex h-10 flex-1 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors',
+              'flex h-10 flex-1 items-center justify-center gap-2 rounded-control border px-3 text-sm whitespace-nowrap transition-colors duration-150',
               value === option.value
-                ? 'bg-card text-foreground shadow-sm ring-1 ring-border'
-                : 'text-muted-foreground hover:text-foreground',
+                ? 'border-green bg-accent font-semibold text-ink'
+                : 'border-rule-strong text-quiet hover:text-ink',
             )}
           >
             {option.label}
             {option.hint ? (
-              <span dir="ltr" className="tabular text-xs font-normal">
+              <span dir="ltr" className="tabular font-normal">
                 {option.hint}
               </span>
             ) : null}
@@ -158,16 +158,12 @@ export function ShareCardDialog({
   }
 
   const shell = { size, theme, lang, t, appUrl, nodeRef: node }
-  const spinner = <LoaderCircle aria-hidden="true" className="animate-spin" />
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent closeLabel={t.close} className="max-h-[92dvh] gap-4 overflow-y-auto p-6 sm:max-w-lg">
+      <DialogContent closeLabel={t.close} className="max-h-[92dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg leading-snug font-semibold">
-            <Share2 aria-hidden="true" className="size-5 text-primary" />
-            {t.share.button}
-          </DialogTitle>
+          <DialogTitle>{t.share.button}</DialogTitle>
           <DialogDescription>{t.share.description}</DialogDescription>
         </DialogHeader>
 
@@ -196,13 +192,13 @@ export function ShareCardDialog({
           ref={frame}
           aria-label={t.share.preview}
           role="group"
-          className="flex min-w-0 justify-center overflow-hidden rounded-lg bg-muted p-3"
+          className="flex min-w-0 justify-center overflow-hidden rounded-sheet border bg-desk p-3"
         >
           {/* A box the size of the scaled card; the full-size template sits inside it, scaled. */}
           <div
             dir="ltr"
             data-testid="share-preview"
-            className="shrink-0 overflow-hidden rounded-md shadow-raised"
+            className="shrink-0 overflow-hidden"
             style={{ width: CARD_WIDTH * scale, height: CARD_HEIGHT[size] * scale }}
           >
             <div style={{ width: CARD_WIDTH, height: CARD_HEIGHT[size], transform: `scale(${scale})`, transformOrigin: '0 0' }}>
@@ -222,21 +218,21 @@ export function ShareCardDialog({
 
         <div className="flex flex-col gap-2 sm:flex-row" aria-live="polite">
           {shareable ? (
-            <Button type="button" variant="gold" size="xl" className="flex-1" disabled={!!busy} onClick={() => void run('share')}>
-              {busy === 'share' ? spinner : <Share2 aria-hidden="true" />}
+            <Button type="button" size="xl" className="flex-1 px-4" disabled={!!busy} onClick={() => void run('share')}>
+              <Share2 aria-hidden="true" />
               {busy === 'share' ? t.share.preparing : t.share.send}
             </Button>
           ) : null}
           <Button
             type="button"
-            variant={shareable ? 'outline' : 'gold'}
+            variant={shareable ? 'outline' : 'default'}
             size="xl"
-            className="flex-1 font-medium"
+            className="flex-1 px-4"
             disabled={!!busy}
             data-testid="share-download"
             onClick={() => void run('download')}
           >
-            {busy === 'download' ? spinner : <Download aria-hidden="true" />}
+            <Download aria-hidden="true" />
             {busy === 'download' ? t.share.preparing : t.share.download}
           </Button>
           {shareable ? null : (
@@ -244,12 +240,12 @@ export function ShareCardDialog({
               type="button"
               variant="outline"
               size="xl"
-              className="flex-1 font-medium"
+              className="flex-1 px-4"
               disabled={!!busy}
               data-testid="share-copy"
               onClick={() => void run('copy')}
             >
-              {busy === 'copy' ? spinner : <Copy aria-hidden="true" />}
+              <Copy aria-hidden="true" />
               {busy === 'copy' ? t.share.preparing : t.share.copyImage}
             </Button>
           )}

@@ -38,9 +38,10 @@ const STATE_COLOURS: Record<EvidenceState, { pill: string; ink: Record<CardTheme
   contradicted: { pill: '#8b2020', ink: { light: '#8b2020', dark: '#f08a8a' }, icon: OctagonX },
 }
 
+// Latin is IBM Plex Sans, as in the server-side twin (which draws Latin with the Plex Arabic TTF).
 const FONT: Record<UiLang, string> = {
-  ar: '"IBM Plex Sans Arabic", "Noto Sans Arabic", "Inter Variable", system-ui, sans-serif',
-  en: '"Inter Variable", "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, sans-serif',
+  ar: '"IBM Plex Sans Arabic", "IBM Plex Sans", "Noto Sans Arabic", system-ui, sans-serif',
+  en: '"IBM Plex Sans", "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, sans-serif',
 }
 const QURAN_FONT = '"Amiri Quran", "Amiri", "Scheherazade New", "Traditional Arabic", serif'
 

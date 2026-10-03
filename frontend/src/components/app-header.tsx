@@ -1,20 +1,20 @@
-import { Download, Ellipsis, History, Moon, Sun, UserRoundCheck } from 'lucide-react'
+import { ClipboardCopy, Download, Ellipsis, FileJson, Moon, Printer, Sun } from 'lucide-react'
 
-import { LogoMark } from '@/components/brand'
+import { Logotype } from '@/components/brand'
 import { ExportMenu } from '@/components/export-menu'
-import { HistoryItems } from '@/components/history-menu'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTheme } from '@/hooks/use-theme'
-import type { HistoryEntry } from '@/lib/history'
 import { useI18n } from '@/lib/i18n'
 import type { UiLang } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -23,11 +23,6 @@ interface AppHeaderProps {
   hasReport: boolean
   reviewerMode: boolean
   onReviewerModeChange: (on: boolean) => void
-  history: HistoryEntry[]
-  /** Called when a menu that lists the history opens. */
-  onHistoryOpen: () => void
-  onOpenHistory: (entry: HistoryEntry) => void
-  onClearHistory: () => void
   onExportJson: () => void
   onExportHtml: () => void
   onCopyReport?: () => void
@@ -41,8 +36,8 @@ function LanguageToggle() {
     { value: 'en', label: t.header.english, short: 'EN' },
   ]
   return (
-    <div role="group" aria-label={t.header.language} className="flex rounded-lg bg-white/12 p-1">
-      {options.map((option) => {
+    <div role="group" aria-label={t.header.language} className="flex items-center">
+      {options.map((option, i) => {
         const active = lang === option.value
         return (
           <button
@@ -53,10 +48,9 @@ function LanguageToggle() {
             aria-label={option.label}
             onClick={() => setLang(option.value)}
             className={cn(
-              'h-7 min-w-8 rounded-md px-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:px-3',
-              active
-                ? 'bg-white text-[#14453d] shadow-sm'
-                : 'text-header-foreground hover:bg-white/5',
+              'h-9 px-2 text-sm transition-colors duration-150',
+              i > 0 && 'border-s',
+              active ? 'font-semibold text-ink' : 'text-quiet hover:text-ink',
             )}
           >
             <span className="sm:hidden" aria-hidden="true">
@@ -70,14 +64,15 @@ function LanguageToggle() {
   )
 }
 
+/**
+ * A thin bar of paper with a hairline under it: the logotype, then export (once there is a
+ * report), reviewer mode, theme and language. Nothing else. On phones reviewer mode and export
+ * fold into one menu.
+ */
 export function AppHeader({
   hasReport,
   reviewerMode,
   onReviewerModeChange,
-  history,
-  onHistoryOpen,
-  onOpenHistory,
-  onClearHistory,
   onExportJson,
   onExportHtml,
   onCopyReport,
@@ -88,27 +83,78 @@ export function AppHeader({
   const themeLabel = theme === 'dark' ? t.header.darkOff : t.header.darkOn
 
   return (
-    <header className="sticky top-0 z-40 bg-header text-header-foreground shadow-sm print:hidden">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:gap-3 sm:px-6">
-        <button
-          type="button"
-          onClick={onHome}
-          aria-label={t.header.home}
-          className="flex items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-        >
-          <LogoMark />
-          <span className="text-xl font-bold leading-none">{t.appName}</span>
+    <header className="sticky top-0 z-40 border-b bg-paper print:hidden">
+      <div className="mx-auto flex h-12 max-w-[69rem] items-center gap-1 px-4 sm:gap-3 sm:px-6">
+        <button type="button" onClick={onHome} aria-label={t.header.home} className="rounded-control">
+          <Logotype />
         </button>
 
-        <div className="ms-auto flex items-center gap-2">
-          <LanguageToggle />
+        <div className="ms-auto flex items-center gap-1 sm:gap-3">
+          {/* Wide screens: export and reviewer mode sit in the bar. */}
+          {hasReport ? (
+            <ExportMenu onExportJson={onExportJson} onExportHtml={onExportHtml} onCopyReport={onCopyReport}>
+              <Button type="button" variant="ghost" aria-label={t.header.export} className="hidden md:inline-flex">
+                <Download aria-hidden="true" />
+                {t.header.exportShort}
+              </Button>
+            </ExportMenu>
+          ) : null}
+
+          <label
+            className="hidden h-9 cursor-pointer items-center gap-2 text-sm font-medium md:flex"
+            title={t.header.reviewerModeHint}
+          >
+            {t.header.reviewerMode}
+            <Switch
+              checked={reviewerMode}
+              onCheckedChange={onReviewerModeChange}
+              aria-label={t.header.reviewerMode}
+            />
+          </label>
+
+          {/* Narrow screens: the same two behind one menu. */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="icon" aria-label={t.header.more} className="md:hidden">
+                <Ellipsis aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuCheckboxItem
+                checked={reviewerMode}
+                onCheckedChange={(checked) => onReviewerModeChange(checked === true)}
+              >
+                {t.header.reviewerMode}
+              </DropdownMenuCheckboxItem>
+              {hasReport ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>{t.header.export}</DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={onExportHtml}>
+                    <Printer aria-hidden="true" />
+                    {t.exportMenu.html}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={onExportJson}>
+                    <FileJson aria-hidden="true" />
+                    {t.exportMenu.json}
+                  </DropdownMenuItem>
+                  {onCopyReport ? (
+                    <DropdownMenuItem onSelect={onCopyReport}>
+                      <ClipboardCopy aria-hidden="true" />
+                      {t.copy.report}
+                    </DropdownMenuItem>
+                  ) : null}
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 type="button"
-                variant="header"
-                size="icon-lg"
+                variant="ghost"
+                size="icon"
                 aria-label={themeLabel}
                 aria-pressed={theme === 'dark'}
                 onClick={toggle}
@@ -119,99 +165,9 @@ export function AppHeader({
             <TooltipContent>{themeLabel}</TooltipContent>
           </Tooltip>
 
-          {/* Wide screens: reviewer mode and history sit in the bar. */}
-          <label
-            className={cn(
-              // White text needs 4.5:1 on the bar, so the "on" state is a gold outline, not a lighter fill.
-              'hidden h-9 cursor-pointer items-center gap-2 rounded-lg bg-white/12 px-3 text-sm font-medium transition-colors hover:bg-white/16 md:flex',
-              reviewerMode && 'ring-2 ring-gold',
-            )}
-            title={t.header.reviewerModeHint}
-          >
-            <UserRoundCheck aria-hidden="true" className="size-4" />
-            {t.header.reviewerMode}
-            <Switch
-              checked={reviewerMode}
-              onCheckedChange={onReviewerModeChange}
-              aria-label={t.header.reviewerMode}
-              className="data-checked:bg-gold data-unchecked:bg-white/30 focus-visible:ring-white/50"
-            />
-          </label>
-
-          <DropdownMenu onOpenChange={(open) => open && onHistoryOpen()}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="header"
-                    size="icon-lg"
-                    aria-label={t.header.history}
-                    className="hidden md:inline-flex"
-                  >
-                    <History aria-hidden="true" />
-                  </Button>
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent>{t.header.history}</TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent align="end" className="w-80">
-              <HistoryItems entries={history} onOpen={onOpenHistory} onClear={onClearHistory} />
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Narrow screens: the same two behind "المزيد". */}
-          <DropdownMenu onOpenChange={(open) => open && onHistoryOpen()}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="header"
-                size="icon-lg"
-                aria-label={t.header.more}
-                className="md:hidden"
-              >
-                <Ellipsis aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72">
-              <DropdownMenuCheckboxItem
-                checked={reviewerMode}
-                onCheckedChange={(checked) => onReviewerModeChange(checked === true)}
-                className="py-2"
-              >
-                <UserRoundCheck aria-hidden="true" />
-                {t.header.reviewerMode}
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuSeparator />
-              <HistoryItems entries={history} onOpen={onOpenHistory} onClear={onClearHistory} />
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {hasReport ? (
-            <ExportMenu onExportJson={onExportJson} onExportHtml={onExportHtml} onCopyReport={onCopyReport}>
-              <Button
-                type="button"
-                variant="gold"
-                size="lg"
-                aria-label={t.header.export}
-                className="animate-rise px-3 sm:px-4"
-              >
-                <Download aria-hidden="true" />
-                <span className="hidden sm:inline">{t.header.export}</span>
-              </Button>
-            </ExportMenu>
-          ) : null}
+          <LanguageToggle />
         </div>
       </div>
     </header>
-  )
-}
-
-export function TransparencyLine() {
-  const { t } = useI18n()
-  return (
-    <p className="border-b bg-secondary/60 px-4 py-1 text-center text-xs text-muted-foreground print:border-0">
-      {t.transparency}
-    </p>
   )
 }

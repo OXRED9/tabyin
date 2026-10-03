@@ -1,29 +1,31 @@
-import { Badge } from '@/components/ui/badge'
+import { StateGlyph } from '@/components/state-glyph'
 import { useI18n } from '@/lib/i18n'
 import { STATE_STYLE } from '@/lib/states'
 import type { EvidenceState } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-/** State in three layers, never colour alone: colour + icon + word. */
-export function StateBadge({
+/**
+ * A state as it is written everywhere: its ring glyph, then its word in the state's ink. Not a
+ * pill: a state is a remark in the margin, not a traffic light.
+ */
+export function StateWord({
   state,
-  short = false,
+  full = false,
   className,
 }: {
   state: EvidenceState
-  short?: boolean
+  /** The full name («مؤيَّد بمصدر معتمد») instead of the margin's short word. */
+  full?: boolean
   className?: string
 }) {
   const { t } = useI18n()
-  const style = STATE_STYLE[state]
-  const Icon = style.icon
   return (
-    <Badge
+    <span
       data-state={state}
-      className={cn('h-6 py-0 font-semibold leading-5 [&>svg]:size-3.5!', style.badge, className)}
+      className={cn('inline-flex items-center gap-2 text-sm font-medium', STATE_STYLE[state].ink, className)}
     >
-      <Icon aria-hidden="true" />
-      {short ? t.statesShort[state] : t.states[state]}
-    </Badge>
+      <StateGlyph state={state} />
+      {full ? t.states[state] : t.stateWords[state]}
+    </span>
   )
 }

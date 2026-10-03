@@ -1,4 +1,4 @@
-import { ExternalLink, GraduationCap } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 
 import {
   Dialog,
@@ -26,42 +26,39 @@ export function ReferralDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent closeLabel={t.close} className="gap-4 p-6 sm:max-w-md">
+      <DialogContent closeLabel={t.close} className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg leading-snug font-semibold">
-            <GraduationCap aria-hidden="true" className="size-5 text-primary" />
-            {t.referral.title}
-          </DialogTitle>
+          <DialogTitle>{t.referral.title}</DialogTitle>
           <DialogDescription>{t.referral.description}</DialogDescription>
         </DialogHeader>
         {links.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t.referral.empty}</p>
+          <p className="text-sm text-quiet">{t.referral.empty}</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y border-y">
             {links.map((link) => (
               <li key={link.url}>
                 <a
                   href={safeHref(link.url)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-3 rounded-lg border bg-background p-3 transition-colors hover:border-primary hover:bg-secondary"
+                  className="group flex items-center gap-3 py-3 focus-visible:-outline-offset-2"
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block font-medium text-primary underline-offset-4 group-hover:underline">
+                    <span className="block text-base font-medium text-green underline decoration-green/40 underline-offset-4 group-hover:decoration-green">
                       {lang === 'ar' ? link.name_ar : link.name_en}
                     </span>
-                    <span className="block truncate text-xs text-muted-foreground" dir="ltr">
+                    <span className="block truncate text-sm text-quiet" dir="ltr">
                       {link.url.replace(/^https?:\/\//, '')}
                     </span>
                   </span>
-                  <ExternalLink aria-hidden="true" className="size-4 shrink-0 text-primary rtl:-scale-x-100" />
+                  <ExternalLink aria-hidden="true" className="size-4 shrink-0 text-quiet rtl:-scale-x-100" />
                   <span className="sr-only">{t.opensInNewTab}</span>
                 </a>
               </li>
             ))}
           </ul>
         )}
-        <p className="text-xs text-muted-foreground">{t.transparency}</p>
+        <p className="text-sm text-quiet">{t.transparency}</p>
       </DialogContent>
     </Dialog>
   )

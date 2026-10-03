@@ -1,21 +1,6 @@
-import {
-  BookOpen,
-  CircleCheck,
-  Lightbulb,
-  MessageCircleQuestion,
-  OctagonX,
-  PencilLine,
-  Quote,
-  Scale,
-  ScrollText,
-  SearchX,
-  TriangleAlert,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import type { Card, ContentLevel, EvidenceState, ReviewerOverride } from './types'
 
-import type { Card, ClaimType, ContentLevel, EvidenceState, ReviewerOverride } from './types'
-
-/** Riskiest first: this is the order of the grouped report (Von Restorff). */
+/** Riskiest first: the order of «الأهم أولاً» in the phone's list of notes. */
 export const STATES_BY_RISK: EvidenceState[] = [
   'contradicted',
   'not_found',
@@ -24,7 +9,7 @@ export const STATES_BY_RISK: EvidenceState[] = [
   'supported',
 ]
 
-/** Reading order for the one-line summary, as in the pitch deck. */
+/** Reading order for the summary sentence, as in the pitch deck. */
 export const STATES_FOR_SUMMARY: EvidenceState[] = [
   'supported',
   'supported_with_note',
@@ -33,87 +18,74 @@ export const STATES_FOR_SUMMARY: EvidenceState[] = [
   'contradicted',
 ]
 
+/**
+ * How a state is drawn. A state is never colour alone: its ring glyph (`StateGlyph`) and its word
+ * always come with it. The classes are spelled out so Tailwind sees them.
+ */
 interface StateStyle {
-  icon: LucideIcon
-  /** The badge: colour + icon + word. */
-  badge: string
-  /** The thick edge on the card's inline-start side. */
-  edge: string
-  /** Text in the state's hue, readable on the card and on the soft surface. */
+  /** The words, in the state's ink. */
   ink: string
-  /** Tinted surface. */
+  /** The tint behind an active highlight. */
   soft: string
-  /** Solid fill for dots and the big icon disc. */
+  /** A solid fill (the similarity meter). */
   solid: string
-  /** A highlighted claim inside the transcript. */
-  mark: string
-  /** Whole-card emphasis for the risky states. */
-  cardTone: string
+  /** The 2px tick on a note's text-side edge. */
+  tick: string
+  /** The CSS variable holding the solid colour: underlines and connectors read it. */
+  variable: string
+  /** The CSS variable holding the ink colour. */
+  inkVariable: string
+  /** The CSS variable holding the soft colour. */
+  softVariable: string
 }
 
 export const STATE_STYLE: Record<EvidenceState, StateStyle> = {
   supported: {
-    icon: CircleCheck,
-    badge: 'bg-supported text-supported-on',
-    edge: 'border-s-supported',
     ink: 'text-supported-ink',
     soft: 'bg-supported-soft',
     solid: 'bg-supported',
-    mark: 'bg-supported-soft text-supported-ink decoration-supported',
-    cardTone: 'bg-card',
+    tick: 'border-supported',
+    variable: 'var(--supported)',
+    inkVariable: 'var(--supported-ink)',
+    softVariable: 'var(--supported-soft)',
   },
   supported_with_note: {
-    icon: PencilLine,
-    badge: 'bg-noted-soft text-noted-ink border-noted/60',
-    edge: 'border-s-noted',
     ink: 'text-noted-ink',
     soft: 'bg-noted-soft',
     solid: 'bg-noted',
-    mark: 'bg-noted-soft text-noted-ink decoration-noted',
-    cardTone: 'bg-card',
+    tick: 'border-noted',
+    variable: 'var(--noted)',
+    inkVariable: 'var(--noted-ink)',
+    softVariable: 'var(--noted-soft)',
   },
   needs_review: {
-    icon: TriangleAlert,
-    badge: 'bg-review-soft text-review-ink border-review/60',
-    edge: 'border-s-review',
     ink: 'text-review-ink',
     soft: 'bg-review-soft',
     solid: 'bg-review',
-    mark: 'bg-review-soft text-review-ink decoration-review',
-    cardTone: 'bg-card',
+    tick: 'border-review',
+    variable: 'var(--review)',
+    inkVariable: 'var(--review-ink)',
+    softVariable: 'var(--review-soft)',
   },
   not_found: {
-    icon: SearchX,
-    badge: 'bg-missing-soft text-missing-ink border-missing/70',
-    edge: 'border-s-missing',
     ink: 'text-missing-ink',
     soft: 'bg-missing-soft',
     solid: 'bg-missing',
-    mark: 'bg-missing-soft text-missing-ink decoration-missing',
-    cardTone: 'bg-missing-soft ring-missing/70 [--muted-foreground:var(--missing-ink)]',
+    tick: 'border-missing',
+    variable: 'var(--missing)',
+    inkVariable: 'var(--missing-ink)',
+    softVariable: 'var(--missing-soft)',
   },
   contradicted: {
-    icon: OctagonX,
-    badge: 'bg-contra-solid text-white',
-    edge: 'border-s-contra',
     ink: 'text-contra-ink',
     soft: 'bg-contra-soft',
-    solid: 'bg-contra-solid',
-    mark: 'bg-contra-soft text-contra-ink decoration-contra',
-    cardTone: 'bg-contra-soft ring-contra/80 [--muted-foreground:var(--contra-ink)]',
+    solid: 'bg-contra',
+    tick: 'border-contra',
+    variable: 'var(--contra)',
+    inkVariable: 'var(--contra-ink)',
+    softVariable: 'var(--contra-soft)',
   },
 }
-
-export const CLAIM_ICON: Record<ClaimType, LucideIcon> = {
-  ayah: BookOpen,
-  hadith: ScrollText,
-  ruling: Scale,
-  attributed_quote: Quote,
-  fact: Lightbulb,
-  request: MessageCircleQuestion,
-}
-
-export const isRisky = (state: EvidenceState) => state === 'contradicted' || state === 'not_found'
 
 /** The state a card shows: the reviewer's, when a human changed it. */
 export function effectiveState(card: Card, override: ReviewerOverride | undefined): EvidenceState {

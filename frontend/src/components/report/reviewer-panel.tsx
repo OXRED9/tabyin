@@ -1,7 +1,7 @@
 import { ChevronDown, Undo2, UserRoundCheck } from 'lucide-react'
 import { useId, useState } from 'react'
 
-import { StateBadge } from '@/components/state-badge'
+import { StateWord } from '@/components/state-badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -20,8 +20,8 @@ import type { Card, EvidenceState, ReviewerOverride } from '@/lib/types'
 const REVIEWER_KEY = 'tabayyun.reviewer'
 
 /**
- * Reviewer mode: a human changes the state of a card, with a note and a name. The change is kept
- * beside the card as a `reviewer_override`; the rule-made state is never overwritten.
+ * Reviewer mode: a human changes the state of a note, with a remark and a name. The change is
+ * kept beside the card as a `reviewer_override`; the rule-made state is never overwritten.
  */
 export function ReviewerPanel({
   card,
@@ -65,12 +65,9 @@ export function ReviewerPanel({
   }
 
   return (
-    <section
-      aria-label={t.reviewer.title}
-      className="space-y-3 rounded-lg border border-gold/60 bg-gold-soft p-3"
-    >
-      <h4 className="flex items-center gap-2 text-sm font-semibold">
-        <UserRoundCheck aria-hidden="true" className="size-4 text-gold-ink" />
+    <section aria-label={t.reviewer.title} className="space-y-3">
+      <h4 className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <UserRoundCheck aria-hidden="true" className="size-4 text-quiet" />
         {t.reviewer.title}
       </h4>
 
@@ -78,62 +75,40 @@ export function ReviewerPanel({
         <p className="text-sm">{t.reviewer.levelD}</p>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label htmlFor={`${ids}-state`} className="text-xs text-gold-ink">
-                {t.reviewer.state}
-              </Label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    id={`${ids}-state`}
-                    type="button"
-                    variant="outline"
-                    className="h-10 w-full justify-between bg-background px-2"
-                  >
-                    <StateBadge state={state} />
-                    <ChevronDown aria-hidden="true" className="text-muted-foreground" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-72">
-                  <DropdownMenuRadioGroup
-                    value={state}
-                    onValueChange={(value) => {
-                      setState(value as EvidenceState)
-                      setNudge(false)
-                    }}
-                  >
-                    {STATES_FOR_SUMMARY.map((option) => (
-                      <DropdownMenuRadioItem
-                        key={option}
-                        value={option}
-                        disabled={!allowed.includes(option) && option !== card.state}
-                        className="py-2"
-                      >
-                        <StateBadge state={option} />
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor={`${ids}-name`} className="text-xs text-gold-ink">
-                {t.reviewer.name}
-              </Label>
-              <Input
-                id={`${ids}-name`}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder={t.reviewer.namePlaceholder}
-                autoComplete="name"
-                maxLength={80}
-                className="h-10 bg-background"
-              />
-            </div>
+          <div className="space-y-1">
+            <Label htmlFor={`${ids}-state`} className="text-quiet">
+              {t.reviewer.state}
+            </Label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button id={`${ids}-state`} type="button" variant="outline" size="touch" className="w-full justify-between px-3">
+                  <StateWord state={state} full />
+                  <ChevronDown aria-hidden="true" className="text-quiet" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-72">
+                <DropdownMenuRadioGroup
+                  value={state}
+                  onValueChange={(value) => {
+                    setState(value as EvidenceState)
+                    setNudge(false)
+                  }}
+                >
+                  {STATES_FOR_SUMMARY.map((option) => (
+                    <DropdownMenuRadioItem
+                      key={option}
+                      value={option}
+                      disabled={!allowed.includes(option) && option !== card.state}
+                    >
+                      <StateWord state={option} full />
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div className="space-y-1">
-            <Label htmlFor={`${ids}-note`} className="text-xs text-gold-ink">
+            <Label htmlFor={`${ids}-note`} className="text-quiet">
               {t.reviewer.note}
             </Label>
             <Input
@@ -151,12 +126,24 @@ export function ReviewerPanel({
               }}
               placeholder={t.reviewer.notePlaceholder}
               maxLength={500}
-              className="h-10 bg-background"
             />
           </div>
-          {reasonText ? <p className="text-xs text-gold-ink">{reasonText}</p> : null}
+          <div className="space-y-1">
+            <Label htmlFor={`${ids}-name`} className="text-quiet">
+              {t.reviewer.name}
+            </Label>
+            <Input
+              id={`${ids}-name`}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={t.reviewer.namePlaceholder}
+              autoComplete="name"
+              maxLength={80}
+            />
+          </div>
+          {reasonText ? <p className="text-sm text-quiet">{reasonText}</p> : null}
           {nudge ? (
-            <p role="status" className="text-xs font-medium text-missing-ink">
+            <p role="status" className="text-sm font-medium text-contra-ink">
               {t.reviewer.nothingToSave}
             </p>
           ) : null}
@@ -165,7 +152,7 @@ export function ReviewerPanel({
               {t.reviewer.save}
             </Button>
             {override ? (
-              <Button type="button" variant="outline" size="touch" onClick={onRemove} className="bg-background">
+              <Button type="button" variant="outline" size="touch" onClick={onRemove}>
                 <Undo2 aria-hidden="true" className="rtl:-scale-x-100" />
                 {t.reviewer.remove}
               </Button>

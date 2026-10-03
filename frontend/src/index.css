@@ -3,9 +3,15 @@
 @import "shadcn/tailwind.css";
 
 /*
+ * Design tokens for "the page and its margin" (docs/DESIGN.md §2). Every component reads these;
+ * nothing below this file names a hex value, except the verdict-card template, which has its own
+ * fixed palette because it is rasterised and must match its server-side twin.
+ *
  * Fonts are self-hosted from @fontsource packages: the product promises that the browser talks
- * to nothing but /api, so there is no Google Fonts request. Only the subsets and weights that the
- * UI uses are declared, which keeps `dist/` small.
+ * to nothing but /api, so there is no font CDN. Three voices:
+ *   Amiri Quran          a verse quoted from the source
+ *   Amiri                the text under examination, narrations and source quotes, the headline
+ *   IBM Plex Sans (+ Arabic)   the tool's own words
  */
 @font-face {
   font-family: "IBM Plex Sans Arabic";
@@ -31,6 +37,7 @@
   src: url("../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-600-normal.woff2") format("woff2");
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
+/* Weight 700 is used by the verdict-card template only (its server-side twin draws with Bold). */
 @font-face {
   font-family: "IBM Plex Sans Arabic";
   font-style: normal;
@@ -40,20 +47,69 @@
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 @font-face {
-  font-family: "Inter Variable";
+  font-family: "IBM Plex Sans";
   font-style: normal;
   font-display: swap;
-  font-weight: 100 900;
-  src: url("../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2") format("woff2-variations");
+  font-weight: 400;
+  src: url("../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: "Inter Variable";
+  font-family: "IBM Plex Sans";
   font-style: normal;
   font-display: swap;
-  font-weight: 100 900;
-  src: url("../node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2") format("woff2-variations");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  font-weight: 500;
+  src: url("../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url("../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* Verdict-card template only, as above. */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-700-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Amiri";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("../node_modules/@fontsource/amiri/files/amiri-arabic-400-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Amiri";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("../node_modules/@fontsource/amiri/files/amiri-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Amiri";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("../node_modules/@fontsource/amiri/files/amiri-arabic-700-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Amiri";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("../node_modules/@fontsource/amiri/files/amiri-latin-700-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
   font-family: "Amiri Quran";
@@ -68,204 +124,223 @@
 @theme inline {
   --font-sans: var(--font-ui);
   --font-heading: var(--font-ui);
+  --font-naskh: "Amiri", "Amiri Quran", "Scheherazade New", "Noto Naskh Arabic", "Traditional Arabic", serif;
   --font-quran: "Amiri Quran", "Amiri", "Scheherazade New", "Noto Naskh Arabic", "Traditional Arabic", serif;
-  --font-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
+  /* There is no monospace family: numbers that line up use Plex's tabular figures. */
+  --font-mono: var(--font-ui);
 
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  /* Type scale: 14 / 16 / 20 / 26 / 34 / 44. Weight does the hierarchy before size. */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.6;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.6;
+  --text-base: 1rem;
+  --text-base--line-height: 1.7;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.625rem;
+  --text-xl--line-height: 1.45;
+  --text-2xl: 2.125rem;
+  --text-2xl--line-height: 1.4;
+  --text-3xl: 2.75rem;
+  --text-3xl--line-height: 1.35;
 
-  /* Brand */
-  --color-header: var(--header);
-  --color-header-foreground: var(--header-foreground);
+  /* The named base colours. */
+  --color-desk: var(--desk);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-quiet: var(--quiet);
+  --color-green: var(--green);
+  --color-green-fill: var(--green-fill);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
   --color-gold: var(--gold);
-  --color-gold-hover: var(--gold-hover);
-  --color-gold-foreground: var(--gold-foreground);
-  --color-gold-ink: var(--gold-ink);
-  --color-gold-soft: var(--gold-soft);
 
-  /* Evidence states: solid (edge, icon), soft (tinted surface), ink (text on soft or on card) */
+  /* The same colours under the names shadcn/ui components read. */
+  --color-background: var(--desk);
+  --color-foreground: var(--ink);
+  --color-card: var(--paper);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--paper);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--green-fill);
+  --color-primary-foreground: var(--on-fill);
+  --color-secondary: var(--supported-soft);
+  --color-secondary-foreground: var(--supported-ink);
+  --color-muted: var(--desk);
+  --color-muted-foreground: var(--quiet);
+  --color-accent: var(--supported-soft);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--contra-ink);
+  --color-border: var(--rule);
+  --color-input: var(--rule-strong);
+  --color-ring: var(--green);
+
+  /* The five states, one family: solid (glyph, underline), ink (words), soft (active tint). */
   --color-supported: var(--supported);
-  --color-supported-soft: var(--supported-soft);
   --color-supported-ink: var(--supported-ink);
-  --color-supported-on: var(--supported-on);
+  --color-supported-soft: var(--supported-soft);
   --color-noted: var(--noted);
-  --color-noted-soft: var(--noted-soft);
   --color-noted-ink: var(--noted-ink);
+  --color-noted-soft: var(--noted-soft);
   --color-review: var(--review);
-  --color-review-soft: var(--review-soft);
   --color-review-ink: var(--review-ink);
+  --color-review-soft: var(--review-soft);
   --color-missing: var(--missing);
-  --color-missing-soft: var(--missing-soft);
   --color-missing-ink: var(--missing-ink);
+  --color-missing-soft: var(--missing-soft);
   --color-contra: var(--contra);
-  --color-contra-soft: var(--contra-soft);
   --color-contra-ink: var(--contra-ink);
-  --color-contra-solid: var(--contra-solid);
+  --color-contra-soft: var(--contra-soft);
 
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /*
+   * Radius, each one a meaning:
+   *   sheet 2px    paper: the page, the composer field
+   *   control 6px  something you press: buttons, menu items, the file row; dialogs and menus
+   *   tag 999px    a label attached to something else: example chips, the recognised-link tag
+   *   overlay 14px the top corners of a sheet that slides over the page
+   * Tailwind's own steps collapse onto these, so no component can invent a fifth.
+   */
+  --radius-sheet: 2px;
+  --radius-control: 6px;
+  --radius-tag: 999px;
+  --radius-overlay: 14px;
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-lg: 6px;
+  --radius-xl: 6px;
+  --radius-2xl: 6px;
+  --radius-3xl: 6px;
+  --radius-4xl: 999px;
 
-  --shadow-card: 0 1px 2px rgb(15 31 27 / 0.04), 0 4px 16px -6px rgb(15 31 27 / 0.08);
-  --shadow-raised: 0 2px 4px rgb(15 31 27 / 0.05), 0 12px 32px -12px rgb(15 31 27 / 0.18);
+  /* One shadow, for things that lie over the page (sheet, dialog, menu). Nothing in the flow has one. */
+  --shadow-overlay: var(--overlay-shadow);
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: var(--overlay-shadow);
+  --shadow-lg: var(--overlay-shadow);
+  --shadow-xl: var(--overlay-shadow);
+  --shadow-2xl: var(--overlay-shadow);
 
-  --animate-rise: rise 220ms ease-out both;
+  /* The one orchestrated moment: an underline inks in along the reading direction. */
+  --animate-ink-in: ink-in 240ms ease-out both;
+  --animate-settle: settle 240ms ease-out both;
 
-  @keyframes rise {
+  @keyframes ink-in {
     from {
-      opacity: 0;
-      transform: translateY(6px);
+      background-size: 0% 2px;
     }
     to {
-      opacity: 1;
-      transform: translateY(0);
+      background-size: 100% 2px;
+    }
+  }
+  @keyframes settle {
+    from {
+      translate: 0 6px;
+    }
+    to {
+      translate: 0 0;
     }
   }
 }
 
-/* Brand palette from the pitch deck: deep green, gold, warm off-white, near-black green. */
 :root {
-  --font-ui: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ui: "IBM Plex Sans Arabic", "IBM Plex Sans", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius: 6px;
+  /* The head of the sheet is as tall while running (the progress line) as when done (the summary). */
+  --sheet-head: 9.5rem;
 
-  --background: #f6f7f5;
-  --foreground: #0f1f1b;
-  --card: #ffffff;
-  --card-foreground: #0f1f1b;
-  --popover: #ffffff;
-  --popover-foreground: #0f1f1b;
-  --primary: #1b6b5e;
-  --primary-foreground: #ffffff;
-  --secondary: #e6eeeb;
-  --secondary-foreground: #14453d;
-  --muted: #eceeeb;
-  --muted-foreground: #4a5b56;
-  --accent: #e3eeea;
-  --accent-foreground: #0f1f1b;
-  --destructive: #a81f1f;
-  --border: #dce2de;
-  --input: #c3cec9;
-  --ring: #1b6b5e;
-  --radius: 0.75rem;
-
-  --header: #1b6b5e;
-  --header-foreground: #ffffff;
+  --desk: #f5f8f7;
+  --paper: #ffffff;
+  --ink: #11221e;
+  --quiet: #4f615b;
+  --green: #1b6b5e;
+  --green-fill: #1b6b5e;
+  --on-fill: #ffffff;
+  --rule: #d3ddd9;
+  --rule-strong: #7c8f88;
   --gold: #c9a227;
-  --gold-hover: #b8931d;
-  --gold-foreground: #1c1703;
-  --gold-ink: #735800;
-  --gold-soft: #faf3d9;
 
-  --supported: #1a7f4e;
-  --supported-soft: #e2f3e9;
-  --supported-ink: #125c38;
-  --supported-on: #ffffff;
-  --noted: #5c9a2b;
-  --noted-soft: #eaf4de;
-  --noted-ink: #3c6417;
-  --review: #b87a00;
-  --review-soft: #fcf0cf;
-  --review-ink: #734700;
-  --missing: #d94848;
-  --missing-soft: #fceaea;
-  --missing-ink: #a81f1f;
-  --contra: #8e1b1b;
-  --contra-soft: #f6dada;
-  --contra-ink: #7a1414;
-  --contra-solid: #8e1b1b;
+  --supported: #1b6b5e;
+  --supported-ink: #14584d;
+  --supported-soft: #e4f0ec;
+  --noted: #6e7b1e;
+  --noted-ink: #56611a;
+  --noted-soft: #eff2dc;
+  --review: #a66a00;
+  --review-ink: #7a4e00;
+  --review-soft: #faefd4;
+  --missing: #b5524a;
+  --missing-ink: #8f3b34;
+  --missing-soft: #f8e8e5;
+  --contra: #8c1d18;
+  --contra-ink: #73130f;
+  --contra-soft: #f2d9d6;
+
+  --overlay-shadow: 0 1px 2px rgb(17 34 30 / 0.06), 0 12px 32px -8px rgb(17 34 30 / 0.22);
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --sheet-head: 7.75rem;
+  }
 }
 
 html[lang="en"] {
-  --font-ui: "Inter Variable", "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ui: "IBM Plex Sans", "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+/* Dark is a deep green-black, not grey; its green is a muted sage, not a mint. */
 .dark {
-  --background: #0d1715;
-  --foreground: #e9f0ed;
-  --card: #14211e;
-  --card-foreground: #e9f0ed;
-  --popover: #182724;
-  --popover-foreground: #e9f0ed;
-  --primary: #4db6a3;
-  --primary-foreground: #06201b;
-  --secondary: #1d302c;
-  --secondary-foreground: #cfe6e0;
-  --muted: #1b2a27;
-  --muted-foreground: #a3b5af;
-  --accent: #20332f;
-  --accent-foreground: #e9f0ed;
-  --destructive: #f8a9a9;
-  --border: #263733;
-  --input: #3a4e49;
-  --ring: #4db6a3;
+  --desk: #0b1a16;
+  --paper: #10231e;
+  --ink: #e7efeb;
+  --quiet: #9db1aa;
+  --green: #7dbfb0;
+  --green-fill: #1f7867;
+  --on-fill: #ffffff;
+  --rule: #24392f;
+  --rule-strong: #6a857a;
+  --gold: #d9b648;
 
-  --header: #123f38;
-  --header-foreground: #ffffff;
-  --gold: #d8b33c;
-  --gold-hover: #e3c152;
-  --gold-foreground: #1c1703;
-  --gold-ink: #e6c65e;
-  --gold-soft: #33301c;
+  --supported: #6fc3a9;
+  --supported-ink: #9ad9c5;
+  --supported-soft: #16332b;
+  --noted: #b3c25a;
+  --noted-ink: #cbd784;
+  --noted-soft: #2a3219;
+  --review: #e0a63a;
+  --review-ink: #efc670;
+  --review-soft: #3a2e14;
+  --missing: #e08a80;
+  --missing-ink: #f0aca4;
+  --missing-soft: #3a2421;
+  --contra: #e0605a;
+  --contra-ink: #f4a29d;
+  --contra-soft: #3f1d1b;
 
-  --supported: #3fbf82;
-  --supported-soft: #1b3a2e;
-  --supported-ink: #86e3b4;
-  --supported-on: #06201b;
-  --noted: #9acd66;
-  --noted-soft: #293d2a;
-  --noted-ink: #bde596;
-  --review: #edb63a;
-  --review-soft: #373922;
-  --review-ink: #f5cf75;
-  --missing: #ee7b7b;
-  --missing-soft: #372f2d;
-  --missing-ink: #f8a9a9;
-  --contra: #e5484d;
-  --contra-soft: #3d2424;
-  --contra-ink: #ffb8b8;
-  --contra-solid: #b42323;
-
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px -8px rgb(0 0 0 / 0.5);
-  --shadow-raised: 0 2px 4px rgb(0 0 0 / 0.35), 0 16px 36px -12px rgb(0 0 0 / 0.6);
+  --overlay-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 36px -10px rgb(0 0 0 / 0.7);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-rule;
   }
   html {
     @apply font-sans;
     color-scheme: light;
     -webkit-text-size-adjust: 100%;
-    scroll-padding-top: 5rem;
+    scroll-padding-top: 4rem;
   }
   html.dark {
     color-scheme: dark;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-desk text-ink antialiased;
     /* Arabic needs more leading than Latin: ascenders, descenders and diacritics stack up. */
     line-height: 1.7;
-    font-feature-settings: "tnum" 0;
   }
   html[lang="en"] body {
     line-height: 1.55;
@@ -274,37 +349,146 @@ html[lang="en"] {
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+  /* One focus ring everywhere: the tool's own green, never gold. */
   :focus-visible {
-    outline: 2px solid var(--ring);
+    outline: 2px solid var(--green);
     outline-offset: 2px;
   }
   ::selection {
-    background: color-mix(in oklab, var(--gold) 40%, transparent);
+    background: color-mix(in oklab, var(--green) 24%, transparent);
   }
 }
 
+/* ── Voices ──────────────────────────────────────────────────────────────────────────────── */
+
+/* A verse quoted from the source: 26 / 2.3. */
 @utility quran-text {
   font-family: var(--font-quran);
+  font-size: 1.625rem;
   line-height: 2.3;
   font-feature-settings: normal;
+}
+
+/* A narration or any other source's words: 22 / 2.0. */
+@utility naskh-quote {
+  font-family: var(--font-naskh);
+  font-size: 1.375rem;
+  line-height: 2;
+}
+
+/* The text under examination, set as a page: 20 / 2.0 (19 on phones). */
+@utility page-text {
+  font-family: var(--font-naskh);
+  font-size: 1.1875rem;
+  line-height: 2;
+  @media (min-width: 48rem) {
+    font-size: 1.25rem;
+  }
+}
+
+/* The headline and the logotype. */
+@utility naskh-display {
+  font-family: var(--font-naskh);
+  font-weight: 700;
 }
 
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }
 
-/* Subtle motion only; everything collapses to an instant change when the user asks for less. */
+/* ── The sheet ───────────────────────────────────────────────────────────────────────────── */
+
+/* Faint ruled lines, one per line of page text: the composer field and the waiting page. */
+@utility ruled {
+  --line: 2.375rem;
+  background-image: linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px));
+  background-size: 100% var(--line);
+  background-repeat: repeat-y;
+  background-origin: content-box;
+  background-clip: content-box;
+  background-attachment: local;
+  @media (min-width: 48rem) {
+    --line: 2.5rem;
+  }
+}
+
+/* ── A claim in the text ─────────────────────────────────────────────────────────────────── */
+
+/*
+ * A copyist's mark, not a highlighter: a 2px underline in the state's colour, the words in the
+ * state's ink, a closing ring. The underline is a background so it can be drawn in by width; with
+ * the default `box-decoration-break: slice` one background runs through every line of the passage,
+ * so it inks in along the text, line after line, in reading order.
+ */
+.claim-ink {
+  --underline: var(--rule-strong);
+  --drop: 5px;
+  background-image: linear-gradient(var(--underline), var(--underline));
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
+  background-position: left calc(100% - var(--drop));
+  transition: background-color 150ms ease-out;
+}
+.claim-ink:dir(rtl) {
+  background-position: right calc(100% - var(--drop));
+}
+.claim-ink[data-pending] {
+  background-size: 100% 1px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-inking] .claim-ink:not([data-pending]) {
+    animation: var(--animate-ink-in);
+    animation-delay: var(--ink-delay, 0ms);
+  }
+  /* A passage is two inline boxes (its last word is kept with the closing ring): the pen runs
+     through the first, then the second, inside the same 240ms. */
+  [data-inking] .claim-ink[data-head]:not([data-pending]) {
+    animation-duration: 200ms;
+    animation-timing-function: linear;
+  }
+  [data-inking] .claim-ink[data-tail]:not([data-pending]) {
+    animation-duration: 40ms;
+    animation-timing-function: linear;
+    animation-delay: calc(var(--ink-delay, 0ms) + 200ms);
+  }
+  [data-inking] [data-note] {
+    animation: var(--animate-settle);
+    animation-delay: var(--ink-delay, 0ms);
+  }
+}
+
+/* The hairline that ties a note to its words. */
+.connector {
+  fill: none;
+  stroke: var(--rule);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition:
+    stroke 150ms ease-out,
+    d 180ms ease-out;
+}
+.connector[data-active] {
+  stroke: var(--connector-active, var(--rule-strong));
+}
+
+/* Everything collapses to an instant change when the user asks for less motion. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     /* 0s, not a tiny duration: any non-zero duration turns every style change into a transition,
        and code that measures layout right after a change would read the old size. */
     transition-duration: 0s !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* A toast answers an action like everything else: in 200ms, not Sonner's own 400ms. */
+[data-sonner-toaster] [data-sonner-toast] {
+  transition-duration: 200ms;
 }
 
 /* The verdict-card template is measured and rasterised: nothing in it may animate. */

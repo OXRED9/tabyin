@@ -23,12 +23,43 @@ export interface HistoryEntry {
   report: Report
 }
 
-export function loadHistory(): HistoryEntry[] {
+/*
+ * The list is read from storage once and then kept here, so the shell can subscribe to it
+ * (`useSyncExternalStore`): saving a report, clearing the history, or another tab doing either
+ * updates every place that shows the list or its count.
+ */
+let cached: HistoryEntry[] | null = null
+const listeners = new Set<() => void>()
+
+function publish(next: HistoryEntry[]): HistoryEntry[] {
+  cached = next
+  for (const listener of listeners) listener()
+  return next
+}
+
+function readHistory(): HistoryEntry[] {
   const stored = readStored<unknown>(HISTORY_KEY, [])
   if (!Array.isArray(stored)) return []
   return (stored as HistoryEntry[]).filter(
     (entry) => entry && typeof entry.id === 'string' && entry.report && Array.isArray(entry.report.cards),
   )
+}
+
+export function loadHistory(): HistoryEntry[] {
+  cached ??= readHistory()
+  return cached
+}
+
+export function subscribeHistory(listener: () => void): () => void {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === HISTORY_KEY) publish(readHistory())
+  }
+  listeners.add(listener)
+  window.addEventListener('storage', onStorage)
+  return () => {
+    listeners.delete(listener)
+    window.removeEventListener('storage', onStorage)
+  }
 }
 
 /** Insert or update an entry, newest first, capped at ten. Drops the oldest if storage is full. */
@@ -38,10 +69,10 @@ export function saveHistoryEntry(entry: HistoryEntry): HistoryEntry[] {
     // A long transcript can exceed the quota: forget the oldest report and try again.
     next = next.slice(0, -1)
   }
-  return next
+  return publish(next)
 }
 
 export function clearHistory(): HistoryEntry[] {
   removeStored(HISTORY_KEY)
-  return []
+  return publish([])
 }

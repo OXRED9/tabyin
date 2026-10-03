@@ -1,207 +1,208 @@
-import { Download, Info, ListOrdered, Layers, RotateCcw, ScanText, Share2, ShieldCheck, TextSearch } from 'lucide-react'
+import { History, RotateCcw, Share2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
-import { ExportMenu } from '@/components/export-menu'
-import { BlankCard, ClaimCard, PendingCard } from '@/components/report/claim-card'
+import { ProgressPanel } from '@/components/progress-panel'
+import { MarginNote, PendingNote } from '@/components/report/note'
+import { NoteRow, NoteSheet, OrderToggle } from '@/components/report/notes-list'
+import type { NoteOrder } from '@/components/report/notes-list'
+import { PageText } from '@/components/report/page-text'
 import { ReferralDialog } from '@/components/report/referral-dialog'
-import { TranscriptPane } from '@/components/report/transcript-pane'
+import { SourceLink } from '@/components/report/source-link'
+import { SummarySentence } from '@/components/report/summary-sentence'
+import { useMarginLayout } from '@/components/report/use-margin-layout'
 import { ShareCardDialog } from '@/components/share/share-card-dialog'
 import type { ShareTarget } from '@/components/share/share-card-dialog'
+import { StateGlyph } from '@/components/state-glyph'
 import { Button } from '@/components/ui/button'
-import { Card as Surface } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { prefersReducedMotion, useIsWide } from '@/hooks/use-media-query'
+import { prefersReducedMotion, useMediaQuery } from '@/hooks/use-media-query'
 import type { VerifyState } from '@/hooks/use-verify'
 import { featuresOf } from '@/lib/features'
 import { formatSeconds, safeHref } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import { countStates, sourcesUsed } from '@/lib/report'
-import { STATES_BY_RISK, STATES_FOR_SUMMARY, STATE_STYLE, chronological } from '@/lib/states'
+import { STATES_BY_RISK, STATE_STYLE, chronological } from '@/lib/states'
 import type { Card, ClaimStub, EvidenceState, Meta, ReviewerOverride } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-type SortMode = 'state' | 'order'
-
 interface ReportViewProps {
   state: VerifyState
+  /** The request is still running: the progress line stands where the summary will. */
+  running: boolean
+  onCancel: (() => void) | undefined
   meta: Meta | null
   reviewerMode: boolean
+  /** A failure that arrived after some notes did: shown above what was received. */
+  error: ReactNode
   onSaveOverride: (override: ReviewerOverride) => void
   onRemoveOverride: (cardId: string) => void
-  onExportJson: () => void
-  onExportHtml: () => void
-  onCopyReport?: () => void
   onVerifyAnother: () => void
 }
 
-function scrollIntoView(element: Element | null, block: ScrollLogicalPosition = 'center') {
-  element?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block })
-}
+/** The orchestrated moment lasts 600ms; the page stays in its "inking" state a little longer. */
+const INKING_MS = 700
+/** Notes below an opening note glide for 180ms. */
+const GLIDE_MS = 220
 
-/** "4 استشهادات · 2 مؤيَّد · 1 مع ملاحظة · 1 بلا مصدر": the whole report in one line. */
-function SummaryLine({
-  total,
-  counts,
-  pending,
-  modified,
-  className,
-}: {
-  total: number
-  counts: Record<EvidenceState, number>
-  pending: number
-  modified: number
-  className?: string
-}) {
-  const { t } = useI18n()
+/** A calm remark at the top of the margin: reduced coverage, or a source that is unreachable. */
+function Notice({ title, icon, children }: { title?: string; icon?: ReactNode; children: ReactNode }) {
   return (
-    <p aria-label={t.report.summaryLabel} className={cn('flex flex-wrap items-center gap-x-3 gap-y-1 text-sm', className)}>
-      <span className="font-semibold">{t.report.citations(total)}</span>
-      {STATES_FOR_SUMMARY.filter((s) => counts[s] > 0).map((s) => {
-        const Icon = STATE_STYLE[s].icon
-        return (
-          <span key={s} className={cn('inline-flex items-center gap-1 font-medium', STATE_STYLE[s].ink)}>
-            <Icon aria-hidden="true" className="size-3.5" />
-            <span className="tabular">{counts[s]}</span> {t.statesShort[s]}
-          </span>
-        )
-      })}
-      {pending > 0 ? <span className="text-muted-foreground">{t.report.pendingCount(pending)}</span> : null}
-      {modified > 0 ? <span className="text-muted-foreground">{t.report.modifiedCount(modified)}</span> : null}
+    <p role="note" className="flex items-start gap-2 text-sm text-quiet">
+      {icon ?? <StateGlyph state="needs_review" className="mt-0.5 size-[18px]" />}
+      <span>
+        {title ? <span className="font-medium text-ink">{title}: </span> : null}
+        {children}
+      </span>
     </p>
   )
 }
 
-function SortToggle({ value, onChange }: { value: SortMode; onChange: (mode: SortMode) => void }) {
-  const { t } = useI18n()
-  const options: { value: SortMode; label: string; icon: typeof Layers }[] = [
-    { value: 'state', label: t.report.sortByState, icon: Layers },
-    { value: 'order', label: t.report.sortByOrder, icon: ListOrdered },
-  ]
-  return (
-    <div role="group" aria-label={t.report.sortLabel} className="flex rounded-lg bg-muted p-1">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          aria-pressed={value === option.value}
-          onClick={() => onChange(option.value)}
-          className={cn(
-            'inline-flex h-8 items-center gap-1 rounded-md px-3 text-xs font-medium whitespace-nowrap transition-colors',
-            value === option.value
-              ? 'bg-card text-foreground shadow-sm ring-1 ring-border'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-        >
-          <option.icon aria-hidden="true" className="size-3.5 max-sm:hidden" />
-          {option.label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-/** A calm, non-blocking note: reduced coverage, or a source that is unreachable right now. */
-function Notice({ title, children }: { title?: string; children: React.ReactNode }) {
-  return (
-    <div role="note" className="flex items-start gap-3 rounded-lg border border-gold/50 bg-gold-soft p-3 text-sm">
-      <Info aria-hidden="true" className="mt-1 size-4 shrink-0 text-gold-ink" />
-      <p>
-        {title ? <span className="font-semibold">{title}: </span> : null}
-        {children}
-      </p>
-    </div>
-  )
-}
-
+/**
+ * The page and its margin. The user's text is the interface: it is set as a page, each claim is
+ * underlined in its state's ink, and its verdict is a note in the margin, level with the line it
+ * is about and tied to it by a hairline. On a phone there is no margin: the notes follow the text
+ * as a list, each beginning with its words, and open as a sheet from the bottom.
+ */
 export function ReportView({
   state,
+  running,
+  onCancel,
   meta,
   reviewerMode,
+  error,
   onSaveOverride,
   onRemoveOverride,
-  onExportJson,
-  onExportHtml,
-  onCopyReport,
   onVerifyAnother,
 }: ReportViewProps) {
   const { t, pick } = useI18n()
-  const wide = useIsWide()
-  const [sort, setSort] = useState<SortMode>('state')
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [referralOpen, setReferralOpen] = useState(false)
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [flashCard, setFlashCard] = useState<string | null>(null)
-  const [flashSpan, setFlashSpan] = useState<string | null>(null)
-  // Which cards are expanded lives here, not in the card: a card that changes group after a
-  // reviewer edit is re-mounted, and it must stay open under the reviewer's hands.
-  const [openIds, setOpenIds] = useState<ReadonlySet<string>>(() => new Set())
+  const hasMargin = useMediaQuery('(min-width: 768px)')
+  const gridRef = useRef<HTMLDivElement | null>(null)
+  const glideTimer = useRef<number | null>(null)
   const flashTimer = useRef<number | null>(null)
 
-  const done = state.phase === 'done'
-  const running = state.phase === 'running'
-  const { claims, cards, overrides, source, segments, summary } = state
+  const [openIds, setOpenIds] = useState<ReadonlySet<string>>(() => new Set())
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [filter, setFilter] = useState<EvidenceState | null>(null)
+  const [order, setOrder] = useState<NoteOrder>('order')
+  const [sheetId, setSheetId] = useState<string | null>(null)
+  const [referralOpen, setReferralOpen] = useState(false)
+  const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null)
+  const [glide, setGlide] = useState(false)
+  // False only between the end of a live run and the end of its orchestrated moment.
+  const [inked, setInked] = useState(!running)
 
-  const ordered = useMemo(() => [...claims].sort(chronological), [claims])
-  const readyCards = useMemo(
-    () => ordered.map((c) => cards[c.id]).filter((c): c is Card => !!c),
-    [ordered, cards],
+  const done = state.phase === 'done'
+  const { claims, cards, overrides, source, segments, summary } = state
+  const features = useMemo(() => featuresOf(meta), [meta])
+
+  // Reading order; claims with no place in the text go at the end of the margin.
+  const ordered = useMemo(
+    () => [...claims].sort((a, b) => Number(!a.span) - Number(!b.span) || chronological(a, b)),
+    [claims],
   )
   const overrideByCard = useMemo(() => new Map(overrides.map((o) => [o.card_id, o])), [overrides])
+  const readyCards = useMemo(() => ordered.map((c) => cards[c.id]).filter((c): c is Card => !!c), [ordered, cards])
+  const states = useMemo(
+    () => new Map(readyCards.map((card) => [card.id, overrideByCard.get(card.id)?.state ?? card.state])),
+    [readyCards, overrideByCard],
+  )
   const counts = useMemo(() => countStates(readyCards, overrides), [readyCards, overrides])
-  const pending = ordered.length - readyCards.length
-  const isMedia = source?.input_type === 'video_url' || source?.input_type === 'file'
+  const used = useMemo(() => sourcesUsed(readyCards), [readyCards])
+
+  // A filter that no longer matches anything (a reviewer changed the last such note) lets go.
+  const activeFilter = filter && counts[filter] > 0 ? filter : null
+  const visible = useMemo(
+    () => (activeFilter ? ordered.filter((c) => states.get(c.id) === activeFilter) : ordered),
+    [activeFilter, ordered, states],
+  )
+  const hidden = useMemo(
+    () => new Set(activeFilter ? ordered.filter((c) => states.get(c.id) !== activeFilter).map((c) => c.id) : []),
+    [activeFilter, ordered, states],
+  )
+
   const hasText = segments.some((s) => s.text.trim().length > 0)
+  const noClaims = done && ordered.length === 0
+  const settled = !running
+  const inking = settled && !inked
 
-  useEffect(() => () => {
-    if (flashTimer.current) window.clearTimeout(flashTimer.current)
-  }, [])
+  // The one orchestrated moment: when a live run completes, the underlines ink in along the text
+  // and the notes settle. It is a CSS animation keyed on `data-inking`; this only ends it.
+  useEffect(() => {
+    if (!inking) return
+    const timer = window.setTimeout(() => setInked(true), prefersReducedMotion() ? 0 : INKING_MS)
+    return () => window.clearTimeout(timer)
+  }, [inking])
 
-  const flash = useCallback((kind: 'card' | 'span', id: string) => {
-    if (flashTimer.current) window.clearTimeout(flashTimer.current)
-    setFlashCard(kind === 'card' ? id : null)
-    setFlashSpan(kind === 'span' ? id : null)
-    flashTimer.current = window.setTimeout(() => {
-      setFlashCard(null)
-      setFlashSpan(null)
-    }, 1700)
-  }, [])
-
-  /** Transcript → card. */
-  const goToCard = useCallback(
-    (claimId: string) => {
-      const run = () => {
-        scrollIntoView(document.getElementById(`card-${claimId}`))
-        flash('card', claimId)
-      }
-      if (sheetOpen) {
-        setSheetOpen(false)
-        window.setTimeout(run, 260)
-      } else run()
+  useEffect(
+    () => () => {
+      if (glideTimer.current) window.clearTimeout(glideTimer.current)
+      if (flashTimer.current) window.clearTimeout(flashTimer.current)
     },
-    [flash, sheetOpen],
+    [],
   )
 
-  /** Card → its place in the transcript (opening the sheet first on narrow screens). */
-  const goToSpan = useCallback(
+  const ids = useMemo(() => visible.map((c) => c.id), [visible])
+  const signature = [
+    hasMargin,
+    ids.join(','),
+    [...openIds].join(','),
+    readyCards.length,
+    overrides.map((o) => `${o.card_id}:${o.state}:${o.at}`).join(','),
+    reviewerMode,
+    segments.length,
+    state.notices.length,
+    summary ? 1 : 0,
+  ].join('|')
+  const layout = useMarginLayout(gridRef, ids, signature)
+
+  const toggleNote = useCallback((cardId: string) => {
+    setOpenIds((current) => {
+      const next = new Set(current)
+      if (next.has(cardId)) next.delete(cardId)
+      else next.add(cardId)
+      return next
+    })
+    // The notes below make room: for this one change their move is a glide, not a jump.
+    setGlide(true)
+    if (glideTimer.current) window.clearTimeout(glideTimer.current)
+    glideTimer.current = window.setTimeout(() => setGlide(false), GLIDE_MS)
+  }, [])
+
+  /** A passage in the text was chosen: open its note (in the margin, or as a sheet on a phone). */
+  const selectPassage = useCallback(
     (claimId: string) => {
-      const run = () => {
-        scrollIntoView(document.getElementById(`span-${claimId}`))
-        flash('span', claimId)
+      if (!cards[claimId]) return
+      if (!hasMargin) {
+        setSheetId(claimId)
+        return
       }
-      if (wide) run()
-      else {
-        setSheetOpen(true)
-        window.setTimeout(run, 320)
-      }
+      if (hidden.has(claimId)) setFilter(null)
+      toggleNote(claimId)
+      window.requestAnimationFrame(() => {
+        const note = document.getElementById(`note-${claimId}`)
+        note?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' })
+        note?.querySelector('button')?.focus({ preventScroll: true })
+      })
     },
-    [flash, wide],
+    [cards, hasMargin, hidden, toggleNote],
   )
+
+  /** A phone's note → its words in the text, tinted for a moment so the eye finds them. */
+  const locate = useCallback((claimId: string) => {
+    setSheetId(null)
+    window.setTimeout(() => {
+      document
+        .getElementById(`span-${claimId}`)
+        ?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' })
+      setActiveId(claimId)
+      if (flashTimer.current) window.clearTimeout(flashTimer.current)
+      flashTimer.current = window.setTimeout(() => setActiveId(null), 1700)
+    }, 220)
+  }, [])
 
   const openReferral = useCallback(() => setReferralOpen(true), [])
 
   // F3: which verdict card the share dialog is showing, if any.
-  const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null)
   const shareClaim = useCallback(
     (cardId: string) => {
       const card = cards[cardId]
@@ -212,81 +213,6 @@ export function ReportView({
     },
     [cards, overrides],
   )
-  const features = useMemo(() => featuresOf(meta), [meta])
-
-  const setCardOpen = useCallback((cardId: string, open: boolean) => {
-    setOpenIds((current) => {
-      const next = new Set(current)
-      if (open) next.add(cardId)
-      else next.delete(cardId)
-      return next
-    })
-  }, [])
-
-  // After a reviewer edit the card may now sit in another group: follow it.
-  const followCard = useCallback(
-    (cardId: string) => {
-      window.requestAnimationFrame(() => {
-        scrollIntoView(document.getElementById(`card-${cardId}`), 'nearest')
-        flash('card', cardId)
-      })
-    },
-    [flash],
-  )
-  const saveOverride = useCallback(
-    (override: ReviewerOverride) => {
-      onSaveOverride(override)
-      followCard(override.card_id)
-    },
-    [followCard, onSaveOverride],
-  )
-  const removeOverride = useCallback(
-    (cardId: string) => {
-      onRemoveOverride(cardId)
-      followCard(cardId)
-    },
-    [followCard, onRemoveOverride],
-  )
-
-  const renderClaim = (claim: ClaimStub) => {
-    const card = cards[claim.id]
-    if (!card) return <PendingCard key={claim.id} claim={claim} />
-    return (
-      <ClaimCard
-        key={claim.id}
-        card={card}
-        override={overrideByCard.get(card.id)}
-        source={source}
-        meta={meta}
-        features={features}
-        stageSeconds={summary?.stage_seconds}
-        reviewerMode={reviewerMode}
-        highlighted={flashCard === card.id}
-        linked={activeId === card.id}
-        open={openIds.has(card.id)}
-        onOpenChange={setCardOpen}
-        onLocate={goToSpan}
-        onHover={setActiveId}
-        onReferral={openReferral}
-        onShare={shareClaim}
-        onSaveOverride={saveOverride}
-        onRemoveOverride={removeOverride}
-      />
-    )
-  }
-
-  // While cards are still arriving they stay in reading order, so each skeleton is replaced in
-  // place and nothing jumps. Grouping by state (riskiest first) applies once the report is done.
-  const grouped = done && sort === 'state'
-  const groups = grouped
-    ? STATES_BY_RISK.map((s) => ({
-        state: s,
-        items: ordered.filter((c) => {
-          const card = cards[c.id]
-          return card && (overrideByCard.get(card.id)?.state ?? card.state) === s
-        }),
-      })).filter((g) => g.items.length > 0)
-    : []
 
   const lexicalNotice = state.notices.find((n) => n.code === 'llm_unavailable')
   const noClaimsNotice = state.notices.find((n) => n.code === 'no_claims')
@@ -294,55 +220,10 @@ export function ReportView({
   const dorarDown = summary?.warnings.includes('dorar_unreachable') ?? false
   // The backup model answered some of this request (primary model down, or the daily spend limit).
   const backupModel = !lexical && (summary?.warnings.includes('llm_fallback') ?? false)
-  const noClaims = done && ordered.length === 0
-  const used = useMemo(() => sourcesUsed(readyCards), [readyCards])
 
-  const transcript = (embedded: boolean) => (
-    <TranscriptPane
-      source={source}
-      segments={segments}
-      claims={ordered}
-      cards={cards}
-      overrides={overrides}
-      activeId={activeId}
-      flashId={flashSpan}
-      onSelect={goToCard}
-      onHover={setActiveId}
-      embedded={embedded}
-    />
-  )
-
-  return (
-    <section
-      aria-labelledby="report-title"
-      className={cn('grid gap-6', wide && hasText && 'grid-cols-[minmax(0,5fr)_minmax(0,8fr)] items-start')}
-    >
-      {wide && hasText ? <aside className="sticky top-20">{transcript(false)}</aside> : null}
-
-      <div className="min-w-0 space-y-4">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h2 id="report-title" className="text-lg font-semibold">
-            {t.report.title}
-          </h2>
-          {ordered.length > 0 ? (
-            <SummaryLine
-              total={ordered.length}
-              counts={counts}
-              pending={running ? pending : 0}
-              modified={overrides.length}
-            />
-          ) : null}
-          <div className="ms-auto flex items-center gap-2">
-            {!wide && hasText ? (
-              <Button type="button" variant="outline" size="touch" onClick={() => setSheetOpen(true)}>
-                <ScanText aria-hidden="true" />
-                {t.transcript.show}
-              </Button>
-            ) : null}
-            {done && ordered.length > 1 ? <SortToggle value={sort} onChange={setSort} /> : null}
-          </div>
-        </div>
-
+  const notices =
+    lexical || backupModel || dorarDown || state.restored ? (
+      <div className="space-y-2">
         {lexical ? (
           <Notice title={t.report.lexicalTitle}>
             {lexicalNotice
@@ -353,156 +234,255 @@ export function ReportView({
         {backupModel ? <Notice title={t.report.lexicalTitle}>{t.report.backupModelBody}</Notice> : null}
         {dorarDown ? <Notice>{t.report.dorarUnavailable}</Notice> : null}
         {state.restored ? (
-          <p className="text-xs text-muted-foreground">{t.report.restored}</p>
+          <Notice icon={<History aria-hidden="true" className="mt-0.5 size-[18px] shrink-0" />}>{t.report.restored}</Notice>
         ) : null}
+      </div>
+    ) : null
 
-        {noClaims ? (
-          <Surface className="animate-rise items-center gap-3 p-8 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
-              <TextSearch aria-hidden="true" className="size-6" />
-            </span>
-            <p className="text-base font-semibold">
+  const bodyProps = {
+    source,
+    meta,
+    features,
+    stageSeconds: summary?.stage_seconds,
+    reviewerMode,
+    onReferral: openReferral,
+    onShare: shareClaim,
+    onSaveOverride,
+    onRemoveOverride,
+  }
+
+  // Phone only: the list can put the notes that matter most first.
+  const listed =
+    order === 'state' && done
+      ? [...visible].sort((a, b) => {
+          const rank = (claim: ClaimStub) => {
+            const s = states.get(claim.id)
+            return s ? STATES_BY_RISK.indexOf(s) : STATES_BY_RISK.length
+          }
+          return rank(a) - rank(b) || chronological(a, b)
+        })
+      : visible
+  const sheetCard = sheetId ? cards[sheetId] : undefined
+
+  // A pasted text is known before the server sends it back: it is set on the page at once, so
+  // nothing moves when its segments arrive.
+  const pastedText = state.input?.input_type === 'text' ? (state.input.text ?? '') : ''
+
+  return (
+    <section aria-label={t.report.title}>
+      {/* The head of the sheet: the progress line while running, then the report in one sentence.
+          Both have the same height, in the same place, so the page under them does not move. */}
+      {running ? (
+        <ProgressPanel state={state} onCancel={onCancel} />
+      ) : noClaims ? (
+        <div className="flex min-h-(--sheet-head) flex-col items-start justify-center gap-3 border-b pb-5">
+          <div>
+            <p className="text-lg font-medium text-ink">
               {noClaimsNotice ? pick(noClaimsNotice.message_ar, noClaimsNotice.message_en) : t.report.noClaimsTitle}
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-quiet">
               {(noClaimsNotice && pick(noClaimsNotice.hint_ar, noClaimsNotice.hint_en)) || t.report.noClaimsHint}
             </p>
-            <Button type="button" variant="outline" size="touch" onClick={onVerifyAnother}>
-              <RotateCcw aria-hidden="true" />
-              {t.report.another}
-            </Button>
-          </Surface>
-        ) : null}
-
-        {running && ordered.length === 0 ? (
-          <div className="space-y-4">
-            <BlankCard />
-            <BlankCard />
-            <BlankCard />
           </div>
+          <Button type="button" variant="outline" size="touch" onClick={onVerifyAnother}>
+            <RotateCcw aria-hidden="true" />
+            {t.report.another}
+          </Button>
+        </div>
+      ) : (
+        <div className="flex min-h-(--sheet-head) items-center gap-x-6 border-b pb-5">
+          <SummarySentence
+            total={ordered.length}
+            counts={counts}
+            modified={overrides.length}
+            filter={activeFilter}
+            onFilter={setFilter}
+            className="min-w-0 flex-1"
+          />
+          <Button type="button" variant="outline" size="touch" onClick={onVerifyAnother} className="shrink-0 max-md:hidden">
+            <RotateCcw aria-hidden="true" />
+            {t.report.another}
+          </Button>
+        </div>
+      )}
+
+      {error ? <div className="mt-5">{error}</div> : null}
+
+      <div
+        ref={gridRef}
+        data-inking={inking ? '' : undefined}
+        className={cn(
+          'relative isolate mt-6',
+          hasMargin && 'grid grid-cols-[minmax(0,1fr)_16rem] gap-x-6 lg:grid-cols-[minmax(0,36rem)_22rem] lg:gap-x-8',
+        )}
+      >
+        {hasMargin ? (
+          <svg aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 size-full overflow-visible">
+            {ids.map((id) => {
+              const d = layout.paths[id]
+              if (!d) return null
+              const noteState = states.get(id)
+              const lit = activeId === id || openIds.has(id)
+              return (
+                <path
+                  key={id}
+                  d={d}
+                  className="connector"
+                  data-connector={id}
+                  data-active={lit && noteState ? '' : undefined}
+                  style={
+                    {
+                      '--connector-active': noteState ? STATE_STYLE[noteState].variable : undefined,
+                      transitionDuration: glide ? undefined : '150ms, 0s',
+                    } as CSSProperties
+                  }
+                />
+              )
+            })}
+          </svg>
         ) : null}
 
-        {grouped ? (
-          groups.map((group) => {
-            const Icon = STATE_STYLE[group.state].icon
-            return (
-              <section key={group.state} aria-labelledby={`group-${group.state}`} className="space-y-3">
-                <h3
-                  id={`group-${group.state}`}
-                  className={cn('flex items-center gap-2 pt-2 text-base font-semibold', STATE_STYLE[group.state].ink)}
-                >
-                  <Icon aria-hidden="true" className="size-4" />
-                  {t.states[group.state]}
-                  <span className="tabular font-normal text-muted-foreground">({group.items.length})</span>
-                </h3>
-                <div className="space-y-4">{group.items.map(renderClaim)}</div>
-              </section>
-            )
-          })
+        {hasText ? (
+          <PageText
+            source={source}
+            segments={segments}
+            claims={ordered}
+            states={states}
+            settled={settled}
+            hidden={hidden}
+            activeId={activeId}
+            openIds={openIds}
+            onSelect={selectPassage}
+            onHover={setActiveId}
+          />
+        ) : running && pastedText ? (
+          <p data-page dir="auto" className="page-text min-w-0 break-words whitespace-pre-line text-ink">
+            {pastedText}
+          </p>
+        ) : running ? (
+          // A clip or an article is not known yet: still ruled lines down to the fold, so that
+          // what lies under the page is out of sight when the text takes its place.
+          <div data-page aria-hidden="true" className="ruled min-h-[calc(100dvh-15rem)]" />
         ) : (
-          <div className="space-y-4">{ordered.map(renderClaim)}</div>
+          <p data-page className="text-sm text-quiet">
+            {t.transcript.empty}
+          </p>
         )}
 
-        {done && !noClaims && summary ? (
-          <Surface className="animate-rise gap-4 p-4 sm:p-6">
-            <div className="flex items-start gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
-                <ShieldCheck aria-hidden="true" className="size-5" />
-              </span>
-              <div className="min-w-0 space-y-1">
-                <p className="text-lg font-semibold">{t.report.finishTitle}</p>
-                <SummaryLine total={ordered.length} counts={counts} pending={0} modified={overrides.length} />
-                {summary.elapsed_seconds >= 0.05 && !state.restored ? (
-                  <p className="text-xs text-muted-foreground">
-                    {t.report.finishBody(formatSeconds(summary.elapsed_seconds))}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-            {used.length > 0 ? (
-              <>
-                <Separator />
-                <div className="space-y-1 text-xs">
-                  <p className="font-semibold text-muted-foreground">{t.report.sources}</p>
-                  <ul className="flex flex-wrap gap-x-4 gap-y-1">
-                    {used.map((s) => (
-                      <li key={s.name}>
-                        {safeHref(s.url) ? (
-                          <a
-                            href={new URL(s.url).origin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary"
-                          >
-                            {s.name}
-                          </a>
-                        ) : (
-                          s.name
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </>
-            ) : null}
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <ExportMenu
-                onExportJson={onExportJson}
-                onExportHtml={onExportHtml}
-                onCopyReport={onCopyReport}
-                align="start"
-              >
-                <Button type="button" variant="gold" size="xl" className="sm:px-6">
-                  <Download aria-hidden="true" />
-                  {t.header.export}
-                </Button>
-              </ExportMenu>
-              {features.share_card ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="xl"
-                  data-testid="share-summary"
-                  className="font-medium sm:px-6"
-                  onClick={() =>
-                    setShareTarget({
-                      kind: 'summary',
-                      summary,
-                      counts,
-                      total: ordered.length,
-                      reviewed: overrides.some((o) => o.state !== o.original_state),
-                    })
-                  }
-                >
-                  <Share2 aria-hidden="true" />
-                  {t.share.button}
-                </Button>
-              ) : null}
-              <Button type="button" variant="outline" size="xl" onClick={onVerifyAnother} className="font-medium sm:px-6">
-                <RotateCcw aria-hidden="true" />
-                {t.report.another}
-              </Button>
-            </div>
-          </Surface>
+        {hasMargin ? (
+          <aside
+            data-margin
+            aria-label={t.notes.title}
+            className="relative"
+            style={{ minHeight: layout.height || undefined }}
+          >
+            {notices ? <div data-margin-head>{notices}</div> : null}
+            {visible.map((claim, i) => {
+              const card = cards[claim.id]
+              const top = layout.tops[claim.id]
+              if (!card) return <PendingNote key={claim.id} claim={claim} top={top} />
+              return (
+                <MarginNote
+                  key={claim.id}
+                  {...bodyProps}
+                  card={card}
+                  override={overrideByCard.get(card.id)}
+                  open={openIds.has(card.id)}
+                  active={activeId === card.id}
+                  top={top}
+                  glide={glide}
+                  delay={Math.round(i * Math.min(60, 360 / Math.max(1, visible.length - 1)))}
+                  onToggle={toggleNote}
+                  onHover={setActiveId}
+                />
+              )
+            })}
+          </aside>
         ) : null}
       </div>
 
-      {!wide ? (
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent
-            side="bottom"
-            closeLabel={t.close}
-            className="gap-0 rounded-t-2xl data-[side=bottom]:h-[85dvh]"
-          >
-            <SheetHeader>
-              <SheetTitle className="text-lg font-semibold">
-                {isMedia ? t.transcript.titleMedia : t.transcript.titleText}
-              </SheetTitle>
-              <SheetDescription>{t.report.citations(ordered.length)}</SheetDescription>
-            </SheetHeader>
-            <div className="min-h-0 flex-1">{transcript(true)}</div>
-          </SheetContent>
-        </Sheet>
+      {hasMargin || (ordered.length === 0 && !notices) ? null : (
+        <section aria-labelledby="notes-title" className="mt-8 border-t pt-4">
+          <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-4">
+            <h2 id="notes-title" className="text-base font-semibold text-ink">
+              {t.notes.title}
+            </h2>
+            {done && ordered.length > 1 ? <OrderToggle value={order} onChange={setOrder} /> : null}
+          </div>
+          {notices ? <div className="py-2">{notices}</div> : null}
+          <ul className="divide-y">
+            {listed.map((claim) => (
+              <NoteRow
+                key={claim.id}
+                claim={claim}
+                card={cards[claim.id]}
+                override={overrideByCard.get(claim.id)}
+                onOpen={setSheetId}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {done && !noClaims && summary ? (
+        <div className="mt-10 space-y-3 text-sm">
+          <p>
+            <span className="font-medium text-ink">
+              {t.report.finished(
+                summary.elapsed_seconds >= 0.05 && !state.restored ? formatSeconds(summary.elapsed_seconds) : null,
+              )}
+            </span>
+            {used.length > 0 ? (
+              <span className="text-quiet">
+                {' '}
+                {t.report.sources}:{' '}
+                {used.map((s, i) => (
+                  <span key={s.name}>
+                    {i > 0 ? t.report.summary.comma : null}
+                    {safeHref(s.url) ? <SourceLink href={new URL(s.url).origin}>{s.name}</SourceLink> : s.name}
+                  </span>
+                ))}
+              </span>
+            ) : null}
+          </p>
+          <div className="flex flex-col gap-3 md:flex-row">
+            {features.share_card ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="touch"
+                data-testid="share-summary"
+                onClick={() =>
+                  setShareTarget({
+                    kind: 'summary',
+                    summary,
+                    counts,
+                    total: ordered.length,
+                    reviewed: overrides.some((o) => o.state !== o.original_state),
+                  })
+                }
+              >
+                <Share2 aria-hidden="true" />
+                {t.report.shareSummary}
+              </Button>
+            ) : null}
+            <Button type="button" size="xl" onClick={onVerifyAnother} className="md:hidden">
+              <RotateCcw aria-hidden="true" />
+              {t.report.another}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {sheetCard ? (
+        <NoteSheet
+          {...bodyProps}
+          open
+          onClose={() => setSheetId(null)}
+          card={sheetCard}
+          override={overrideByCard.get(sheetCard.id)}
+          onLocate={locate}
+        />
       ) : null}
 
       <ReferralDialog open={referralOpen} onOpenChange={setReferralOpen} meta={meta} />

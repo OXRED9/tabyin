@@ -1,11 +1,12 @@
-import { FileText, MessageCircleQuestion, Newspaper, Play, Upload } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FileText, Upload } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 
-import { AppHeader, TransparencyLine } from '@/components/app-header'
+import { AppHeader } from '@/components/app-header'
+import { Composer } from '@/components/composer'
+import type { AttachKind } from '@/components/composer'
+import { HistoryPanel } from '@/components/history-panel'
 import { InlineError } from '@/components/inline-error'
-import { InputPanel, VerifyButton } from '@/components/input-panel'
-import { ProgressPanel } from '@/components/progress-panel'
 import { ReportView } from '@/components/report/report-view'
 import { Button } from '@/components/ui/button'
 import { DirectionProvider } from '@/components/ui/direction'
@@ -14,40 +15,38 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { ThemeProvider } from '@/hooks/use-theme'
 import { useVerify } from '@/hooks/use-verify'
-import { fetchMeta } from '@/lib/api'
+import { MOCK_MODE, fetchMeta } from '@/lib/api'
 import { copyText } from '@/lib/clipboard'
 import { emptyDraft } from '@/lib/draft'
 import type { InputDraft } from '@/lib/draft'
 import { errorCopy, errorRemedies, localError } from '@/lib/errors'
 import { downloadJson, exportHtml } from '@/lib/export'
 import { featuresOf } from '@/lib/features'
-import { isHttpUrl, safeHref, truncate } from '@/lib/format'
-import { clearHistory, loadHistory, saveHistoryEntry } from '@/lib/history'
-import type { HistoryEntry } from '@/lib/history'
+import { safeHref, truncate } from '@/lib/format'
+import { clearHistory, loadHistory, saveHistoryEntry, subscribeHistory } from '@/lib/history'
+import type { HistoryEntry, SubmittedInput } from '@/lib/history'
 import { I18nProvider, useI18n } from '@/lib/i18n'
+import { detectLink, looksLikeBrokenLink } from '@/lib/link'
 import { buildMarkdownReport } from '@/lib/markdown'
 import { assembleReport } from '@/lib/report'
 import { chronological } from '@/lib/states'
 import { readStored, writeStored } from '@/lib/storage'
-import type { Card, InputType, Meta, MetaExample, Report, ReviewerOverride, VerifyInput } from '@/lib/types'
+import type { Card, Meta, MetaExample, Report, ReviewerOverride, VerifyInput } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 const DEFAULT_LIMITS: Meta['limits'] = { max_text_chars: 60000, max_upload_mb: 50, max_media_minutes: 30 }
 const REVIEWER_MODE_KEY = 'tabayyun.reviewerMode'
 const MEDIA_EXTENSIONS = /\.(mp3|m4a|wav|ogg|oga|opus|aac|flac|wma|mp4|m4v|mov|mkv|webm|avi|3gp)$/i
+const IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|heic|heif)$/i
 
-const EXAMPLE_ICONS: Record<InputType, typeof FileText> = {
-  text: FileText,
-  article_url: Newspaper,
-  video_url: Play,
-  file: Upload,
-}
+/** Mock mode only: `?mock=1&scenario=<name>&autorun=1` submits that scenario's input on load. */
+const AUTORUN = MOCK_MODE && new URLSearchParams(window.location.search).get('autorun') === '1'
 
-/** Accept "youtube.com/watch?v=…" as typed: people rarely type the scheme. */
-function normaliseUrl(value: string): string {
-  const trimmed = value.trim()
-  if (!trimmed || /^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed
-  return /^[^\s/]+\.[^\s/]+/.test(trimmed) ? `https://${trimmed}` : trimmed
+/** What the composer shows for an input that was submitted earlier (history, autorun). */
+function draftFromInput(input: SubmittedInput | VerifyInput): InputDraft {
+  if (input.input_type === 'text') return { ...emptyDraft, text: input.text ?? '' }
+  if (input.input_type === 'file') return emptyDraft
+  return { ...emptyDraft, text: input.url ?? '', linkAs: input.input_type }
 }
 
 function Shell() {
@@ -58,12 +57,17 @@ function Shell() {
   const [meta, setMeta] = useState<Meta | null>(null)
   const [draft, setDraft] = useState<InputDraft>(emptyDraft)
   const [reviewerMode, setReviewerMode] = useState(() => readStored<boolean>(REVIEWER_MODE_KEY, false))
-  const [history, setHistory] = useState<HistoryEntry[]>(loadHistory)
-  const fieldRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null)
+  const history = useSyncExternalStore(subscribeHistory, loadHistory)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [autorunPending, setAutorunPending] = useState(AUTORUN)
+  const fieldRef = useRef<HTMLTextAreaElement | null>(null)
+  const pickerRef = useRef<((kind: AttachKind) => void) | null>(null)
+  const autorunStarted = useRef(false)
   const wide = useMediaQuery('(min-width: 640px)')
 
   const limits = meta?.limits ?? DEFAULT_LIMITS
-  const running = state.phase === 'running'
+  const features = useMemo(() => featuresOf(meta), [meta])
+  const running = state.phase === 'running' || autorunPending
   const done = state.phase === 'done'
   const hasResults = running || done || state.claims.length > 0
 
@@ -77,6 +81,20 @@ function Shell() {
       })
     return () => controller.abort()
   }, [])
+
+  // Mock mode's direct route to a finished report, for audits of the report page.
+  useEffect(() => {
+    if (!AUTORUN || autorunStarted.current) return
+    autorunStarted.current = true
+    void import('@/mocks/mock-stream').then(({ mockAutorunInput }) => {
+      const input = mockAutorunInput()
+      if (input) {
+        setDraft(draftFromInput(input))
+        void start(input)
+      }
+      setAutorunPending(false)
+    })
+  }, [start])
 
   const report: Report | null = useMemo(() => {
     if (!done || !state.source || !state.summary || !state.generatedAt) return null
@@ -110,9 +128,6 @@ function Shell() {
     })
   }, [report, state.input])
 
-  // The menu reads the stored list each time it opens, so it never shows a stale one.
-  const refreshHistory = useCallback(() => setHistory(loadHistory()), [])
-
   const patchDraft = useCallback(
     (patch: Partial<InputDraft>) => {
       setDraft((current) => ({ ...current, ...patch }))
@@ -125,44 +140,44 @@ function Shell() {
     window.requestAnimationFrame(() => fieldRef.current?.focus())
   }, [])
 
+  /** One field, four kinds of request: what is in the composer decides which one is sent. */
   const submit = useCallback(
     (override?: InputDraft) => {
       if (running) return
       const current = override ?? draft
       let input: VerifyInput
-      if (current.tab === 'text') {
-        const text = current.text.trim()
-        if (!text) return showError(localError('empty_input'))
-        if (text.length > limits.max_text_chars) return showError(localError('input_too_long'))
-        input = { input_type: 'text', text }
-      } else if (current.tab === 'file') {
+      if (current.file) {
         const file = current.file
-        if (!file) return showError(localError('empty_input'))
         if (file.size > limits.max_upload_mb * 1024 * 1024) return showError(localError('file_too_large'))
         const isMedia = /^(audio|video)\//.test(file.type) || MEDIA_EXTENSIONS.test(file.name)
-        if (!isMedia) return showError(localError('unsupported_file'))
+        const isImage = features.image && (/^image\//.test(file.type) || IMAGE_EXTENSIONS.test(file.name))
+        if (!isMedia && !isImage) return showError(localError('unsupported_file'))
         input = { input_type: 'file', file }
       } else {
-        const key = current.tab
-        const url = normaliseUrl(current[key])
-        if (!url) return showError(localError('empty_input'))
-        if (!isHttpUrl(url)) return showError(localError('invalid_url'))
-        if (url !== current[key]) setDraft((d) => ({ ...d, [key]: url }))
-        input = { input_type: key, url }
+        const text = current.text.trim()
+        if (!text) return showError(localError('empty_input'))
+        const link = detectLink(text)
+        if (link) {
+          if (link.url !== current.text) setDraft((d) => ({ ...d, text: link.url }))
+          input = { input_type: current.linkAs ?? link.kind, url: link.url }
+        } else {
+          if (looksLikeBrokenLink(text)) return showError(localError('invalid_url'))
+          if (text.length > limits.max_text_chars) return showError(localError('input_too_long'))
+          input = { input_type: 'text', text }
+        }
       }
+      window.scrollTo({ top: 0 })
       void start(input)
     },
-    [draft, limits, running, showError, start],
+    [draft, features.image, limits, running, showError, start],
   )
 
   const applyExample = useCallback(
     (example: MetaExample) => {
-      const tab = example.input_type
       patchDraft({
-        tab,
-        ...(tab === 'text' ? { text: example.text ?? '' } : {}),
-        ...(tab === 'article_url' ? { article_url: example.url ?? '' } : {}),
-        ...(tab === 'video_url' ? { video_url: example.url ?? '' } : {}),
+        file: null,
+        linkAs: null,
+        text: example.input_type === 'text' ? (example.text ?? '') : (example.url ?? ''),
       })
       focusField()
     },
@@ -171,7 +186,7 @@ function Shell() {
 
   const verifyAnother = useCallback(() => {
     reset()
-    setDraft((d) => ({ ...emptyDraft, tab: d.tab }))
+    setDraft(emptyDraft)
     window.scrollTo({ top: 0 })
     focusField()
   }, [focusField, reset])
@@ -182,32 +197,27 @@ function Shell() {
     window.scrollTo({ top: 0 })
   }, [reset])
 
-  const openHistory = useCallback(
+  const openHistoryEntry = useCallback(
     (entry: HistoryEntry) => {
+      setHistoryOpen(false)
       restore(entry)
-      const { input } = entry
-      setDraft({
-        ...emptyDraft,
-        tab: input.input_type,
-        text: input.input_type === 'text' ? (input.text ?? '') : '',
-        article_url: input.input_type === 'article_url' ? (input.url ?? '') : '',
-        video_url: input.input_type === 'video_url' ? (input.url ?? '') : '',
-      })
+      setDraft(draftFromInput(entry.input))
       window.scrollTo({ top: 0 })
     },
     [restore],
   )
 
+  const showHistory = useCallback(() => setHistoryOpen(true), [])
+
   const wipeHistory = useCallback(() => {
     const previous = loadHistory()
-    setHistory(clearHistory())
+    clearHistory()
+    setHistoryOpen(false)
     toast(t.history.cleared, {
       action: {
         label: t.reviewer.undo,
         onClick: () => {
-          let restored: HistoryEntry[] = []
-          for (const entry of [...previous].reverse()) restored = saveHistoryEntry(entry)
-          setHistory(restored)
+          for (const entry of [...previous].reverse()) saveHistoryEntry(entry)
         },
       },
     })
@@ -218,7 +228,7 @@ function Shell() {
     writeStored(REVIEWER_MODE_KEY, on)
   }, [])
 
-  // Reviewer edits are undoable from the toast as well as from the card itself.
+  // Reviewer edits are undoable from the toast as well as from the note itself.
   const saveOverride = useCallback(
     (override: ReviewerOverride) => {
       const previous = state.overrides.find((o) => o.card_id === override.card_id)
@@ -268,10 +278,10 @@ function Shell() {
       else toast.error(t.copy.failed)
     })
   }, [report, t, lang, meta])
-  const features = useMemo(() => featuresOf(meta), [meta])
 
   // Ctrl/⌘ + Enter anywhere on the page runs the verification.
   useEffect(() => {
+    if (hasResults) return
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.defaultPrevented) {
         const target = event.target as HTMLElement | null
@@ -282,13 +292,13 @@ function Shell() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [submit])
+  }, [hasResults, submit])
 
   const errorId = 'verify-error'
   const error = state.fatalError
   const errorNode = error
     ? (() => {
-        const copy = errorCopy(error, { t, lang, tab: draft.tab, limits })
+        const copy = errorCopy(error, { t, lang, limits })
         const remedies = errorRemedies(error.code)
         return (
           <InlineError
@@ -301,7 +311,15 @@ function Shell() {
                 ? remedies.map((remedy) => {
                     if (remedy === 'upload') {
                       return (
-                        <Button key={remedy} type="button" size="touch" onClick={() => patchDraft({ tab: 'file' })}>
+                        <Button
+                          key={remedy}
+                          type="button"
+                          size="touch"
+                          onClick={() => {
+                            if (hasResults) verifyAnother()
+                            window.requestAnimationFrame(() => pickerRef.current?.('file'))
+                          }}
+                        >
                           <Upload aria-hidden="true" />
                           {t.errors.uploadInstead}
                         </Button>
@@ -320,9 +338,11 @@ function Shell() {
                         type="button"
                         variant="outline"
                         size="touch"
-                        className="bg-background"
                         onClick={() => {
-                          patchDraft({ tab: 'text' })
+                          // The link gives way to the text the user is about to paste.
+                          if (hasResults) reset()
+                          setDraft(emptyDraft)
+                          clearError()
                           focusField()
                         }}
                       >
@@ -341,14 +361,13 @@ function Shell() {
   const examples = (meta?.examples ?? []).filter((example) =>
     example.input_type === 'text' ? !!example.text : !!safeHref(example.url),
   )
-  const motto = meta?.motto_verse ?? null
 
   return (
     <DirectionProvider dir={dir}>
       <TooltipProvider delayDuration={300}>
         <a
           href="#main"
-          className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:start-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-lg focus-visible:bg-card focus-visible:px-4 focus-visible:py-2 focus-visible:shadow-raised"
+          className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:start-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-control focus-visible:border focus-visible:bg-paper focus-visible:px-4 focus-visible:py-2 focus-visible:shadow-overlay"
         >
           {t.skipToContent}
         </a>
@@ -358,132 +377,79 @@ function Shell() {
             hasReport={!!report}
             reviewerMode={reviewerMode}
             onReviewerModeChange={changeReviewerMode}
-            history={history}
-            onHistoryOpen={refreshHistory}
-            onOpenHistory={openHistory}
-            onClearHistory={wipeHistory}
             onExportJson={exportJson}
             onExportHtml={exportPrintable}
             onCopyReport={features.copy ? copyReport : undefined}
             onHome={goHome}
           />
-          <TransparencyLine />
 
-          <main
-            id="main"
-            className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 pt-6 pb-28 sm:px-6 sm:pb-12"
-          >
-            <div className={hasResults ? 'space-y-6' : 'mx-auto max-w-3xl space-y-6 sm:pt-8'}>
+          <main id="main" className="flex-1 sm:px-4 sm:py-6 lg:py-10">
+            {/* One sheet of paper on the desk. It is narrow while it is a blank page and widens
+                to the text-and-margin layout the moment a verification starts. */}
+            <div
+              data-sheet={hasResults ? 'report' : 'compose'}
+              className={cn(
+                'mx-auto flex w-full flex-col border-b bg-paper p-5 sm:rounded-sheet sm:border md:p-8 lg:p-12 print:border-0',
+                hasResults ? 'max-w-[66rem]' : 'max-w-[45rem]',
+              )}
+            >
               {hasResults ? (
-                <h1 className="sr-only">{t.headline}</h1>
+                <>
+                  <h1 className="sr-only">{t.report.title}</h1>
+                  <ReportView
+                    key={state.run}
+                    state={state}
+                    running={running}
+                    onCancel={autorunPending ? undefined : cancel}
+                    meta={meta}
+                    reviewerMode={reviewerMode}
+                    error={errorNode}
+                    onSaveOverride={saveOverride}
+                    onRemoveOverride={dropOverride}
+                    onVerifyAnother={verifyAnother}
+                  />
+                </>
               ) : (
-                <div className="space-y-2 text-center">
-                  <h1 className="text-3xl font-bold leading-tight text-primary sm:text-4xl">{t.headline}</h1>
-                  <p className="text-base text-muted-foreground">{t.subline}</p>
-                </div>
+                <Composer
+                  draft={draft}
+                  onChange={patchDraft}
+                  onSubmit={() => submit()}
+                  limits={limits}
+                  imageInput={features.image}
+                  examples={examples}
+                  onExample={applyExample}
+                  historyCount={history.length}
+                  onOpenHistory={showHistory}
+                  hasError={!!error}
+                  errorId={errorId}
+                  error={errorNode}
+                  fieldRef={fieldRef}
+                  pickerRef={pickerRef}
+                />
               )}
 
-              <InputPanel
-                draft={draft}
-                onChange={patchDraft}
-                onSubmit={() => submit()}
-                running={running}
-                compact={hasResults}
-                limits={limits}
-                hasError={!!error}
-                errorId={errorId}
-                error={errorNode}
-                fieldRef={fieldRef}
-              />
-
-              {!hasResults && examples.length > 0 ? (
-                <div className="space-y-3">
-                  <p className="text-center text-sm font-medium text-muted-foreground">{t.input.examples}</p>
-                  <ul
-                    className={cn(
-                      'mx-auto grid gap-3',
-                      examples.length === 2 && 'max-w-xl sm:grid-cols-2',
-                      examples.length >= 3 && 'sm:grid-cols-3',
-                      examples.length === 1 && 'max-w-xs',
-                    )}
-                  >
-                    {examples.map((example) => {
-                      const Icon = example.id === 'fabrication' ? MessageCircleQuestion : EXAMPLE_ICONS[example.input_type]
-                      return (
-                        <li key={example.id}>
-                          <button
-                            type="button"
-                            onClick={() => applyExample(example)}
-                            className="group flex h-full w-full items-center gap-3 rounded-xl bg-card p-3 text-start shadow-card ring-1 ring-border transition hover:ring-primary hover:shadow-raised"
-                          >
-                            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                              <Icon aria-hidden="true" className="size-5" />
-                            </span>
-                            <span className="text-sm font-medium text-primary underline decoration-primary/30 underline-offset-4 group-hover:decoration-primary">
-                              {lang === 'ar' ? example.label_ar : example.label_en}
-                            </span>
-                          </button>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-              ) : null}
-
-              {!hasResults && motto ? (
-                <figure className="space-y-2 pt-4 text-center">
-                  <blockquote lang="ar" dir="rtl" className="quran-text text-xl text-foreground/80">
-                    ﴿{motto.text}﴾
-                  </blockquote>
-                  <figcaption className="text-xs text-muted-foreground">
-                    <a
-                      href={safeHref(motto.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary"
-                    >
-                      {lang === 'ar' ? motto.ref : motto.ref_en || motto.ref}
-                    </a>
-                  </figcaption>
-                </figure>
-              ) : null}
+              {/* The transparency line is the sheet's footer in every state. */}
+              <footer className="mt-10 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-t pt-4 text-sm text-quiet">
+                <p>{t.transparency}</p>
+                {hasResults && !running && history.length > 0 ? (
+                  <Button type="button" variant="link" onClick={showHistory} className="print:hidden">
+                    {t.input.recent(history.length)}
+                  </Button>
+                ) : null}
+              </footer>
             </div>
-
-            {running ? <ProgressPanel state={state} onCancel={cancel} /> : null}
-
-            {hasResults ? (
-              <ReportView
-                key={state.run}
-                state={state}
-                meta={meta}
-                reviewerMode={reviewerMode}
-                onSaveOverride={saveOverride}
-                onRemoveOverride={dropOverride}
-                onExportJson={exportJson}
-                onExportHtml={exportPrintable}
-                onCopyReport={features.copy ? copyReport : undefined}
-                onVerifyAnother={verifyAnother}
-              />
-            ) : null}
           </main>
         </div>
 
-        {/* Fitts: on a phone the primary action is always under the thumb. */}
-        <div className="fixed inset-x-0 bottom-0 z-30 flex gap-3 border-t bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden print:hidden">
-          {running ? (
-            <Button type="button" variant="outline" size="xl" onClick={cancel} className="px-6 font-medium">
-              {t.input.cancel}
-            </Button>
-          ) : null}
-          <VerifyButton running={running} onClick={() => submit()} className="flex-1" />
-        </div>
-
-        <Toaster
-          dir={dir}
-          position={wide ? 'bottom-center' : 'top-center'}
-          offset={24}
-          mobileOffset={{ top: 72 }}
+        <HistoryPanel
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          entries={history}
+          onOpen={openHistoryEntry}
+          onClear={wipeHistory}
         />
+
+        <Toaster dir={dir} position={wide ? 'bottom-center' : 'top-center'} offset={24} mobileOffset={{ top: 64 }} />
       </TooltipProvider>
     </DirectionProvider>
   )

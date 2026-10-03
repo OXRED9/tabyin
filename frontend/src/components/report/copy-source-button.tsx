@@ -40,15 +40,8 @@ export function CopySourceButton({ text, kind }: { text: string; kind: SourceRef
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="touch"
-          data-testid="copy-source"
-          onClick={() => void copy()}
-          className="bg-background"
-        >
-          {copied ? <Check aria-hidden="true" className="text-supported-ink" /> : <Copy aria-hidden="true" />}
+        <Button type="button" variant="outline" size="touch" data-testid="copy-source" onClick={() => void copy()}>
+          {copied ? <Check aria-hidden="true" className="text-green" /> : <Copy aria-hidden="true" />}
           {label}
         </Button>
       </TooltipTrigger>

@@ -1,10 +1,6 @@
-import { Check, LoaderCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { progressPercent } from '@/hooks/use-verify'
 import type { VerifyState } from '@/hooks/use-verify'
 import { useI18n } from '@/lib/i18n'
 import type { StageId } from '@/lib/types'
@@ -27,14 +23,17 @@ function useEta(eta: VerifyState['eta']): number | null {
 }
 
 /**
- * Five-stage progress with the current stage's name and an estimated time. Stages can overlap
- * (matching starts on verbatim verses before extraction finishes), so each step has its own
- * status and the bar follows the highest stage seen.
+ * The head of the sheet while a verification runs: one sentence naming the current stage, the
+ * five stages as one line, and a way out. The five stages are a real sequence, so they are the
+ * only numbered thing in the product. Stages can overlap (matching starts on verbatim verses
+ * before extraction finishes), so each step has its own status.
+ *
+ * The block has the same height as the summary that replaces it, so nothing under it moves when
+ * the report completes.
  */
-export function ProgressPanel({ state, onCancel }: { state: VerifyState; onCancel: () => void }) {
+export function ProgressPanel({ state, onCancel }: { state: VerifyState; onCancel?: () => void }) {
   const { t, pick } = useI18n()
   const remaining = useEta(state.eta)
-  const percent = progressPercent(state)
 
   const status = (stage: StageId, index: number): StepStatus => {
     const seen = state.stages[stage]
@@ -53,75 +52,74 @@ export function ProgressPanel({ state, onCancel }: { state: VerifyState; onCance
   const stageName = t.stages[currentId]
 
   return (
-    <Card role="region" aria-label={t.progress.label} className="animate-rise p-4 sm:p-6">
+    <section aria-label={t.progress.label} className="flex min-h-(--sheet-head) flex-col justify-center gap-3 border-b pb-5">
       <div className="flex items-start gap-4">
-        <div className="min-w-0 flex-1" aria-live="polite">
-          <p className="text-sm text-muted-foreground">{t.progress.stageOf(currentIndex)}</p>
-          <p className="text-base font-semibold">
-            {stageName}
-            {current?.total ? (
-              <span className="tabular ms-2 text-sm font-normal text-muted-foreground">
-                {t.progress.matched(current.done ?? 0, current.total)}
-              </span>
-            ) : null}
-          </p>
-          {detail && detail !== stageName ? (
-            <p className="truncate text-sm text-muted-foreground">{detail}</p>
+        <p className="min-w-0 flex-1 text-base" aria-live="polite">
+          <span className="font-semibold text-ink">{t.progress.sentence(stageName)}</span>
+          {current?.total ? (
+            <span className="tabular ms-2 text-quiet">{t.progress.matched(current.done ?? 0, current.total)}</span>
           ) : null}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <p className="tabular text-sm text-muted-foreground">
-            {remaining === null ? null : remaining > 1 ? t.progress.eta(remaining) : t.progress.etaSoon}
-          </p>
-          <Button type="button" variant="outline" size="sm" onClick={onCancel} className="hidden sm:inline-flex">
+          {detail && detail !== stageName ? <span className="ms-2 text-quiet">{detail}</span> : null}
+          {remaining === null ? null : (
+            <span className="tabular ms-2 whitespace-nowrap text-quiet">
+              {remaining > 1 ? t.progress.eta(remaining) : t.progress.etaSoon}
+            </span>
+          )}
+        </p>
+        {onCancel ? (
+          <Button type="button" variant="outline" onClick={onCancel} className="shrink-0">
             {t.input.cancel}
           </Button>
-        </div>
+        ) : null}
       </div>
 
-      <Progress value={percent} aria-label={t.progress.label} className="mt-4" />
-
-      <ol className="mt-4 grid grid-cols-5 gap-2">
+      <ol className="flex">
         {STAGES.map((stage, i) => {
           const step = status(stage, i + 1)
+          const last = i === STAGES.length - 1
           const label =
             step === 'done' ? t.progress.stageDone : step === 'active' ? t.progress.stageActive : t.progress.stagePending
           return (
             <li
               key={stage}
               aria-current={step === 'active' ? 'step' : undefined}
-              className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-start"
+              className={cn('min-w-0', last ? 'flex-none' : 'flex-1')}
             >
+              <div className="flex items-center">
+                <span
+                  className={cn(
+                    'tabular flex size-6 shrink-0 items-center justify-center rounded-tag border-[1.5px] text-sm leading-none font-medium transition-colors duration-150',
+                    step === 'done' && 'border-green-fill bg-green-fill text-primary-foreground',
+                    step === 'active' && 'border-green text-green',
+                    step === 'pending' && 'border-rule-strong text-quiet',
+                  )}
+                >
+                  {i + 1}
+                </span>
+                {last ? null : (
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'mx-2 flex-1 border-t-[1.5px] transition-colors duration-150',
+                      step === 'done' ? 'border-green' : 'border-dashed border-rule-strong',
+                    )}
+                  />
+                )}
+              </div>
               <span
                 className={cn(
-                  'tabular flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors',
-                  step === 'done' && 'bg-primary text-primary-foreground',
-                  step === 'active' && 'bg-gold text-gold-foreground',
-                  step === 'pending' && 'bg-muted text-muted-foreground',
+                  'mt-1 block text-sm',
+                  step === 'pending' ? 'text-quiet' : 'text-ink',
+                  step === 'active' && 'font-medium',
                 )}
               >
-                {step === 'done' ? (
-                  <Check aria-hidden="true" className="size-4" />
-                ) : step === 'active' ? (
-                  <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-                ) : (
-                  i + 1
-                )}
-              </span>
-              <span
-                className={cn(
-                  'text-xs leading-snug',
-                  step === 'pending' ? 'text-muted-foreground' : 'font-medium text-foreground',
-                  'max-sm:sr-only',
-                )}
-              >
-                {t.stages[stage]}
+                {t.stagesShort[stage]}
                 <span className="sr-only"> ({label})</span>
               </span>
             </li>
           )
         })}
       </ol>
-    </Card>
+    </section>
   )
 }

@@ -1,4 +1,4 @@
-import { ClipboardCopy, Download, FileJson, Printer } from 'lucide-react'
+import { ClipboardCopy, FileJson, Printer } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import {
@@ -29,37 +29,31 @@ export function ExportMenu({
   align?: 'start' | 'center' | 'end'
 }) {
   const { t } = useI18n()
+  const item = (icon: ReactNode, title: string, hint: string) => (
+    <>
+      {icon}
+      <span className="flex flex-col">
+        <span className="font-medium">{title}</span>
+        <span className="text-quiet">{hint}</span>
+      </span>
+    </>
+  )
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent align={align} className="w-64">
-        <DropdownMenuLabel className="flex items-center gap-2">
-          <Download aria-hidden="true" className="size-4" />
-          {t.header.export}
-        </DropdownMenuLabel>
-        <DropdownMenuItem onSelect={onExportHtml} className="items-start gap-3 py-2">
-          <Printer aria-hidden="true" className="mt-1" />
-          <span className="flex flex-col">
-            <span className="font-medium">{t.exportMenu.html}</span>
-            <span className="text-xs text-muted-foreground">{t.exportMenu.htmlHint}</span>
-          </span>
+      <DropdownMenuContent align={align} className="w-72">
+        <DropdownMenuLabel>{t.header.export}</DropdownMenuLabel>
+        <DropdownMenuItem onSelect={onExportHtml} className="items-start gap-3">
+          {item(<Printer aria-hidden="true" className="mt-1 text-quiet" />, t.exportMenu.html, t.exportMenu.htmlHint)}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onExportJson} className="items-start gap-3 py-2">
-          <FileJson aria-hidden="true" className="mt-1" />
-          <span className="flex flex-col">
-            <span className="font-medium">{t.exportMenu.json}</span>
-            <span className="text-xs text-muted-foreground">{t.exportMenu.jsonHint}</span>
-          </span>
+        <DropdownMenuItem onSelect={onExportJson} className="items-start gap-3">
+          {item(<FileJson aria-hidden="true" className="mt-1 text-quiet" />, t.exportMenu.json, t.exportMenu.jsonHint)}
         </DropdownMenuItem>
         {onCopyReport ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={onCopyReport} className="items-start gap-3 py-2">
-              <ClipboardCopy aria-hidden="true" className="mt-1" />
-              <span className="flex flex-col">
-                <span className="font-medium">{t.copy.report}</span>
-                <span className="text-xs text-muted-foreground">{t.copy.reportHint}</span>
-              </span>
+            <DropdownMenuItem onSelect={onCopyReport} className="items-start gap-3">
+              {item(<ClipboardCopy aria-hidden="true" className="mt-1 text-quiet" />, t.copy.report, t.copy.reportHint)}
             </DropdownMenuItem>
           </>
         ) : null}

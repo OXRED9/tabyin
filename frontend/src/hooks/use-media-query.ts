@@ -12,8 +12,5 @@ export function useMediaQuery(query: string): boolean {
   )
 }
 
-/** Two panes need room: the transcript sits beside the report from 1024px up. */
-export const useIsWide = () => useMediaQuery('(min-width: 1024px)')
-
 export const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
