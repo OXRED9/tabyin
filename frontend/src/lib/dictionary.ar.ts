@@ -340,6 +340,9 @@ export const ar = {
     // not something it quotes, and showing it raises no state.
     referencedSource: 'الدليل المشار إليه في المصادر',
     referencedShort: 'الدليل المشار إليه',
+    // Travels with the verdict card and the shared text of such a claim: a disputed ruling beside
+    // a narration, with no caveat, would read as an argument for one opinion.
+    referencedCaveat: 'عرض هذا النص لا يعني ترجيحاً ولا حكماً من تبيّن.',
     reference: 'المرجع',
     grade: 'الحكم',
     grades: 'الحكم على الحديث',

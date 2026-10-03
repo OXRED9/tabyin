@@ -49,6 +49,8 @@ function lines(subject: ShareSubject, t: Dictionary, shape: Shape): string[] {
     return [
       `${t.states[card.state]}: «${truncateClaim(card.text_as_quoted, shape.quoted)}»`,
       ...(reference ? [reference] : []),
+      // The caveat goes wherever the evidence referred to goes.
+      ...(reference && card.match_kind === 'referenced' ? [t.card.referencedCaveat] : []),
       ...(shape.action ? [t.actionSentences[card.action]] : []),
     ]
   }

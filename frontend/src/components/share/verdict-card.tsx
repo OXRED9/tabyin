@@ -535,6 +535,12 @@ export function ClaimCardImage({ card, verse, ...shell }: ClaimCardImageProps) {
               </span>
             )}
           </div>
+          {card.match_kind === 'referenced' ? (
+            // The caveat travels with the image: the text is what the claim points at, no more.
+            <div data-caveat="" style={{ flex: 'none', marginTop: whole(6 * k), fontSize: whole(26 * k), lineHeight: 1.5, color: palette.quiet }}>
+              {t.card.referencedCaveat}
+            </div>
+          ) : null}
         </>
       ) : state === 'not_found' ? (
         // Nothing to quote: the tool abstains, and says so in a verse's words.

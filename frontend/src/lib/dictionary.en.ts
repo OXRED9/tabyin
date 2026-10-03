@@ -263,6 +263,7 @@ export const en: Dictionary = {
     inSource: 'In the source',
     referencedSource: 'The evidence referred to, in the sources',
     referencedShort: 'Evidence referred to',
+    referencedCaveat: 'Showing this text is neither a preference nor a ruling by Tabayyun.',
     reference: 'Reference',
     grade: 'Grading',
     grades: 'Hadith grading',
