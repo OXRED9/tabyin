@@ -364,3 +364,61 @@ as a short stub in the gutter, none for a displaced note, the full tie in state 
 hover/focus/open; notes open in the bottom sheet below 1024; quoted words in ink and the rest of
 the source in `quiet`, no dots; no sparkle; a readable off state for the reviewer switch; links in
 Plex; the header spans the viewport.
+
+### Round 2 — after the first fixes
+
+Looked at `report-1440` and `note-open-1440` at full size and at the sixteen captures not seen in
+round 1 (every other state at 390 and 820) on contact sheets, so each of the thirty has now been
+looked at at least once.
+
+**Report (1440).**
+- Memorable: the margin is now what the plan drew — nine one-line notes, each level with its line, a short stub across the gutter, nothing else. The fan is gone.
+- Works: the chevrons fall into one column at the sheet's edge; the references in `quiet` read as the second voice of each note.
+- Noise: each collapsed note still has a 2px tick of its state colour beside a glyph and a word in the same colour — the same thing said three times.
+- Inconsistent: none.
+- The summary sentence is the only large coloured text on the page, which is right: it is also the filter.
+
+**Open note (1440, 820, 390).**
+- Memorable: one straight tie in the state's colour from the words to their note; every other tie stays quiet.
+- Works: below 1024 the note opens as a sheet at a readable measure and the margin stays level behind it.
+- Noise: none left in the note's body; the sparkle and the dots are gone.
+- Inconsistent: quoted and unquoted words of the source differ only by `ink` against `quiet` — too faint in light mode, and greying a narration is the wrong signal. The page already has a language for "these are the quoted words": the state's ink.
+- The mock's note still says the rest of the text is «مظلَّلة»; nothing is shaded any more.
+
+**Processing (390, 820).**
+- Works: the sentence and the five stages fit a phone without wrapping the stage names.
+- Works at 820: pending notes are a ruled line and a dotted ring, the same placeholder language as the ruled field.
+- Noise: none.
+- Inconsistent: none.
+- The text is readable from the first second, which is the point of the state.
+
+**Examples and error (390, 820).**
+- Works: a link is in the tool's face now, left-to-right, on the same ruled lines.
+- Works: after a failure the tag says only what was recognised; the promise is gone.
+- Noise: none.
+- Inconsistent: a long link wraps onto a second ruled line on a phone — acceptable, it is still one field.
+- The two remedies stay side by side at 390.
+
+**Reviewer and not-found (390, 820).**
+- Works: the reviewer's line is the last thing in the sheet, after the tool has said everything it has to say.
+- Works: the abstention reads the same in a sheet as in the margin — sentence, verse, referral.
+- Noise: none.
+- Inconsistent: «موضعه في النص» appears in the sheet but not in the margin note; correct, since in the margin the tie already shows it.
+- The reviewer switch now looks off when it is off.
+
+**Dark (empty and report, 390, 820).**
+- Works: the ruled field survives in dark mode without becoming a grid.
+- Works: the sheet's edge is still visible against the desk at both widths.
+- Noise: none.
+- Inconsistent: none found.
+- The amber of «يحتاج مراجعة» is the brightest ink on the dark page; it stays because it is the state that asks for a person.
+
+**Measured in this round** (Lighthouse 12.8, report page of the production build): accessibility 100
+and best practices 100 on both presets. Performance was 89 desktop and 58 on the phone preset with
+uncompressed assets; with compression and immutable caching on the API, 99 desktop and 68 phone
+(first paint 5.1 s on the simulated slow connection — fonts and up-front script).
+
+**Fixes sent for round 3**: quoted words in the state's ink; the collapsed note's tick removed (the
+final-pass removal); the mock's wording; and a performance pass — a static shell painted before any
+script, one Naskh weight, two Plex weights, and code-splitting of everything the first paint does
+not need.
