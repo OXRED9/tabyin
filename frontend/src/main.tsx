@@ -2,20 +2,22 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import App from './App'
-import './index.css'
+import { dictionaryFor, loadDictionary } from './lib/dictionary'
+import { initialLang } from './lib/lang'
 
 /*
- * Ask for the page's faces now rather than when the first text in each arrives. A report's text
- * and its notes then lay out once, in their own face, instead of in a fallback that is swapped
- * (and re-wrapped) a moment later. The sample has an Arabic letter, a space and a Latin letter,
- * so every subset a line of text needs is fetched.
+ * index.html links the stylesheet and paints a static shell (the bar, the sheet, the headline)
+ * before this file runs; the first render replaces it with the same thing, alive. Only the language in use is loaded:
+ * Arabic is part of this bundle, English is fetched first when it is the stored choice.
  */
-for (const face of ['400 20px Amiri', '700 20px Amiri', '400 26px "Amiri Quran"', '400 16px "IBM Plex Sans Arabic"', '500 16px "IBM Plex Sans Arabic"', '600 16px "IBM Plex Sans Arabic"']) {
-  void document.fonts?.load(face, 'ب a').catch(() => undefined)
+function start() {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+const lang = initialLang()
+if (dictionaryFor(lang)) start()
+else void loadDictionary(lang).then(start, start)

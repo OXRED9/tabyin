@@ -1,11 +1,11 @@
 import { Check, Copy } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { copyText } from '@/lib/clipboard'
 import { useI18n } from '@/lib/i18n'
+import { notify } from '@/lib/notify'
 import type { SourceRef } from '@/lib/types'
 
 /**
@@ -29,15 +29,16 @@ export function CopySourceButton({ text, kind }: { text: string; kind: SourceRef
   const copy = async () => {
     if (await copyText(text)) {
       setCopied(true)
-      toast(t.copy.done)
+      notify((toast) => toast(t.copy.done))
       if (timer.current) window.clearTimeout(timer.current)
       timer.current = window.setTimeout(() => setCopied(false), 2000)
     } else {
-      toast.error(t.copy.failed)
+      notify((toast) => toast.error(t.copy.failed))
     }
   }
 
   return (
+    <TooltipProvider delayDuration={300}>
     <Tooltip>
       <TooltipTrigger asChild>
         <Button type="button" variant="outline" size="touch" data-testid="copy-source" onClick={() => void copy()}>
@@ -47,5 +48,6 @@ export function CopySourceButton({ text, kind }: { text: string; kind: SourceRef
       </TooltipTrigger>
       <TooltipContent>{t.copy.hint}</TooltipContent>
     </Tooltip>
+    </TooltipProvider>
   )
 }

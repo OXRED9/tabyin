@@ -148,7 +148,7 @@ export function Composer({
     >
       <h1 className="naskh-display text-2xl text-balance text-ink md:text-3xl">{t.headline}</h1>
 
-      <label htmlFor={`${id}-field`} className="mt-8 block text-base font-medium text-ink">
+      <label htmlFor={`${id}-field`} className="mt-8 block text-base font-semibold text-ink">
         {t.input.label}
       </label>
 
@@ -160,7 +160,7 @@ export function Composer({
             <FileAudio aria-hidden="true" className="size-5 shrink-0 text-quiet" />
           )}
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-base font-medium" dir="auto">
+            <span className="block truncate text-base font-semibold" dir="auto">
               {file.name}
             </span>
             <span className="tabular block text-sm text-quiet">
@@ -222,7 +222,7 @@ export function Composer({
             </Button>
           ) : null}
           {dragging ? (
-            <p className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-sm font-medium text-green">
+            <p className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-sm font-semibold text-green">
               {t.input.dropHere}
             </p>
           ) : null}
@@ -233,7 +233,7 @@ export function Composer({
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <span
             data-testid="link-tag"
-            className="inline-flex min-h-8 items-center gap-2 rounded-tag bg-accent ps-3 pe-1 text-sm font-medium text-ink"
+            className="inline-flex min-h-8 items-center gap-2 rounded-tag bg-accent ps-3 pe-1 text-sm text-ink"
           >
             <LinkIcon aria-hidden="true" className="size-4 shrink-0 text-green" />
             {linkLabel}
@@ -311,7 +311,7 @@ export function Composer({
             key={example.id}
             type="button"
             onClick={() => onExample(example)}
-            className="min-h-9 rounded-tag border border-rule-strong px-4 text-sm font-medium text-ink transition-colors duration-150 hover:bg-accent"
+            className="min-h-9 rounded-tag border border-rule-strong px-4 text-sm text-ink transition-colors duration-150 hover:bg-accent"
           >
             {lang === 'ar' ? example.label_ar : example.label_en}
           </button>

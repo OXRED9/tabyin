@@ -28,8 +28,8 @@ The source code in this repository is released under the MIT licence (`LICENSE`)
 | faster-whisper (optional), CTranslate2 | MIT |
 | openai SDK (used as the OpenAI-compatible client for OpenRouter) | Apache-2.0 |
 | React, Vite, Tailwind CSS, shadcn/ui, Radix UI, lucide-react | MIT / ISC |
-| IBM Plex Sans Arabic and IBM Plex Sans (© IBM Corp.): the tool's own words. Self-hosted in the UI from `@fontsource/ibm-plex-sans-arabic` (400, 500, 600; 700 for the verdict card only) and `@fontsource/ibm-plex-sans` (Latin 400, 500, 600; 700 for the verdict card only) | SIL Open Font License 1.1 |
-| Amiri (400, 700) and Amiri Quran (© The Amiri Project Authors): the text under examination, source quotes, the headline and logotype (Amiri); verses (Amiri Quran). Self-hosted in the UI from `@fontsource/amiri` and `@fontsource/amiri-quran` | SIL Open Font License 1.1 |
+| IBM Plex Sans Arabic and IBM Plex Sans (© IBM Corp.): the tool's own words. Self-hosted in the UI from `@fontsource/ibm-plex-sans-arabic` (400, 600; 700 for the verdict card only) and `@fontsource/ibm-plex-sans` (Latin 400, 600; 700 for the verdict card only) | SIL Open Font License 1.1 |
+| Amiri (400, Arabic and Latin files) and Amiri Quran (© The Amiri Project Authors): the text under examination, source quotes, the headline and logotype (Amiri); verses (Amiri Quran). Self-hosted in the UI from `@fontsource/amiri` and `@fontsource/amiri-quran` | SIL Open Font License 1.1 |
 | TTF copies of IBM Plex Sans Arabic and Amiri Quran, with their OFL texts, in `backend/tabayyun/assets/fonts/` for server-side verdict cards | SIL Open Font License 1.1 |
 | Pillow (with libraqm, HarfBuzz, FriBiDi), segno | MIT-CMU / MIT, LGPL (FriBiDi, system library) / BSD-3-Clause |
 | html-to-image, qrcode-generator (UI) | MIT |

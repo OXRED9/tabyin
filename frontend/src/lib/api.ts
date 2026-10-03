@@ -10,6 +10,24 @@ export const MOCK_MODE: boolean =
   import.meta.env.VITE_MOCK === '1' ||
   (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mock'))
 
+/** Resolves once a frame has been painted (or shortly after, in a tab that is not painting). */
+const afterFirstPaint = () =>
+  new Promise<void>((resolve) => {
+    const timer = window.setTimeout(resolve, 200)
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        window.clearTimeout(timer)
+        resolve()
+      }),
+    )
+  })
+
+/**
+ * Mock mode's code and fixtures. They are fetched once the first frame is on screen, the way a
+ * real report's data arrives after the page is up, and never unless mock mode is on.
+ */
+export const loadMock = () => afterFirstPaint().then(() => import('@/mocks/mock-stream'))
+
 /** A failure that already carries a human message for the user. */
 export class ApiFailure extends Error {
   readonly error: ApiError
@@ -57,7 +75,7 @@ async function errorFromResponse(response: Response): Promise<ApiError> {
 
 export async function fetchMeta(signal?: AbortSignal): Promise<Meta> {
   if (MOCK_MODE) {
-    const { mockMeta } = await import('@/mocks/mock-stream')
+    const { mockMeta } = await loadMock()
     return mockMeta()
   }
   const response = await fetch('/api/meta', { signal, headers: { Accept: 'application/json' } })
@@ -79,7 +97,7 @@ export async function verifyStream(
   signal: AbortSignal,
 ): Promise<void> {
   if (MOCK_MODE) {
-    const { mockVerify } = await import('@/mocks/mock-stream')
+    const { mockVerify } = await loadMock()
     return mockVerify(input, uiLang, onEvent, signal)
   }
 

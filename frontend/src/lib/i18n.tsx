@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
-import { dictionaries } from './dictionary'
+import { dictionaryFor, loadDictionary } from './dictionary'
 import type { Dictionary } from './dictionary'
-import { readStored, writeStored } from './storage'
+import { LANG_KEY, initialLang } from './lang'
+import { writeStored } from './storage'
 import type { UiLang } from './types'
 
 interface I18nValue {
@@ -17,17 +18,16 @@ interface I18nValue {
 
 const I18nContext = createContext<I18nValue | null>(null)
 
-const LANG_KEY = 'tabayyun.lang'
-
-function initialLang(): UiLang {
-  const fromUrl = new URLSearchParams(window.location.search).get('lang')
-  if (fromUrl === 'ar' || fromUrl === 'en') return fromUrl
-  const stored = readStored<string>(LANG_KEY, '')
-  return stored === 'en' ? 'en' : 'ar'
+/** The language on screen and its words always change together. */
+function initial(): { lang: UiLang; t: Dictionary } {
+  const lang = initialLang()
+  const t = dictionaryFor(lang)
+  // main.tsx loads the initial language before it renders; Arabic is the fallback if that failed.
+  return t ? { lang, t } : { lang: 'ar', t: dictionaryFor('ar')! }
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<UiLang>(initialLang)
+  const [{ lang, t }, setCurrent] = useState(initial)
   const dir = lang === 'ar' ? 'rtl' : 'ltr'
 
   useEffect(() => {
@@ -38,21 +38,27 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       lang === 'ar' ? 'تبيّن — تحقّق قبل أن تصدّق أو تنشر' : 'Tabayyun — verify before you believe or share'
   }, [lang, dir])
 
+  // Only the language in use is loaded: the other one is fetched when it is chosen.
   const setLang = useCallback((next: UiLang) => {
-    setLangState(next)
     writeStored(LANG_KEY, next)
+    void loadDictionary(next).then(
+      (words) => setCurrent({ lang: next, t: words }),
+      () => {
+        /* Offline: the page stays in the language it has. */
+      },
+    )
   }, [])
 
   const value = useMemo<I18nValue>(
     () => ({
       lang,
       dir,
-      t: dictionaries[lang],
+      t,
       setLang,
       pick: (arabic, english) =>
         (lang === 'ar' ? arabic || english : english || arabic) ?? '',
     }),
-    [lang, dir, setLang],
+    [lang, dir, t, setLang],
   )
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>

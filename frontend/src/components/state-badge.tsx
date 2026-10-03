@@ -22,7 +22,7 @@ export function StateWord({
   return (
     <span
       data-state={state}
-      className={cn('inline-flex items-center gap-2 text-sm font-medium', STATE_STYLE[state].ink, className)}
+      className={cn('inline-flex items-center gap-2 text-sm font-semibold', STATE_STYLE[state].ink, className)}
     >
       <StateGlyph state={state} />
       {full ? t.states[state] : t.stateWords[state]}

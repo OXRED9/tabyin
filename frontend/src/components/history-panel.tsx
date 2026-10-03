@@ -12,7 +12,7 @@ import { summarySentence } from '@/lib/summary'
  * «آخر ما تحققتَ منه»: the last ten reports, kept in this browser only. A side panel that lies
  * over the page; each entry is summed up by the same sentence that heads its report.
  */
-export function HistoryPanel({
+export default function HistoryPanel({
   open,
   onOpenChange,
   entries,
@@ -47,7 +47,7 @@ export function HistoryPanel({
                     onClick={() => onOpen(entry)}
                     className="block w-full px-5 py-3 text-start transition-colors duration-150 hover:bg-desk focus-visible:-outline-offset-2"
                   >
-                    <span className="block truncate text-base font-medium text-ink" dir="auto">
+                    <span className="block truncate text-base font-semibold text-ink" dir="auto">
                       {truncate(entry.title || t.history.untitled, 60)}
                     </span>
                     <span className="block text-sm text-ink">

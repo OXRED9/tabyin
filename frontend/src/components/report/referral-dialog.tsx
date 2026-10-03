@@ -12,7 +12,7 @@ import { useI18n } from '@/lib/i18n'
 import type { Meta } from '@/lib/types'
 
 /** "إحالة إلى أهل العلم": the bodies to consult, served by `/api/meta`. Opened only on request. */
-export function ReferralDialog({
+export default function ReferralDialog({
   open,
   onOpenChange,
   meta,
@@ -44,7 +44,7 @@ export function ReferralDialog({
                   className="group flex items-center gap-3 py-3 focus-visible:-outline-offset-2"
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block text-base font-medium text-green underline decoration-green/40 underline-offset-4 group-hover:decoration-green">
+                    <span className="block text-base text-green underline decoration-green/40 underline-offset-4 group-hover:decoration-green">
                       {lang === 'ar' ? link.name_ar : link.name_en}
                     </span>
                     <span className="block truncate text-sm text-quiet" dir="ltr">

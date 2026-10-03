@@ -55,7 +55,7 @@ function Disclosure({ title, hint, children }: { title: string; hint?: string; c
     <Collapsible open={open} onOpenChange={setOpen} className="border-t">
       <CollapsibleTrigger className="flex min-h-10 w-full items-center gap-2 py-2 text-start text-sm">
         <span className="min-w-0 flex-1">
-          <span className="font-medium text-green">{title}</span>
+          <span className="font-semibold text-green">{title}</span>
           {hint ? <span className="block text-quiet">{hint}</span> : null}
         </span>
         <ChevronDown
@@ -71,7 +71,7 @@ function Disclosure({ title, hint, children }: { title: string; hint?: string; c
 /** The tool's own remark about a claim: its glyph, then a sentence. */
 function Remark({ state, children }: { state: EvidenceState; children: ReactNode }) {
   return (
-    <p className="flex items-start gap-2 text-sm font-medium text-ink">
+    <p className="flex items-start gap-2 text-sm font-semibold text-ink">
       <StateGlyph state={state} className="mt-0.5 size-[18px]" />
       <span>{children}</span>
     </p>
@@ -83,14 +83,14 @@ function Remark({ state, children }: { state: EvidenceState; children: ReactNode
  * When the collation prints the source word for word, the marks are put on these words instead
  * of printing the text a second time.
  */
-function SourceWords({ source, marked }: { source: SourceRef; marked: Card['diff'] }) {
+function SourceWords({ source, marked, state }: { source: SourceRef; marked: Card['diff']; state: EvidenceState }) {
   const { t } = useI18n()
   const voice = source.kind === 'quran' ? 'quran-text' : 'naskh-quote'
   return (
     <figure aria-label={t.notes.sourceWords} className="border-y py-2">
       {marked ? (
         <blockquote lang="ar" dir="rtl" className={voice}>
-          <MarkedSource diff={marked} />
+          <MarkedSource diff={marked} state={state} />
         </blockquote>
       ) : (
         <blockquote>
@@ -107,7 +107,7 @@ function Takhrij({ source }: { source: SourceRef }) {
   return (
     <div className="space-y-1">
       <p className="text-sm">
-        <span className="font-medium text-ink">{source.ref}</span>
+        <span className="font-semibold text-ink">{source.ref}</span>
         {' — '}
         <SourceLink href={source.url}>{source.source_name}</SourceLink>
       </p>
@@ -145,14 +145,14 @@ function Grades({ grades, unavailable }: { grades: Grade[]; unavailable: boolean
         {grades.length > 0 ? ` (${t.card.gradeVerbatim})` : null}
       </p>
       {grades.length === 0 ? (
-        <p className="text-sm font-medium text-ink">{t.card.gradeUnavailable}</p>
+        <p className="text-sm font-semibold text-ink">{t.card.gradeUnavailable}</p>
       ) : (
         <>
           {grades.length > 1 ? <p className="text-sm text-ink">{t.card.gradesMany}</p> : null}
           <ul className="space-y-2">
             {grades.map((grade, i) => (
               <li key={i}>
-                <p lang="ar" dir="rtl" className="font-naskh text-lg font-bold whitespace-pre-line">
+                <p lang="ar" dir="rtl" className="font-naskh text-lg whitespace-pre-line">
                   {grade.text}
                 </p>
                 <p className="text-sm text-quiet">
@@ -177,10 +177,10 @@ function Grades({ grades, unavailable }: { grades: Grade[]; unavailable: boolean
 }
 
 /** Another source of the same text: its words, then its takhrij. */
-function OtherSource({ source }: { source: SourceRef }) {
+function OtherSource({ source, state }: { source: SourceRef; state: EvidenceState }) {
   return (
     <div className="space-y-2">
-      <SourceWords source={source} marked={null} />
+      <SourceWords source={source} marked={null} state={state} />
       <Takhrij source={source} />
     </div>
   )
@@ -213,7 +213,7 @@ export interface NoteBodyProps {
  * and, in reviewer mode, the reviewer's line. The same body fills the margin note on a wide
  * screen and the bottom sheet on a phone.
  */
-export function NoteBody({
+export default function NoteBody({
   card,
   override,
   source,
@@ -247,7 +247,7 @@ export function NoteBody({
     <div className="space-y-4">
       {override ? (
         <div className="text-sm">
-          <p className="flex items-start gap-2 font-medium text-ink">
+          <p className="flex items-start gap-2 font-semibold text-ink">
             <UserRoundCheck aria-hidden="true" className="mt-1 size-4 shrink-0 text-quiet" />
             {stateChanged ? t.reviewer.modified : t.reviewer.noted}
           </p>
@@ -277,7 +277,7 @@ export function NoteBody({
 
       {card.source ? (
         <>
-          <SourceWords source={card.source} marked={markedSource} />
+          <SourceWords source={card.source} marked={markedSource} state={state} />
           {markedSource && hasUnquoted(markedSource) ? (
             <p className="text-sm text-quiet">{t.diff.partial}</p>
           ) : null}
@@ -289,7 +289,7 @@ export function NoteBody({
 
       {state === 'not_found' ? (
         <div className="space-y-1">
-          <p className="text-sm font-medium text-ink">{t.card.abstention}</p>
+          <p className="text-sm font-semibold text-ink">{t.card.abstention}</p>
           {verse ? (
             <p>
               <span lang="ar" dir="rtl" className="quran-text">
@@ -299,7 +299,7 @@ export function NoteBody({
                 href={safeHref(verse.url)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-medium whitespace-nowrap text-green underline decoration-green/40 underline-offset-4 hover:decoration-green"
+                className="text-sm whitespace-nowrap text-green underline decoration-green/40 underline-offset-4 hover:decoration-green"
               >
                 {lang === 'ar' ? verse.ref : verse.ref_en || verse.ref}
               </a>
@@ -314,10 +314,15 @@ export function NoteBody({
             {t.diff.title}
             {card.match_kind !== 'none' ? ` (${t.matchKinds[card.match_kind]})` : null}
           </h4>
-          <DiffView diff={card.diff} quranSource={card.source?.kind === 'quran'} sourceShownAbove={!!markedSource} />
+          <DiffView
+            diff={card.diff}
+            state={state}
+            quranSource={card.source?.kind === 'quran'}
+            sourceShownAbove={!!markedSource}
+          />
         </section>
       ) : card.source && card.match_kind === 'exact' ? (
-        <p className="text-sm font-medium text-supported-ink">{t.diff.exact}</p>
+        <p className="text-sm text-supported-ink">{t.diff.exact}</p>
       ) : card.source && card.match_kind !== 'none' ? (
         <p className="text-sm text-quiet">{t.matchKinds[card.match_kind]}</p>
       ) : null}
@@ -325,7 +330,7 @@ export function NoteBody({
       {/* The tool's own words: the rule's note, then what to do, said as a sentence. */}
       <div className="space-y-1 text-base">
         {note ? <p className="text-ink">{note}</p> : null}
-        <p className="font-medium text-ink">{t.actionSentences[card.action]}</p>
+        <p className="font-semibold text-ink">{t.actionSentences[card.action]}</p>
         <p className="text-sm text-quiet">
           {t.card.levelSentence(card.content_level, t.levels[card.content_level], t.certainty[card.certainty])}
           {card.attributed_to ? ` ${t.card.attributedSentence(card.attributed_to)}` : null}
@@ -344,7 +349,7 @@ export function NoteBody({
       {card.ai_explanation ? (
         <section className="border-t border-dashed border-rule-strong pt-3 text-sm">
           {/* Words only: the label says what this is, and no stock "AI" mark stands in for it. */}
-          <h4 className="font-medium text-ink">{t.card.aiExplanation}</h4>
+          <h4 className="font-semibold text-ink">{t.card.aiExplanation}</h4>
           <p className="text-quiet">{t.card.aiExplanationHint}</p>
           <p dir="auto" className="mt-1 text-base text-ink">
             {card.ai_explanation}
@@ -399,7 +404,7 @@ export function NoteBody({
         {card.other_sources.length > 0 ? (
           <Disclosure title={t.card.otherSources(card.other_sources.length)}>
             {card.other_sources.map((other, i) => (
-              <OtherSource key={i} source={other} />
+              <OtherSource key={i} source={other} state={state} />
             ))}
           </Disclosure>
         ) : null}

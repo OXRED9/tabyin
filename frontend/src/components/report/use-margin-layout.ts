@@ -28,6 +28,11 @@ const GAP = 8
  * continues the passage's underline straight across the gutter.
  */
 const ANCHOR = 26
+/**
+ * A collapsed note has no bar on its edge, so its tie runs on to just short of its ring. An open
+ * note's tie stops at its bar.
+ */
+const REACH = 10
 /** The underline's centre sits this far above the bottom of the passage's inline box (see `.claim-ink`). */
 const UNDERLINE_RISE = 6
 
@@ -82,6 +87,7 @@ export function useMarginLayout(
     const marginTop = marginBox.top - gridBox.top
     // The note's text-side edge, the text block's margin-side edge, and the gutter between them.
     const noteX = (marginOnLeft ? marginBox.right : marginBox.left) - gridBox.left
+    const towardsText = marginOnLeft ? 1 : -1
     const textX = (marginOnLeft ? pageBox.left : pageBox.right) - gridBox.left
     const laneX = (noteX + textX) / 2
     const pitch = parseFloat(getComputedStyle(page.querySelector('.page-text') ?? page).lineHeight) || 40
@@ -93,6 +99,7 @@ export function useMarginLayout(
       const line = ink ? Array.from(ink.getClientRects()).find((rect) => rect.width > 1) : undefined
       return {
         id,
+        open: !!note?.hasAttribute('data-open'),
         height: note?.offsetHeight ?? 0,
         // The underline of the passage's first line, and the end of it nearest the margin.
         lineY: line ? line.bottom - gridBox.top - UNDERLINE_RISE : null,
@@ -114,7 +121,8 @@ export function useMarginLayout(
       if (item.lineY !== null && item.lineX !== null) {
         const y1 = crisp(marginTop + top + ANCHOR)
         const y2 = drift > 0.5 ? crisp(item.lineY) : y1
-        const across = `M${crisp(noteX)} ${y1}H${crisp(laneX)}V${y2}`
+        const start = item.open ? noteX : noteX - towardsText * REACH
+        const across = `M${crisp(start)} ${y1}H${crisp(laneX)}V${y2}`
         next.ties[item.id] = `${across}H${crisp(item.lineX)}`
         if (drift <= pitch / 2) next.stubs[item.id] = `${across}H${crisp(textX)}`
       }

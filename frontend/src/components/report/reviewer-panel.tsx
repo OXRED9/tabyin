@@ -143,7 +143,7 @@ export function ReviewerPanel({
           </div>
           {reasonText ? <p className="text-sm text-quiet">{reasonText}</p> : null}
           {nudge ? (
-            <p role="status" className="text-sm font-medium text-contra-ink">
+            <p role="status" className="text-sm font-semibold text-contra-ink">
               {t.reviewer.nothingToSave}
             </p>
           ) : null}

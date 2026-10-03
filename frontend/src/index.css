@@ -12,6 +12,11 @@
  *   Amiri Quran          a verse quoted from the source
  *   Amiri                the text under examination, narrations and source quotes, the headline
  *   IBM Plex Sans (+ Arabic)   the tool's own words
+ *
+ * Few files, because every one is on the way to the first report: the Naskh has one weight, as
+ * a manuscript hand does, and Plex has two (400 to read, 600 for labels and titles). Amiri's
+ * Latin file stays: the full stop, the colon, the guillemets and the digits of a Naskh line live
+ * in it. index.html preloads the faces the first screen needs.
  */
 @font-face {
   font-family: "IBM Plex Sans Arabic";
@@ -19,14 +24,6 @@
   font-display: swap;
   font-weight: 400;
   src: url("../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-400-normal.woff2") format("woff2");
-  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
-}
-@font-face {
-  font-family: "IBM Plex Sans Arabic";
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url("../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-500-normal.woff2") format("woff2");
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 @font-face {
@@ -52,14 +49,6 @@
   font-display: swap;
   font-weight: 400;
   src: url("../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "IBM Plex Sans";
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url("../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
@@ -96,22 +85,6 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: "Amiri";
-  font-style: normal;
-  font-display: swap;
-  font-weight: 700;
-  src: url("../node_modules/@fontsource/amiri/files/amiri-arabic-700-normal.woff2") format("woff2");
-  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
-}
-@font-face {
-  font-family: "Amiri";
-  font-style: normal;
-  font-display: swap;
-  font-weight: 700;
-  src: url("../node_modules/@fontsource/amiri/files/amiri-latin-700-normal.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
   font-family: "Amiri Quran";
   font-style: normal;
   font-display: swap;
@@ -129,7 +102,7 @@
   /* There is no monospace family: numbers that line up use Plex's tabular figures. */
   --font-mono: var(--font-ui);
 
-  /* Type scale: 14 / 16 / 20 / 26 / 34 / 44. Weight does the hierarchy before size. */
+  /* Type scale: 14 / 16 / 20 / 26 / 34 / 44. Weight does the hierarchy before size: 400 and 600. */
   --text-xs: 0.875rem;
   --text-xs--line-height: 1.6;
   --text-sm: 0.875rem;
@@ -359,6 +332,19 @@ html[lang="en"] {
   }
 }
 
+/*
+ * The static shell in index.html carries both languages and both first screens; the inline
+ * script there sets `lang` and `data-view` before the first paint, and these rules pick.
+ */
+html[lang="en"] [data-shell-lang="ar"],
+html:not([lang="en"]) [data-shell-lang="en"],
+html[data-view="report"] [data-shell="headline"] {
+  display: none;
+}
+html[data-view="report"] [data-shell="sheet"] {
+  max-width: 66rem;
+}
+
 /* ── Voices ──────────────────────────────────────────────────────────────────────────────── */
 
 /* A verse quoted from the source: 26 / 2.3. */
@@ -386,10 +372,10 @@ html[lang="en"] {
   }
 }
 
-/* The headline and the logotype. */
+/* The headline and the logotype: the same hand as the page, larger. */
 @utility naskh-display {
   font-family: var(--font-naskh);
-  font-weight: 700;
+  font-weight: 400;
 }
 
 @utility tabular {

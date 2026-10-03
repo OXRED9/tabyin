@@ -9,13 +9,13 @@ import { Slot } from "radix-ui"
  * 2px green outline, so no variant draws a ring of its own.
  */
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-control border border-transparent text-sm font-medium whitespace-nowrap select-none transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-control border border-transparent text-sm whitespace-nowrap select-none transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-green-fill text-primary-foreground hover:bg-green-fill/90",
+        default: "bg-green-fill font-semibold text-primary-foreground hover:bg-green-fill/90",
         outline:
-          "border-rule-strong bg-paper text-ink hover:bg-desk aria-expanded:bg-desk",
+          "border-rule-strong bg-paper font-semibold text-ink hover:bg-desk aria-expanded:bg-desk",
         ghost: "text-ink hover:bg-desk aria-expanded:bg-desk",
         quiet: "text-green hover:bg-accent aria-expanded:bg-accent",
         destructive: "text-destructive hover:bg-contra-soft",

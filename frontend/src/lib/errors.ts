@@ -7,24 +7,6 @@ export interface ErrorCopy {
 }
 
 /**
- * The backend's hints were written for the tabbed input ("paste it in the «Text» tab"). There is
- * one composer now, so a hint that still names a tab is replaced by the same advice in the UI's
- * own words. The message itself is always the backend's.
- */
-function composerHint(code: string, hint: string | null | undefined, t: Dictionary): string | null {
-  if (!hint) return null
-  if (!/تبويب|\btab\b/i.test(hint)) return hint
-  switch (code) {
-    case 'article_fetch_failed':
-      return t.errors.hintPasteArticle
-    case 'no_speech':
-      return t.errors.hintPasteTranscript
-    default:
-      return t.errors.hintUploadOrPaste
-  }
-}
-
-/**
  * The words shown for an error. The backend's own `message_*` / `hint_*` win; codes raised by the
  * client (validation before the request, network failures) are worded from the dictionary, in
  * whatever language the UI is in right now.
@@ -35,8 +17,8 @@ export function errorCopy(
 ): ErrorCopy {
   const { t, lang, limits } = ctx
   const message = lang === 'ar' ? error.message_ar || '' : error.message_en || ''
-  const hint = composerHint(error.code, lang === 'ar' ? error.hint_ar : error.hint_en, t)
-  if (message && error.code !== 'internal') return { message, hint }
+  const hint = lang === 'ar' ? error.hint_ar : error.hint_en
+  if (message && error.code !== 'internal') return { message, hint: hint ?? null }
   if (error.message_ar && error.message_en && error.code === 'internal') {
     return { message, hint: hint ?? t.errors.internal.hint }
   }
@@ -59,10 +41,7 @@ export function errorCopy(
     default:
       // A backend error in the other language is still better than a generic line.
       if (error.message_ar || error.message_en) {
-        return {
-          message: error.message_ar || error.message_en,
-          hint: composerHint(error.code, error.hint_ar ?? error.hint_en, t),
-        }
+        return { message: error.message_ar || error.message_en, hint: error.hint_ar ?? error.hint_en ?? null }
       }
       return t.errors.internal
   }

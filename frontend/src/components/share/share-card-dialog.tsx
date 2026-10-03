@@ -1,6 +1,5 @@
 import { Copy, Download, Share2 } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { toast } from 'sonner'
 
 import { ClaimCardImage, SummaryCardImage } from '@/components/share/verdict-card'
 import { Button } from '@/components/ui/button'
@@ -10,6 +9,7 @@ import { requestShareCard } from '@/lib/api'
 import type { ShareCardRequest } from '@/lib/api'
 import { appUrlOf } from '@/lib/features'
 import { useI18n } from '@/lib/i18n'
+import { notify } from '@/lib/notify'
 import {
   CARD_HEIGHT,
   CARD_PALETTE,
@@ -75,7 +75,7 @@ function Choice<T extends string>({
  * of size and theme, and the actions the device supports: the share sheet where files can be
  * shared, otherwise download and copy. The language follows the interface.
  */
-export function ShareCardDialog({
+export default function ShareCardDialog({
   target,
   meta,
   onClose,
@@ -141,17 +141,17 @@ export function ShareCardDialog({
     try {
       const blob = await produce()
       if (action === 'share') {
-        if (await shareFile(blob, filename, `${t.share.footer} — ${appUrl}`)) toast(t.share.shared)
+        if (await shareFile(blob, filename, `${t.share.footer} — ${appUrl}`)) notify((toast) => toast(t.share.shared))
       } else if (action === 'download') {
         downloadBlob(blob, filename)
-        toast(t.share.downloaded)
+        notify((toast) => toast(t.share.downloaded))
       } else if (await copyImage(blob)) {
-        toast(t.share.copied)
+        notify((toast) => toast(t.share.copied))
       } else {
-        toast.error(t.share.copyFailed)
+        notify((toast) => toast.error(t.share.copyFailed))
       }
     } catch {
-      toast.error(t.share.failed)
+      notify((toast) => toast.error(t.share.failed))
     } finally {
       setBusy(null)
     }

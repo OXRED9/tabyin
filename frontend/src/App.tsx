@@ -1,33 +1,28 @@
 import { FileText, Upload } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { toast } from 'sonner'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import { AppHeader } from '@/components/app-header'
 import { Composer } from '@/components/composer'
 import type { AttachKind } from '@/components/composer'
-import { HistoryPanel } from '@/components/history-panel'
 import { InlineError } from '@/components/inline-error'
 import { ReportView } from '@/components/report/report-view'
 import { Button } from '@/components/ui/button'
 import { DirectionProvider } from '@/components/ui/direction'
-import { Toaster } from '@/components/ui/sonner'
-import { TooltipProvider } from '@/components/ui/tooltip'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { ThemeProvider } from '@/hooks/use-theme'
 import { useVerify } from '@/hooks/use-verify'
-import { MOCK_MODE, fetchMeta } from '@/lib/api'
+import { MOCK_MODE, fetchMeta, loadMock } from '@/lib/api'
 import { copyText } from '@/lib/clipboard'
 import { emptyDraft } from '@/lib/draft'
 import type { InputDraft } from '@/lib/draft'
 import { errorCopy, errorRemedies, localError } from '@/lib/errors'
-import { downloadJson, exportHtml } from '@/lib/export'
 import { featuresOf } from '@/lib/features'
 import { safeHref, truncate } from '@/lib/format'
 import { clearHistory, loadHistory, saveHistoryEntry, subscribeHistory } from '@/lib/history'
 import type { HistoryEntry, SubmittedInput } from '@/lib/history'
 import { I18nProvider, useI18n } from '@/lib/i18n'
 import { detectLink, looksLikeBrokenLink } from '@/lib/link'
-import { buildMarkdownReport } from '@/lib/markdown'
+import { notify, subscribeToaster, toasterWanted } from '@/lib/notify'
 import { assembleReport } from '@/lib/report'
 import { chronological } from '@/lib/states'
 import { readStored, writeStored } from '@/lib/storage'
@@ -38,6 +33,11 @@ const DEFAULT_LIMITS: Meta['limits'] = { max_text_chars: 60000, max_upload_mb: 5
 const REVIEWER_MODE_KEY = 'tabayyun.reviewerMode'
 const MEDIA_EXTENSIONS = /\.(mp3|m4a|wav|ogg|oga|opus|aac|flac|wma|mp4|m4v|mov|mkv|webm|avi|3gp)$/i
 const IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|heic|heif)$/i
+
+// Not needed to paint the page: each is fetched when first wanted.
+const HistoryPanel = lazy(() => import('@/components/history-panel'))
+const Toaster = lazy(() => import('@/components/ui/sonner'))
+const loadExport = () => import('@/lib/export')
 
 /** Mock mode only: `?mock=1&scenario=<name>&autorun=1` submits that scenario's input on load. */
 const AUTORUN = MOCK_MODE && new URLSearchParams(window.location.search).get('autorun') === '1'
@@ -59,6 +59,9 @@ function Shell() {
   const [reviewerMode, setReviewerMode] = useState(() => readStored<boolean>(REVIEWER_MODE_KEY, false))
   const history = useSyncExternalStore(subscribeHistory, loadHistory)
   const [historyOpen, setHistoryOpen] = useState(false)
+  // The panel stays mounted once it has been opened, so it can close with its transition.
+  const [historySeen, setHistorySeen] = useState(false)
+  const toaster = useSyncExternalStore(subscribeToaster, toasterWanted)
   const [autorunPending, setAutorunPending] = useState(AUTORUN)
   const fieldRef = useRef<HTMLTextAreaElement | null>(null)
   const pickerRef = useRef<((kind: AttachKind) => void) | null>(null)
@@ -86,7 +89,7 @@ function Shell() {
   useEffect(() => {
     if (!AUTORUN || autorunStarted.current) return
     autorunStarted.current = true
-    void import('@/mocks/mock-stream').then(({ mockAutorunInput }) => {
+    void loadMock().then(({ mockAutorunInput }) => {
       const input = mockAutorunInput()
       if (input) {
         setDraft(draftFromInput(input))
@@ -207,20 +210,25 @@ function Shell() {
     [restore],
   )
 
-  const showHistory = useCallback(() => setHistoryOpen(true), [])
+  const showHistory = useCallback(() => {
+    setHistorySeen(true)
+    setHistoryOpen(true)
+  }, [])
 
   const wipeHistory = useCallback(() => {
     const previous = loadHistory()
     clearHistory()
     setHistoryOpen(false)
-    toast(t.history.cleared, {
-      action: {
-        label: t.reviewer.undo,
-        onClick: () => {
-          for (const entry of [...previous].reverse()) saveHistoryEntry(entry)
+    notify((toast) =>
+      toast(t.history.cleared, {
+        action: {
+          label: t.reviewer.undo,
+          onClick: () => {
+            for (const entry of [...previous].reverse()) saveHistoryEntry(entry)
+          },
         },
-      },
-    })
+      }),
+    )
   }, [t])
 
   const changeReviewerMode = useCallback((on: boolean) => {
@@ -233,12 +241,14 @@ function Shell() {
     (override: ReviewerOverride) => {
       const previous = state.overrides.find((o) => o.card_id === override.card_id)
       setOverride(override)
-      toast.success(t.reviewer.saved, {
-        action: {
-          label: t.reviewer.undo,
-          onClick: () => (previous ? setOverride(previous) : removeOverride(override.card_id)),
-        },
-      })
+      notify((toast) =>
+        toast.success(t.reviewer.saved, {
+          action: {
+            label: t.reviewer.undo,
+            onClick: () => (previous ? setOverride(previous) : removeOverride(override.card_id)),
+          },
+        }),
+      )
     },
     [removeOverride, setOverride, state.overrides, t],
   )
@@ -247,36 +257,59 @@ function Shell() {
     (cardId: string) => {
       const previous = state.overrides.find((o) => o.card_id === cardId)
       removeOverride(cardId)
-      toast(t.reviewer.undone, {
-        action: previous ? { label: t.reviewer.undo, onClick: () => setOverride(previous) } : undefined,
-      })
+      notify((toast) =>
+        toast(t.reviewer.undone, {
+          action: previous ? { label: t.reviewer.undo, onClick: () => setOverride(previous) } : undefined,
+        }),
+      )
     },
     [removeOverride, setOverride, state.overrides, t],
   )
 
+  // The export code is fetched when a report exists and the page is quiet, so that the click
+  // itself can open the print window without waiting (a late window.open is blocked by browsers).
+  const exportModule = useRef<Awaited<ReturnType<typeof loadExport>> | null>(null)
+  const hasReport = !!report
+  useEffect(() => {
+    if (!hasReport) return
+    const timer = window.setTimeout(() => {
+      void loadExport().then((module) => {
+        exportModule.current = module
+      })
+    }, 2500)
+    return () => window.clearTimeout(timer)
+  }, [hasReport])
+
   const exportJson = useCallback(() => {
     if (!report) return
-    downloadJson(report)
-    toast.success(t.exportMenu.doneJson)
+    void loadExport().then(({ downloadJson }) => {
+      downloadJson(report)
+      notify((toast) => toast.success(t.exportMenu.doneJson))
+    })
   }, [report, t])
 
   const exportPrintable = useCallback(() => {
     if (!report) return
-    exportHtml(report, { t, lang, meta })
-      .then((outcome) => {
-        if (outcome.via === 'client') toast(t.exportMenu.fallback)
-        else toast.success(outcome.opened ? t.exportMenu.doneHtml : t.exportMenu.downloadedHtml)
-      })
-      .catch(() => toast.error(t.errors.internal.message))
+    const run = ({ exportHtml }: Awaited<ReturnType<typeof loadExport>>) =>
+      exportHtml(report, { t, lang, meta })
+        .then((outcome) => {
+          if (outcome.via === 'client') notify((toast) => toast(t.exportMenu.fallback))
+          else notify((toast) => toast.success(outcome.opened ? t.exportMenu.doneHtml : t.exportMenu.downloadedHtml))
+        })
+        .catch(() => notify((toast) => toast.error(t.errors.internal.message)))
+    if (exportModule.current) void run(exportModule.current)
+    else void loadExport().then(run)
   }, [report, t, lang, meta])
 
   // F4: the whole report as Markdown, on the clipboard.
   const copyReport = useCallback(() => {
     if (!report) return
-    void copyText(buildMarkdownReport(report, { t, lang, meta })).then((copied) => {
-      if (copied) toast(t.copy.reportDone)
-      else toast.error(t.copy.failed)
-    })
+    void import('@/lib/markdown')
+      .then(({ buildMarkdownReport }) => copyText(buildMarkdownReport(report, { t, lang, meta })))
+      .then((copied) => {
+        if (copied) notify((toast) => toast(t.copy.reportDone))
+        else notify((toast) => toast.error(t.copy.failed))
+      })
   }, [report, t, lang, meta])
 
   // Ctrl/⌘ + Enter anywhere on the page runs the verification.
@@ -364,7 +397,7 @@ function Shell() {
 
   return (
     <DirectionProvider dir={dir}>
-      <TooltipProvider delayDuration={300}>
+      <>
         <a
           href="#main"
           className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:start-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-control focus-visible:border focus-visible:bg-paper focus-visible:px-4 focus-visible:py-2 focus-visible:shadow-overlay"
@@ -374,7 +407,7 @@ function Shell() {
 
         <div className="flex min-h-dvh flex-col">
           <AppHeader
-            hasReport={!!report}
+            hasReport={hasReport}
             reviewerMode={reviewerMode}
             onReviewerModeChange={changeReviewerMode}
             onExportJson={exportJson}
@@ -441,16 +474,21 @@ function Shell() {
           </main>
         </div>
 
-        <HistoryPanel
-          open={historyOpen}
-          onOpenChange={setHistoryOpen}
-          entries={history}
-          onOpen={openHistoryEntry}
-          onClear={wipeHistory}
-        />
-
-        <Toaster dir={dir} position={wide ? 'bottom-center' : 'top-center'} offset={24} mobileOffset={{ top: 64 }} />
-      </TooltipProvider>
+        <Suspense fallback={null}>
+          {historySeen ? (
+            <HistoryPanel
+              open={historyOpen}
+              onOpenChange={setHistoryOpen}
+              entries={history}
+              onOpen={openHistoryEntry}
+              onClear={wipeHistory}
+            />
+          ) : null}
+          {toaster ? (
+            <Toaster dir={dir} position={wide ? 'bottom-center' : 'top-center'} offset={24} mobileOffset={{ top: 64 }} />
+          ) : null}
+        </Suspense>
+      </>
     </DirectionProvider>
   )
 }

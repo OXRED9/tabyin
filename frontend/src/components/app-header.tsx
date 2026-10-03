@@ -1,23 +1,20 @@
-import { ClipboardCopy, Download, Ellipsis, FileJson, Moon, Printer, Sun } from 'lucide-react'
+import { Download, Ellipsis, Moon, Sun } from 'lucide-react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 
 import { Logotype } from '@/components/brand'
-import { ExportMenu } from '@/components/export-menu'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Switch } from '@/components/ui/switch'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTheme } from '@/hooks/use-theme'
 import { useI18n } from '@/lib/i18n'
 import type { UiLang } from '@/lib/types'
 import { cn } from '@/lib/utils'
+
+// The two menus are not needed to paint the bar: each is fetched the first time its button is
+// used (or just before, when the pointer reaches it), and is born open.
+const loadExportMenu = () => import('@/components/export-menu')
+const loadMoreMenu = () => import('@/components/more-menu')
+const ExportMenu = lazy(loadExportMenu)
+const MoreMenu = lazy(loadMoreMenu)
 
 interface AppHeaderProps {
   hasReport: boolean
@@ -67,7 +64,7 @@ function LanguageToggle() {
 /**
  * A thin bar of paper with a hairline under it: the logotype, then export (once there is a
  * report), reviewer mode, theme and language. Nothing else. On phones reviewer mode and export
- * fold into one menu.
+ * fold into one menu. The static shell in index.html draws the same bar before this code runs.
  */
 export function AppHeader({
   hasReport,
@@ -81,6 +78,49 @@ export function AppHeader({
   const { t } = useI18n()
   const { theme, toggle } = useTheme()
   const themeLabel = theme === 'dark' ? t.header.darkOff : t.header.darkOn
+  const [exportArmed, setExportArmed] = useState(false)
+  const [moreArmed, setMoreArmed] = useState(false)
+
+  // Once there is a report its menus are likely to be wanted: fetch them when the page is quiet.
+  useEffect(() => {
+    if (!hasReport) return
+    const timer = window.setTimeout(() => {
+      void loadExportMenu()
+      void loadMoreMenu()
+    }, 2500)
+    return () => window.clearTimeout(timer)
+  }, [hasReport])
+
+  const exportButton = (
+    <Button
+      type="button"
+      variant="ghost"
+      aria-label={t.header.export}
+      aria-haspopup="menu"
+      className="hidden md:inline-flex"
+      onPointerEnter={() => void loadExportMenu()}
+      onFocus={() => void loadExportMenu()}
+      onClick={exportArmed ? undefined : () => setExportArmed(true)}
+    >
+      <Download aria-hidden="true" />
+      {t.header.exportShort}
+    </Button>
+  )
+  const moreButton = (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      aria-label={t.header.more}
+      aria-haspopup="menu"
+      className="md:hidden"
+      onPointerEnter={() => void loadMoreMenu()}
+      onFocus={() => void loadMoreMenu()}
+      onClick={moreArmed ? undefined : () => setMoreArmed(true)}
+    >
+      <Ellipsis aria-hidden="true" />
+    </Button>
+  )
 
   return (
     <header className="sticky top-0 z-40 border-b bg-paper print:hidden">
@@ -92,16 +132,19 @@ export function AppHeader({
         <div className="ms-auto flex items-center gap-1 sm:gap-3">
           {/* Wide screens: export and reviewer mode sit in the bar. */}
           {hasReport ? (
-            <ExportMenu onExportJson={onExportJson} onExportHtml={onExportHtml} onCopyReport={onCopyReport}>
-              <Button type="button" variant="ghost" aria-label={t.header.export} className="hidden md:inline-flex">
-                <Download aria-hidden="true" />
-                {t.header.exportShort}
-              </Button>
-            </ExportMenu>
+            exportArmed ? (
+              <Suspense fallback={exportButton}>
+                <ExportMenu defaultOpen onExportJson={onExportJson} onExportHtml={onExportHtml} onCopyReport={onCopyReport}>
+                  {exportButton}
+                </ExportMenu>
+              </Suspense>
+            ) : (
+              exportButton
+            )
           ) : null}
 
           <label
-            className="hidden h-9 cursor-pointer items-center gap-2 text-sm font-medium md:flex"
+            className="hidden h-9 cursor-pointer items-center gap-2 text-sm md:flex"
             title={t.header.reviewerModeHint}
           >
             {t.header.reviewerMode}
@@ -113,57 +156,35 @@ export function AppHeader({
           </label>
 
           {/* Narrow screens: the same two behind one menu. */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="icon" aria-label={t.header.more} className="md:hidden">
-                <Ellipsis aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72">
-              <DropdownMenuCheckboxItem
-                checked={reviewerMode}
-                onCheckedChange={(checked) => onReviewerModeChange(checked === true)}
+          {moreArmed ? (
+            <Suspense fallback={moreButton}>
+              <MoreMenu
+                defaultOpen
+                hasReport={hasReport}
+                reviewerMode={reviewerMode}
+                onReviewerModeChange={onReviewerModeChange}
+                onExportJson={onExportJson}
+                onExportHtml={onExportHtml}
+                onCopyReport={onCopyReport}
               >
-                {t.header.reviewerMode}
-              </DropdownMenuCheckboxItem>
-              {hasReport ? (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>{t.header.export}</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={onExportHtml}>
-                    <Printer aria-hidden="true" />
-                    {t.exportMenu.html}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={onExportJson}>
-                    <FileJson aria-hidden="true" />
-                    {t.exportMenu.json}
-                  </DropdownMenuItem>
-                  {onCopyReport ? (
-                    <DropdownMenuItem onSelect={onCopyReport}>
-                      <ClipboardCopy aria-hidden="true" />
-                      {t.copy.report}
-                    </DropdownMenuItem>
-                  ) : null}
-                </>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {moreButton}
+              </MoreMenu>
+            </Suspense>
+          ) : (
+            moreButton
+          )}
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={themeLabel}
-                aria-pressed={theme === 'dark'}
-                onClick={toggle}
-              >
-                {theme === 'dark' ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{themeLabel}</TooltipContent>
-          </Tooltip>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={themeLabel}
+            title={themeLabel}
+            aria-pressed={theme === 'dark'}
+            onClick={toggle}
+          >
+            {theme === 'dark' ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+          </Button>
 
           <LanguageToggle />
         </div>

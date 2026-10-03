@@ -14,7 +14,7 @@ export function SourceLink({ href, children }: { href: string | null | undefined
       href={safe}
       target="_blank"
       rel="noopener noreferrer"
-      className="font-medium text-green underline decoration-green/40 underline-offset-4 hover:decoration-green"
+      className="text-green underline decoration-green/40 underline-offset-4 hover:decoration-green"
     >
       {children}
       <ExternalLink aria-hidden="true" className="ms-1 inline size-3.5 align-[-2px] rtl:-scale-x-100" />

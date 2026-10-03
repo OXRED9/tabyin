@@ -1,8 +1,7 @@
 import { ChevronDown, ChevronLeft, UserRoundCheck } from 'lucide-react'
-import { memo, useId } from 'react'
+import { Suspense, lazy, memo, useId } from 'react'
 import type { CSSProperties } from 'react'
 
-import { NoteBody } from '@/components/report/note-body'
 import type { NoteBodyProps } from '@/components/report/note-body'
 import { StateGlyph } from '@/components/state-glyph'
 import { useI18n } from '@/lib/i18n'
@@ -10,6 +9,10 @@ import { referenceLine } from '@/lib/reference-line'
 import { STATE_STYLE } from '@/lib/states'
 import type { ClaimStub } from '@/lib/types'
 import { cn } from '@/lib/utils'
+
+// What an open note says is not needed to draw the page: it is fetched when a note is first
+// opened (and warmed up once the report is complete, so that opening is immediate).
+const NoteBody = lazy(() => import('@/components/report/note-body'))
 
 interface MarginNoteProps extends Omit<NoteBodyProps, 'showQuoted' | 'onLocate'> {
   /** Wide screens open a note in place; narrower ones hand it to a sheet and keep the margin still. */
@@ -28,11 +31,10 @@ interface MarginNoteProps extends Omit<NoteBodyProps, 'showQuoted' | 'onLocate'>
 }
 
 /**
- * A margin note: a remark beside a line, not a card. It has no box, only a 2px tick of its
- * state's colour on the edge that faces the text. Collapsed it is one line, no taller than a
+ * A margin note: a remark beside a line, not a card. Collapsed it is one line, no taller than a
  * line of the page, so each note can sit level with its own passage: the state's ring and word,
- * the kind of claim, then the reference, cut short. Open, it unfolds in place and the reference
- * is given in full.
+ * the kind of claim, then the reference, cut short. Open, it unfolds in place, the reference is
+ * given in full, and a 2px bar of the state's colour on the edge that faces the text bounds it.
  */
 export const MarginNote = memo(function MarginNote({
   inPlace,
@@ -71,7 +73,9 @@ export const MarginNote = memo(function MarginNote({
         aria-label={`${t.stateWords[state]}: ${card.text_as_quoted}`}
         onMouseEnter={() => onHover(card.id)}
         onMouseLeave={() => onHover(null)}
-        className={cn('border-s-2 ps-3', style.tick)}
+        // The bar bounds an open note, which has no box. A collapsed note needs none: its ring
+        // and its coloured word already say its state.
+        className={cn('border-s-2 ps-3', open ? style.tick : 'border-transparent')}
         style={{ '--ink-delay': `${delay}ms` } as CSSProperties}
       >
         <button
@@ -90,7 +94,7 @@ export const MarginNote = memo(function MarginNote({
         >
           <span className="flex h-7 items-center gap-2 text-sm">
             <StateGlyph state={state} />
-            <span className={cn('shrink-0 font-medium', style.ink)}>{t.stateWords[state]}</span>
+            <span className={cn('shrink-0 font-semibold', style.ink)}>{t.stateWords[state]}</span>
             <span className="shrink-0 text-ink max-lg:hidden">— {t.claimTypes[card.claim_type]}</span>
             {override ? (
               <UserRoundCheck aria-label={t.reviewer.title} role="img" className="size-4 shrink-0 text-quiet" />
@@ -110,7 +114,9 @@ export const MarginNote = memo(function MarginNote({
         </button>
         {open ? (
           <div id={bodyId} className="pt-3 pb-1">
-            <NoteBody {...body} showQuoted={!card.span} />
+            <Suspense fallback={null}>
+              <NoteBody {...body} showQuoted={!card.span} />
+            </Suspense>
           </div>
         ) : null}
       </article>
@@ -134,7 +140,7 @@ export function PendingNote({ claim, top }: { claim: ClaimStub; top: number | un
         data-note={claim.id}
         data-state="pending"
         aria-busy="true"
-        className="border-s-2 border-rule ps-3"
+        className="border-s-2 border-transparent ps-3"
       >
         <span className="sr-only">{t.card.pending}</span>
         <span className="flex h-7 items-center gap-2 text-sm text-quiet">

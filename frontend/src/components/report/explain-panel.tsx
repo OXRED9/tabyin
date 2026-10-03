@@ -20,7 +20,7 @@ function ChosenMark() {
   return (
     <span
       title={t.explain.chosenHint}
-      className="inline-flex items-center gap-1 rounded-tag bg-accent px-2 text-sm font-medium whitespace-nowrap text-supported-ink"
+      className="inline-flex items-center gap-1 rounded-tag bg-accent px-2 text-sm whitespace-nowrap text-supported-ink"
     >
       <Check aria-hidden="true" className="size-3.5" />
       {t.explain.chosen}
@@ -53,10 +53,10 @@ function Candidates({ candidates }: { candidates: ExplainCandidate[] }) {
           </p>
           <p className="text-quiet">
             {t.explain.similarity}:{' '}
-            <span className="tabular font-medium text-ink">{similarityText(candidate, t.explain.byTopic)}</span>
+            <span className="tabular font-semibold text-ink">{similarityText(candidate, t.explain.byTopic)}</span>
             {t.report.summary.comma}
             {t.explain.grade}:{' '}
-            <span className="font-medium text-ink" lang="ar">
+            <span className="font-semibold text-ink" lang="ar">
               {candidate.grade_text ?? t.explain.noGrade}
             </span>
           </p>
@@ -94,7 +94,7 @@ function SimilarityMeter({ similarity, threshold }: { similarity: number; thresh
         {meets != null ? (
           <>
             {' — '}
-            <span className={cn('font-medium', meets ? 'text-supported-ink' : 'text-review-ink')}>
+            <span className={cn('font-semibold', meets ? 'text-supported-ink' : 'text-review-ink')}>
               {meets ? t.explain.meets : t.explain.below}
             </span>
           </>
@@ -148,7 +148,7 @@ export function ExplainPanel({
     <Collapsible open={open} onOpenChange={setOpen} className="border-t" data-testid="explain">
       <CollapsibleTrigger aria-controls={bodyId} className="flex w-full items-start gap-2 py-2 text-start text-sm">
         <span className="min-w-0 flex-1">
-          <span className="block font-medium text-green">{t.explain.title}</span>
+          <span className="block font-semibold text-green">{t.explain.title}</span>
           {/* The rule in words is readable before the panel is opened. */}
           <span className={cn('block text-ink', !open && 'line-clamp-2')}>{rule}</span>
         </span>
@@ -202,7 +202,7 @@ export function ExplainPanel({
               ).map(([label, seconds]) => (
                 <div key={label}>
                   <dt className="text-quiet">{label}</dt>
-                  <dd className="tabular font-medium">{formatDuration(seconds, t)}</dd>
+                  <dd className="tabular font-semibold">{formatDuration(seconds, t)}</dd>
                 </div>
               ))}
             </dl>

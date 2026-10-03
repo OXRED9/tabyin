@@ -91,7 +91,7 @@ export const PageText = memo(function PageText({
       {source?.title || sourceHref || origin || source?.duration ? (
         <div className={cn('mb-4 text-sm text-quiet', hasTimes && 'md:ps-14')}>
           {source?.title ? (
-            <p className="text-base font-medium text-ink" dir="auto">
+            <p className="text-base font-semibold text-ink" dir="auto">
               {source.title}
             </p>
           ) : null}
@@ -134,7 +134,7 @@ export const PageText = memo(function PageText({
                     rel="noopener noreferrer"
                     dir="ltr"
                     aria-label={t.card.openVideoAt(clock)}
-                    className="tabular block justify-self-start font-sans text-sm leading-6 font-medium text-green underline decoration-green/40 underline-offset-4 hover:decoration-green md:leading-10"
+                    className="tabular block justify-self-start font-sans text-sm leading-6 text-green underline decoration-green/40 underline-offset-4 hover:decoration-green md:leading-10"
                   >
                     {clock}
                   </a>

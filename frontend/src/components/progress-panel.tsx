@@ -88,7 +88,7 @@ export function ProgressPanel({ state, onCancel }: { state: VerifyState; onCance
               <div className="flex items-center">
                 <span
                   className={cn(
-                    'tabular flex size-6 shrink-0 items-center justify-center rounded-tag border-[1.5px] text-sm leading-none font-medium transition-colors duration-150',
+                    'tabular flex size-6 shrink-0 items-center justify-center rounded-tag border-[1.5px] text-sm leading-none font-semibold transition-colors duration-150',
                     step === 'done' && 'border-green-fill bg-green-fill text-primary-foreground',
                     step === 'active' && 'border-green text-green',
                     step === 'pending' && 'border-rule-strong text-quiet',
@@ -110,7 +110,7 @@ export function ProgressPanel({ state, onCancel }: { state: VerifyState; onCance
                 className={cn(
                   'mt-1 block text-sm',
                   step === 'pending' ? 'text-quiet' : 'text-ink',
-                  step === 'active' && 'font-medium',
+                  step === 'active' && 'font-semibold',
                 )}
               >
                 {t.stagesShort[stage]}

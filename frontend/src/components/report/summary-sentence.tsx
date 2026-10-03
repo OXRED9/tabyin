@@ -29,8 +29,8 @@ export function SummarySentence({
   const { head, tail, clauses } = summaryParts(t, total, counts)
   return (
     <div className={className}>
-      <p aria-label={t.report.summaryLabel} className="text-lg font-medium text-ink">
-        {head}
+      <p aria-label={t.report.summaryLabel} className="text-lg text-ink">
+        <span className="font-semibold">{head}</span>
         {tail}
         {clauses.map((clause) => {
           const pressed = filter === clause.state

@@ -333,9 +333,9 @@
         "source": "وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا»."
        }
       ],
-      "note_ar": "اقتباس مجتزأ: اللفظ المنقول جزء من حديث في مصدر معتمد، وبقية النص مظلَّلة في المقارنة.",
-      "note_en": "Partial quote: the quoted words are part of a narration in an approved source. The rest of the text is highlighted in the comparison.",
-      "ai_explanation": "ذكر المتحدث مطلع الحديث فقط. النص في المصدر أطول، والجزء الذي لم يُذكر مظلَّل في المقارنة أعلاه.",
+      "note_ar": "الحديث ثابت في المصدر مع اختلاف يسير في اللفظ أو اقتباس مجتزأ.",
+      "note_en": "The narration is established in the source with a slight difference in wording or a partial quotation.",
+      "ai_explanation": "ذكر المتحدث مطلع الحديث فقط، والنص في المصدر أطول منه.",
       "referral": false,
       "personal_case": false,
       "disagreement_noted": false,
@@ -419,7 +419,7 @@
       "content_level": "A",
       "text_as_quoted": "إن أحب الصيام إلى الله صيام داود",
       "state": "supported_with_note",
-      "rule_id": "hadith.accepted_partial",
+      "rule_id": "hadith.accepted_near",
       "position": 180
      },
      {
@@ -1227,9 +1227,9 @@
         "source": "وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا»."
        }
       ],
-      "note_ar": "اقتباس مجتزأ: اللفظ المنقول جزء من حديث في مصدر معتمد، وبقية النص مظلَّلة في المقارنة.",
-      "note_en": "Partial quote: the quoted words are part of a narration in an approved source. The rest of the text is highlighted in the comparison.",
-      "ai_explanation": "The speaker quoted only the opening of the hadith. The source text is longer, and the part that was left out is highlighted in the comparison above.",
+      "note_ar": "الحديث ثابت في المصدر مع اختلاف يسير في اللفظ أو اقتباس مجتزأ.",
+      "note_en": "The narration is established in the source with a slight difference in wording or a partial quotation.",
+      "ai_explanation": "The speaker quoted only the opening of the hadith; the text in the source is longer.",
       "referral": false,
       "personal_case": false,
       "disagreement_noted": false,
@@ -1313,7 +1313,7 @@
       "content_level": "A",
       "text_as_quoted": "إن أحب الصيام إلى الله صيام داود",
       "state": "supported_with_note",
-      "rule_id": "hadith.accepted_partial",
+      "rule_id": "hadith.accepted_near",
       "position": 180
      },
      {
@@ -2156,9 +2156,9 @@
         "source": "وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا»."
        }
       ],
-      "note_ar": "اقتباس مجتزأ: اللفظ المنقول جزء من حديث في مصدر معتمد، وبقية النص مظلَّلة في المقارنة.",
-      "note_en": "Partial quote: the quoted words are part of a narration in an approved source. The rest of the text is highlighted in the comparison.",
-      "ai_explanation": "ذكر المتحدث مطلع الحديث فقط. النص في المصدر أطول، والجزء الذي لم يُذكر مظلَّل في المقارنة أعلاه.",
+      "note_ar": "الحديث ثابت في المصدر مع اختلاف يسير في اللفظ أو اقتباس مجتزأ.",
+      "note_en": "The narration is established in the source with a slight difference in wording or a partial quotation.",
+      "ai_explanation": "ذكر المتحدث مطلع الحديث فقط، والنص في المصدر أطول منه.",
       "referral": false,
       "personal_case": false,
       "disagreement_noted": false,
@@ -2239,7 +2239,7 @@
       "content_level": "A",
       "text_as_quoted": "إن أحب الصيام إلى الله صيام داود",
       "state": "supported_with_note",
-      "rule_id": "hadith.accepted_partial",
+      "rule_id": "hadith.accepted_near",
       "position": 133
      },
      {
@@ -2454,9 +2454,9 @@
         "source": "وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا»."
        }
       ],
-      "note_ar": "اقتباس مجتزأ: اللفظ المنقول جزء من حديث في مصدر معتمد، وبقية النص مظلَّلة في المقارنة.",
-      "note_en": "Partial quote: the quoted words are part of a narration in an approved source. The rest of the text is highlighted in the comparison.",
-      "ai_explanation": "The speaker quoted only the opening of the hadith. The source text is longer, and the part that was left out is highlighted in the comparison above.",
+      "note_ar": "الحديث ثابت في المصدر مع اختلاف يسير في اللفظ أو اقتباس مجتزأ.",
+      "note_en": "The narration is established in the source with a slight difference in wording or a partial quotation.",
+      "ai_explanation": "The speaker quoted only the opening of the hadith; the text in the source is longer.",
       "referral": false,
       "personal_case": false,
       "disagreement_noted": false,
@@ -2537,7 +2537,7 @@
       "content_level": "A",
       "text_as_quoted": "إن أحب الصيام إلى الله صيام داود",
       "state": "supported_with_note",
-      "rule_id": "hadith.accepted_partial",
+      "rule_id": "hadith.accepted_near",
       "position": 133
      },
      {

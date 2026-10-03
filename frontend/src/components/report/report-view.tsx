@@ -1,17 +1,15 @@
 import { History, RotateCcw, Share2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 
 import { ProgressPanel } from '@/components/progress-panel'
 import { MarginNote, PendingNote } from '@/components/report/note'
-import { NoteRow, NoteSheet, OrderToggle } from '@/components/report/notes-list'
+import { NoteRow, OrderToggle } from '@/components/report/notes-list'
 import type { NoteOrder } from '@/components/report/notes-list'
 import { PageText } from '@/components/report/page-text'
-import { ReferralDialog } from '@/components/report/referral-dialog'
 import { SourceLink } from '@/components/report/source-link'
 import { SummarySentence } from '@/components/report/summary-sentence'
 import { useMarginLayout } from '@/components/report/use-margin-layout'
-import { ShareCardDialog } from '@/components/share/share-card-dialog'
 import type { ShareTarget } from '@/components/share/share-card-dialog'
 import { StateGlyph } from '@/components/state-glyph'
 import { Button } from '@/components/ui/button'
@@ -46,13 +44,20 @@ const GLIDE_MS = 220
 
 const NONE: ReadonlySet<string> = new Set()
 
+// Nothing that lies over the page is needed to draw it: each of these is fetched when first used.
+const NoteSheet = lazy(() => import('@/components/report/note-sheet'))
+const ReferralDialog = lazy(() => import('@/components/report/referral-dialog'))
+const ShareCardDialog = lazy(() => import('@/components/share/share-card-dialog'))
+/** How long after a report completes its on-demand parts are warmed up. */
+const WARM_UP_MS = 2500
+
 /** A calm remark at the top of the margin: reduced coverage, or a source that is unreachable. */
 function Notice({ title, icon, children }: { title?: string; icon?: ReactNode; children: ReactNode }) {
   return (
     <p role="note" className="flex items-start gap-2 text-sm text-quiet">
       {icon ?? <StateGlyph state="needs_review" className="mt-0.5 size-[18px]" />}
       <span>
-        {title ? <span className="font-medium text-ink">{title}: </span> : null}
+        {title ? <span className="font-semibold text-ink">{title}: </span> : null}
         {children}
       </span>
     </p>
@@ -91,6 +96,8 @@ export function ReportView({
   const [order, setOrder] = useState<NoteOrder>('order')
   const [sheetId, setSheetId] = useState<string | null>(null)
   const [referralOpen, setReferralOpen] = useState(false)
+  // The dialog stays mounted once it has been opened, so it can close with its transition.
+  const [referralSeen, setReferralSeen] = useState(false)
   const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null)
   const [glide, setGlide] = useState(false)
   // False only between the end of a live run and the end of its orchestrated moment.
@@ -214,7 +221,22 @@ export function ReportView({
     }, 220)
   }, [])
 
-  const openReferral = useCallback(() => setReferralOpen(true), [])
+  const openReferral = useCallback(() => {
+    setReferralSeen(true)
+    setReferralOpen(true)
+  }, [])
+
+  // Once the report is complete and the page is quiet, fetch what a first tap on a note will
+  // need (its body, the sheet, the Mushaf face), so that opening a note is immediate.
+  useEffect(() => {
+    if (!done) return
+    const timer = window.setTimeout(() => {
+      void import('@/components/report/note-body')
+      if (!inPlace) void import('@/components/report/note-sheet')
+      void document.fonts?.load('26px "Amiri Quran"', 'ب').catch(() => undefined)
+    }, WARM_UP_MS)
+    return () => window.clearTimeout(timer)
+  }, [done, inPlace])
 
   // F3: which verdict card the share dialog is showing, if any.
   const shareClaim = useCallback(
@@ -291,7 +313,7 @@ export function ReportView({
       ) : noClaims ? (
         <div className="flex min-h-(--sheet-head) flex-col items-start justify-center gap-3 border-b pb-5">
           <div>
-            <p className="text-lg font-medium text-ink">
+            <p className="text-lg font-semibold text-ink">
               {noClaimsNotice ? pick(noClaimsNotice.message_ar, noClaimsNotice.message_en) : t.report.noClaimsTitle}
             </p>
             <p className="text-base text-quiet">
@@ -334,12 +356,11 @@ export function ReportView({
           <svg aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 size-full overflow-visible">
             {/* At rest a note is tied to its line by a stub in the gutter, and a note that was
                 pushed away from its line by none. The note in hand (hovered, focused, open) gets
-                the full tie, from its words, in its state's colour. While a note is open, it is
-                the only one tied. */}
+                the full tie, from its words, in its state's colour. */}
             {ids.map((id) => {
               const noteState = states.get(id)
               const lit = !!noteState && (activeId === id || openInPlace.has(id))
-              const d = lit ? layout.ties[id] : openInPlace.size > 0 ? undefined : layout.stubs[id]
+              const d = lit ? layout.ties[id] : layout.stubs[id]
               if (!d) return null
               return (
                 <path
@@ -443,7 +464,7 @@ export function ReportView({
       {done && !noClaims && summary ? (
         <div className="mt-10 space-y-3 text-sm">
           <p>
-            <span className="font-medium text-ink">
+            <span className="text-ink">
               {t.report.finished(
                 summary.elapsed_seconds >= 0.05 && !state.restored ? formatSeconds(summary.elapsed_seconds) : null,
               )}
@@ -490,19 +511,20 @@ export function ReportView({
         </div>
       ) : null}
 
-      {sheetCard ? (
-        <NoteSheet
-          {...bodyProps}
-          open
-          onClose={() => setSheetId(null)}
-          card={sheetCard}
-          override={overrideByCard.get(sheetCard.id)}
-          onLocate={locate}
-        />
-      ) : null}
-
-      <ReferralDialog open={referralOpen} onOpenChange={setReferralOpen} meta={meta} />
-      <ShareCardDialog target={shareTarget} meta={meta} onClose={() => setShareTarget(null)} />
+      <Suspense fallback={null}>
+        {sheetCard ? (
+          <NoteSheet
+            {...bodyProps}
+            open
+            onClose={() => setSheetId(null)}
+            card={sheetCard}
+            override={overrideByCard.get(sheetCard.id)}
+            onLocate={locate}
+          />
+        ) : null}
+        {referralSeen ? <ReferralDialog open={referralOpen} onOpenChange={setReferralOpen} meta={meta} /> : null}
+        {shareTarget ? <ShareCardDialog target={shareTarget} meta={meta} onClose={() => setShareTarget(null)} /> : null}
+      </Suspense>
     </section>
   )
 }

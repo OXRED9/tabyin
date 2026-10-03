@@ -13,17 +13,101 @@
     />
     <title>تبيّن — تحقّق قبل أن تصدّق أو تنشر</title>
     <script>
-      // Apply the saved theme before first paint, so dark mode never flashes light.
+      // Before the first paint: the saved theme (so dark never flashes light), the saved language
+      // (so the shell below is in it), and which first screen the shell stands for.
       try {
-        var q = new URLSearchParams(location.search).get('theme')
-        var s = JSON.parse(localStorage.getItem('tabayyun.theme') || 'null')
-        var t = q || s || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        if (t === 'dark') document.documentElement.classList.add('dark')
+        var q = new URLSearchParams(location.search)
+        var d = document.documentElement
+        var t = q.get('theme') || JSON.parse(localStorage.getItem('tabayyun.theme') || 'null')
+        t = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        if (t === 'dark') {
+          d.classList.add('dark')
+          document.querySelector('meta[name="theme-color"]').content = '#10231e'
+        }
+        var l = q.get('lang')
+        if (l !== 'ar' && l !== 'en') l = JSON.parse(localStorage.getItem('tabayyun.lang') || 'null')
+        if (l === 'en') {
+          d.lang = 'en'
+          d.dir = 'ltr'
+          document.title = 'Tabayyun — verify before you believe or share'
+        }
+        // Mock mode's direct route to a report starts on the report's sheet, not on the composer.
+        if (q.has('mock') && q.get('autorun') === '1') d.dataset.view = 'report'
       } catch (e) {}
     </script>
+    <!-- The stylesheet is linked here, not imported by the script: the shell below is styled by it
+         before any script has run. -->
+    <link rel="stylesheet" href="/src/index.css" />
+    <!-- The faces the first screen is set in, fetched with the page instead of after its styles. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-400-normal.woff2"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-600-normal.woff2"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/node_modules/@fontsource/amiri/files/amiri-arabic-400-normal.woff2"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/node_modules/@fontsource/amiri/files/amiri-latin-400-normal.woff2"
+    />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div id="root">
+      <!--
+        The static shell: the bar, the sheet and the headline, painted from this HTML and the
+        stylesheet before any script runs. React's first render replaces it with the same
+        thing, alive, so nothing flashes or moves. Keep its classes in step with
+        src/components/app-header.tsx, src/App.tsx and src/components/composer.tsx.
+      -->
+      <div class="flex min-h-dvh flex-col">
+        <header class="sticky top-0 z-40 border-b bg-paper">
+          <div class="flex h-12 items-center gap-1 px-4 sm:gap-3 sm:px-6">
+            <button type="button" tabindex="-1" class="rounded-control">
+              <span class="naskh-display text-xl leading-none text-ink">
+                <span data-shell-lang="ar">تبيّن</span>
+                <span data-shell-lang="en">Tabayyun</span>
+              </span>
+            </button>
+          </div>
+        </header>
+        <main class="flex-1 sm:px-4 sm:py-6 lg:py-10">
+          <div
+            data-shell="sheet"
+            class="mx-auto flex w-full max-w-[45rem] flex-col border-b bg-paper p-5 sm:rounded-sheet sm:border md:p-8 lg:p-12"
+          >
+            <p data-shell="headline" class="naskh-display text-2xl text-balance text-ink md:text-3xl">
+              <span data-shell-lang="ar">فتبيّنوا — تحقّق قبل أن تصدّق أو تنشر</span>
+              <span data-shell-lang="en">Verify before you believe or share</span>
+            </p>
+          </div>
+        </main>
+      </div>
+    </div>
+    <!-- The page above is readable without this; the code that makes it work comes after it. -->
+    <script type="module" src="/src/main.tsx" fetchpriority="low"></script>
   </body>
 </html>

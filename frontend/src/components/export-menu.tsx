@@ -14,15 +14,20 @@ import { useI18n } from '@/lib/i18n'
 /**
  * "تصدير التقرير": a printable HTML page, JSON (client-side), or the whole report copied as
  * Markdown. A menu, not a blocking dialog. `onCopyReport` is absent when the copy feature is off.
+ *
+ * The header loads this module the first time the button is used, which is why it can be born
+ * open (`defaultOpen`).
  */
-export function ExportMenu({
+export default function ExportMenu({
   children,
+  defaultOpen,
   onExportJson,
   onExportHtml,
   onCopyReport,
   align = 'end',
 }: {
   children: ReactNode
+  defaultOpen?: boolean
   onExportJson: () => void
   onExportHtml: () => void
   onCopyReport?: () => void
@@ -33,13 +38,13 @@ export function ExportMenu({
     <>
       {icon}
       <span className="flex flex-col">
-        <span className="font-medium">{title}</span>
+        <span className="font-semibold">{title}</span>
         <span className="text-quiet">{hint}</span>
       </span>
     </>
   )
   return (
-    <DropdownMenu>
+    <DropdownMenu defaultOpen={defaultOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align={align} className="w-72">
         <DropdownMenuLabel>{t.header.export}</DropdownMenuLabel>

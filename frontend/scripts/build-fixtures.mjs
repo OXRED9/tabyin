@@ -377,19 +377,20 @@ function buildCards(lang) {
       text_as_quoted: partialQuoted,
       explicit_attribution: true,
       state: 'supported_with_note',
-      rule_id: 'hadith.accepted_partial',
+      rule_id: 'hadith.accepted_near',
       similarity: partialDiff.similarity,
       match_kind: 'partial',
       source: hadithSource(hPartial, lang),
       grades: [hadithGrade(hPartial)],
       diff: partialDiff.ops,
-      note_ar: 'اقتباس مجتزأ: اللفظ المنقول جزء من حديث في مصدر معتمد، وبقية النص مظلَّلة في المقارنة.',
+      // The backend's own sentence for this rule (evidence_rules/rules.py, `hadith.accepted_near`).
+      note_ar: 'الحديث ثابت في المصدر مع اختلاف يسير في اللفظ أو اقتباس مجتزأ.',
       note_en:
-        'Partial quote: the quoted words are part of a narration in an approved source. The rest of the text is highlighted in the comparison.',
+        'The narration is established in the source with a slight difference in wording or a partial quotation.',
       ai_explanation:
         lang === 'ar'
-          ? 'ذكر المتحدث مطلع الحديث فقط. النص في المصدر أطول، والجزء الذي لم يُذكر مظلَّل في المقارنة أعلاه.'
-          : 'The speaker quoted only the opening of the hadith. The source text is longer, and the part that was left out is highlighted in the comparison above.',
+          ? 'ذكر المتحدث مطلع الحديث فقط، والنص في المصدر أطول منه.'
+          : 'The speaker quoted only the opening of the hadith; the text in the source is longer.',
     }),
     ruling: card({
       claim_type: 'ruling',
