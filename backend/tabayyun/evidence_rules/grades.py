@@ -6,6 +6,8 @@ category only drives the evidence state. Anything the classifier does not recogn
 """
 from __future__ import annotations
 
+import re
+
 from enum import Enum
 
 from ..normalize import normalize_ar
@@ -47,17 +49,24 @@ _WEAK = (
 _ACCEPTED = ("صحيح", "حسن", "متفق عليه", "ثابت", "جيد", "قوي", "رجاله ثقات", "صححه", "حسنه")
 
 
+def _pattern(keywords: tuple[str, ...]) -> "re.Pattern[str]":
+    """A keyword counts only at the start of a word (after an optional و/ف, ب/ل/ك and ال), never inside
+    another one: «واه» used to match inside «شواهد», so «له شواهد» was read as a weakening."""
+    return re.compile(r"(?<![\u0621-\u064a])[وف]?[بلك]?(?:ال)?(?:" + "|".join(re.escape(normalize_ar(k)) for k in keywords) + ")")
+
+
+_RE_FABRICATED, _RE_WEAK, _RE_ACCEPTED = _pattern(_FABRICATED), _pattern(_WEAK), _pattern(_ACCEPTED)
+
+
 def classify_grade(text: str | None) -> GradeCategory:
     if not text or not text.strip():
         return GradeCategory.unknown
     norm = normalize_ar(text)
-    fabricated = any(k in norm for k in _FABRICATED)
-    weak = any(k in norm for k in _WEAK)
+    fabricated = bool(_RE_FABRICATED.search(norm))
+    weak = bool(_RE_WEAK.search(norm))
     # Remove rejecting phrases before looking for accepting words they may contain.
-    residue = norm
-    for k in _WEAK + _FABRICATED:
-        residue = residue.replace(k, " ")
-    accepted = any(k in residue for k in _ACCEPTED)
+    residue = _RE_FABRICATED.sub(" ", _RE_WEAK.sub(" ", norm))
+    accepted = bool(_RE_ACCEPTED.search(residue))
     if accepted and (weak or fabricated):
         return GradeCategory.mixed
     if fabricated:

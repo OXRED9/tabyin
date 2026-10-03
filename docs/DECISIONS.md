@@ -499,3 +499,10 @@ gradings beside the state, verifying after «لصق»).
      and its second line when open.
 110. **The «لصق» button verifies what it pastes**, when it is text of ten characters or more; a
      picture still goes to the reader, which asks first. A keyboard paste and typing start nothing.
+111. **⚑ The grading classifier matches whole words.** Its keywords were matched as substrings, so «واه»
+    ("very weak") matched inside «شواهد» and the grading «له شواهد» made a note say the narration was
+    «مضعَّف». Keywords now count only at the start of a word (after و/ف, ب/ل/ك, ال). «له شواهد» is
+    therefore unclassified: the card stays "needs review", its note no longer claims a weakening, and
+    the grading is shown verbatim as always. No state in the test set changed. The keyword lists
+    themselves are still for the Sharia reviewer to confirm.
+
