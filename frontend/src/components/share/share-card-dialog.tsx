@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useTheme } from '@/hooks/use-theme'
 import { requestShareCard } from '@/lib/api'
 import type { ShareCardRequest } from '@/lib/api'
+import { copyText } from '@/lib/clipboard'
 import { appUrlOf } from '@/lib/features'
 import { useI18n } from '@/lib/i18n'
 import { notify } from '@/lib/notify'
@@ -15,15 +16,18 @@ import {
   CARD_PALETTE,
   CARD_WIDTH,
   canShareFiles,
+  canShareText,
   cardFileName,
   copyImage,
   downloadBlob,
   renderCardPng,
   shareFile,
+  shareWords,
 } from '@/lib/share-card'
 import type { CardSize, CardTheme } from '@/lib/share-card'
 import { shareLink, shareText } from '@/lib/share-text'
 import type { ShareApp, ShareSubject } from '@/lib/share-text'
+import { readStored, writeStored } from '@/lib/storage'
 import type { Card, EvidenceState, Meta, Summary } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -121,12 +125,23 @@ function Choice<T extends string>({
   )
 }
 
+const SHARE_AS_KEY = 'tabayyun.shareAs'
+type ShareAs = 'image' | 'text'
+type Act = 'share' | 'download' | 'copy' | App
+
 /**
- * F3 «مشاركة بطاقة التثبّت» (docs/DESIGN.md §8.3). A live preview of the card (the real template,
- * scaled down), its size and theme, and the ways out, in this order: the system's share sheet
- * with the image, where the browser can share files; the named apps, which a web page can only
- * hand text and an address (Instagram takes the image: through the share sheet, or saved first);
- * then saving and copying the image. The language follows the interface.
+ * F3 «مشاركة بطاقة التثبّت» (docs/DESIGN.md §8.3). The first choice is what to share — the card
+ * as an image, or the verdict as text — and it is remembered in this browser.
+ *
+ *  - Image: a live preview of the card (the real template, scaled down), its size and theme.
+ *    «مشاركة» and each named app open the system's share sheet with the PNG where the browser can
+ *    share files; where it cannot, an app's button saves the PNG and says to attach it there.
+ *    Then saving and copying the image.
+ *  - Text: the preview is the exact text that will go. «مشاركة» opens the share sheet with it;
+ *    WhatsApp, X and Telegram open through their web links with it; Instagram has no such link,
+ *    so the text is copied to paste there. Then copying the text.
+ *
+ * The language follows the interface.
  */
 export default function ShareCardDialog({
   target,
@@ -139,12 +154,14 @@ export default function ShareCardDialog({
 }) {
   const { t, lang } = useI18n()
   const page = useTheme()
+  const [shareAs, setShareAs] = useState<ShareAs>(() => (readStored<string>(SHARE_AS_KEY, 'image') === 'text' ? 'text' : 'image'))
   const [size, setSize] = useState<CardSize>('portrait')
   const [theme, setTheme] = useState<CardTheme>(page.theme)
-  const [busy, setBusy] = useState<'share' | 'download' | 'copy' | 'instagram' | null>(null)
+  const [busy, setBusy] = useState<Act | null>(null)
   const [frameWidth, setFrameWidth] = useState(0)
   const node = useRef<HTMLDivElement | null>(null)
-  const shareable = useMemo(() => canShareFiles(), [])
+  // What the system's share sheet takes here: files (phones, over HTTPS), or text at least.
+  const sheet = useMemo(() => ({ files: canShareFiles(), text: canShareText() }), [])
   const appUrl = appUrlOf(meta)
 
   // The preview is the template itself, scaled to the width the dialog gives it. A callback ref,
@@ -161,14 +178,22 @@ export default function ShareCardDialog({
 
   if (!target) return null
 
+  const chooseShareAs = (value: ShareAs) => {
+    setShareAs(value)
+    writeStored(SHARE_AS_KEY, value)
+  }
+
   // A portrait card is tall: cap its preview height so the ways to share stay within reach.
-  const maxPreviewHeight = Math.min(420, Math.round(window.innerHeight * 0.34))
+  const maxPreviewHeight = Math.min(420, Math.round(window.innerHeight * (window.innerWidth < 640 ? 0.28 : 0.34)))
   const scale = Math.min(frameWidth / CARD_WIDTH || 0.2, maxPreviewHeight / CARD_HEIGHT[size])
   const filename = cardFileName(target.kind === 'claim' ? target.card.state : 'summary', size, theme)
   const subject: ShareSubject =
     target.kind === 'claim'
       ? { kind: 'claim', card: target.card }
-      : { kind: 'summary', total: target.total, counts: target.counts, title: target.title }
+      : { kind: 'summary', total: target.total, counts: target.counts, title: target.title, cards: target.cards }
+  // The text as it will be sent, and as it is shown.
+  const text = shareText(subject, t, { address: appUrl })
+  const asText = shareAs === 'text'
 
   /** Client-side first; if drawing throws, the backend draws the same card. */
   const produce = async (): Promise<Blob> => {
@@ -193,27 +218,35 @@ export default function ShareCardDialog({
     }
   }
 
-  const run = async (action: 'share' | 'download' | 'copy' | 'instagram') => {
+  const run = async (action: Act) => {
     if (busy) return
     setBusy(action)
     try {
-      const blob = await produce()
-      if (action === 'share' || (action === 'instagram' && shareable)) {
-        // The share sheet carries the image, and the verdict as text beside it.
-        if (await shareFile(blob, filename, t.appName, shareText(subject, t, { address: appUrl }))) {
-          notify((toast) => toast(t.share.shared))
+      if (asText) {
+        if (action === 'share') {
+          if (await shareWords(t.appName, text)) notify((toast) => toast(t.share.shared))
+        } else if (await copyText(text)) {
+          // Instagram has no web link to open with a text: it is copied, to be pasted there.
+          notify((toast) => toast(action === 'instagram' ? t.share.pasteIn(t.share.apps.instagram) : t.share.textCopied))
+        } else {
+          notify((toast) => toast.error(t.copy.failed))
         }
-      } else if (action === 'instagram') {
-        // No share sheet here: the image is saved, to be posted from the app.
-        downloadBlob(blob, filename)
-        notify((toast) => toast(t.share.instagramSaved))
-      } else if (action === 'download') {
+        return
+      }
+      const blob = await produce()
+      if (action === 'download') {
         downloadBlob(blob, filename)
         notify((toast) => toast(t.share.downloaded))
-      } else if (await copyImage(blob)) {
-        notify((toast) => toast(t.share.copied))
-      } else {
-        notify((toast) => toast.error(t.share.copyFailed))
+      } else if (action === 'copy') {
+        if (await copyImage(blob)) notify((toast) => toast(t.share.copied))
+        else notify((toast) => toast.error(t.share.copyFailed))
+      } else if (sheet.files) {
+        // «مشاركة», or a named app: the share sheet carries the image, and the app is chosen there.
+        if (await shareFile(blob, filename, t.appName)) notify((toast) => toast(t.share.shared))
+      } else if (action !== 'share') {
+        // No share sheet for files here: the image is saved, to be attached in the app.
+        downloadBlob(blob, filename)
+        notify((toast) => toast(t.share.attachIn(t.share.apps[action])))
       }
     } catch {
       notify((toast) => toast.error(t.share.failed))
@@ -225,61 +258,93 @@ export default function ShareCardDialog({
   const shell = { size, theme, lang, t, appUrl, nodeRef: node }
   const tile =
     'flex h-16 min-w-0 flex-col items-center justify-center gap-1 rounded-control border border-rule-strong text-sm text-ink transition-colors duration-150 hover:bg-accent'
+  const apps: App[] = ['whatsapp', 'x', 'telegram', 'instagram']
+  const canShare = asText ? sheet.text : sheet.files
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent closeLabel={t.close} className="max-h-[92dvh] overflow-y-auto sm:max-w-lg">
+      <DialogContent closeLabel={t.close} className="max-h-[92dvh] gap-3 overflow-y-auto sm:max-w-lg sm:gap-4">
         <DialogHeader>
           <DialogTitle>{t.share.button}</DialogTitle>
           <DialogDescription>{t.share.description}</DialogDescription>
         </DialogHeader>
 
-        <div
-          ref={frame}
-          aria-label={t.share.preview}
-          role="group"
-          className="flex min-w-0 justify-center overflow-hidden rounded-sheet border bg-desk p-3"
-        >
-          {/* A box the size of the scaled card; the full-size template sits inside it, scaled. */}
-          <div
-            dir="ltr"
-            data-testid="share-preview"
-            className="shrink-0 overflow-hidden"
-            style={{ width: CARD_WIDTH * scale, height: CARD_HEIGHT[size] * scale }}
-          >
-            <div style={{ width: CARD_WIDTH, height: CARD_HEIGHT[size], transform: `scale(${scale})`, transformOrigin: '0 0' }}>
-              {target.kind === 'claim' ? (
-                <ClaimCardImage {...shell} card={target.card} verse={meta?.abstention_verse ?? null} />
-              ) : (
-                <SummaryCardImage {...shell} total={target.total} counts={target.counts} cards={target.cards} title={target.title} />
-              )}
-            </div>
-          </div>
+        <div data-testid="share-as">
+          <Choice
+            label={t.share.shareAs}
+            value={shareAs}
+            onChange={chooseShareAs}
+            options={[
+              { value: 'image', label: t.share.asImage },
+              { value: 'text', label: t.share.asText },
+            ]}
+          />
         </div>
 
-        <div className="grid min-w-0 grid-cols-2 gap-3">
-          <Choice
-            label={t.share.size}
-            value={size}
-            onChange={setSize}
-            options={[
-              { value: 'portrait', label: t.share.portrait, hint: '1080×1350' },
-              { value: 'square', label: t.share.square, hint: '1080×1080' },
-            ]}
-          />
-          <Choice
-            label={t.share.theme}
-            value={theme}
-            onChange={setTheme}
-            options={[
-              { value: 'light', label: t.share.light },
-              { value: 'dark', label: t.share.dark },
-            ]}
-          />
-        </div>
+        {asText ? (
+          // The exact text that will be sent: selectable, in the tool's face, each line in its own direction.
+          <div
+            role="group"
+            aria-label={t.share.textPreview}
+            tabIndex={0}
+            data-testid="share-text"
+            className="max-h-64 min-w-0 space-y-1 overflow-y-auto rounded-sheet border bg-desk p-3 text-sm leading-relaxed text-ink select-text"
+          >
+            {text.split('\n').map((line, i) => (
+              <p key={i} dir="auto" className="break-words">
+                {line}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="grid min-w-0 grid-cols-2 gap-3">
+              <Choice
+                label={t.share.size}
+                value={size}
+                onChange={setSize}
+                options={[
+                  { value: 'portrait', label: t.share.portrait, hint: '1080×1350' },
+                  { value: 'square', label: t.share.square, hint: '1080×1080' },
+                ]}
+              />
+              <Choice
+                label={t.share.theme}
+                value={theme}
+                onChange={setTheme}
+                options={[
+                  { value: 'light', label: t.share.light },
+                  { value: 'dark', label: t.share.dark },
+                ]}
+              />
+            </div>
+            <div
+              ref={frame}
+              aria-label={t.share.preview}
+              role="group"
+              className="flex min-w-0 justify-center overflow-hidden rounded-sheet border bg-desk p-3"
+            >
+              {/* A box the size of the scaled card; the full-size template sits inside it, scaled. */}
+              <div
+                dir="ltr"
+                data-testid="share-preview"
+                className="shrink-0 overflow-hidden"
+                style={{ width: CARD_WIDTH * scale, height: CARD_HEIGHT[size] * scale }}
+              >
+                <div style={{ width: CARD_WIDTH, height: CARD_HEIGHT[size], transform: `scale(${scale})`, transformOrigin: '0 0' }}>
+                  {target.kind === 'claim' ? (
+                    <ClaimCardImage {...shell} card={target.card} verse={meta?.abstention_verse ?? null} />
+                  ) : (
+                    <SummaryCardImage {...shell} total={target.total} counts={target.counts} cards={target.cards} title={target.title} />
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="grid min-w-0 gap-3" aria-live="polite">
-          {shareable ? (
+          {canShare ? (
             <Button type="button" size="xl" className="px-4" disabled={!!busy} data-testid="share-send" onClick={() => void run('share')}>
               <Share2 aria-hidden="true" />
               {busy === 'share' ? t.share.preparing : t.share.send}
@@ -288,54 +353,73 @@ export default function ShareCardDialog({
 
           <div>
             <div role="group" aria-label={t.share.targets} data-testid="share-targets" className="grid grid-cols-4 gap-2">
-              {(['whatsapp', 'x', 'telegram'] as const).map((app) => (
-                <a
-                  key={app}
-                  href={shareLink(app, subject, t, appUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid={`share-${app}`}
-                  className={tile}
-                >
-                  <AppMark app={app} />
-                  <span className="max-w-full truncate">{t.share.apps[app]}</span>
-                  <span className="sr-only">{t.opensInNewTab}</span>
-                </a>
-              ))}
-              <button type="button" disabled={!!busy} data-testid="share-instagram" onClick={() => void run('instagram')} className={tile}>
-                <AppMark app="instagram" />
-                <span className="max-w-full truncate">{t.share.apps.instagram}</span>
-              </button>
+              {apps.map((app) =>
+                asText && app !== 'instagram' ? (
+                  <a
+                    key={app}
+                    href={shareLink(app, subject, t, appUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid={`share-${app}`}
+                    className={tile}
+                  >
+                    <AppMark app={app} />
+                    <span className="max-w-full truncate">{t.share.apps[app]}</span>
+                    <span className="sr-only">{t.opensInNewTab}</span>
+                  </a>
+                ) : (
+                  <button
+                    key={app}
+                    type="button"
+                    disabled={!!busy}
+                    data-testid={`share-${app}`}
+                    onClick={() => void run(app)}
+                    className={tile}
+                  >
+                    <AppMark app={app} />
+                    <span className="max-w-full truncate">{t.share.apps[app]}</span>
+                  </button>
+                ),
+              )}
             </div>
-            <p className="pt-2 text-sm text-quiet">{t.share.targetsHint}</p>
+            <p data-testid="share-hint" className="pt-2 text-sm text-quiet">
+              {asText ? t.share.hintText : sheet.files ? t.share.hintImageSheet : t.share.hintImageSave}
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant={shareable ? 'outline' : 'default'}
-              size="touch"
-              className="px-3"
-              disabled={!!busy}
-              data-testid="share-download"
-              onClick={() => void run('download')}
-            >
-              <Download aria-hidden="true" />
-              {busy === 'download' ? t.share.preparing : t.share.download}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="touch"
-              className="px-3"
-              disabled={!!busy}
-              data-testid="share-copy"
-              onClick={() => void run('copy')}
-            >
+          {asText ? (
+            <Button type="button" variant={canShare ? 'outline' : 'default'} size="touch" className="px-3" disabled={!!busy} data-testid="share-copy-text" onClick={() => void run('copy')}>
               <Copy aria-hidden="true" />
-              {busy === 'copy' ? t.share.preparing : t.share.copyImage}
+              {t.share.copyText}
             </Button>
-          </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={canShare ? 'outline' : 'default'}
+                size="touch"
+                className="px-3"
+                disabled={!!busy}
+                data-testid="share-download"
+                onClick={() => void run('download')}
+              >
+                <Download aria-hidden="true" />
+                {busy === 'download' ? t.share.preparing : t.share.download}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="touch"
+                className="px-3"
+                disabled={!!busy}
+                data-testid="share-copy"
+                onClick={() => void run('copy')}
+              >
+                <Copy aria-hidden="true" />
+                {busy === 'copy' ? t.share.preparing : t.share.copyImage}
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -87,5 +87,11 @@ export const STATE_STYLE: Record<EvidenceState, StateStyle> = {
   },
 }
 
+/** What most needs attention first, and the text's order inside each state. */
+export const byAttention = (
+  a: { state: EvidenceState; position?: number; index: number },
+  b: { state: EvidenceState; position?: number; index: number },
+) => STATES_BY_RISK.indexOf(a.state) - STATES_BY_RISK.indexOf(b.state) || chronological(a, b)
+
 export const chronological = (a: { position?: number; index: number }, b: { position?: number; index: number }) =>
   (a.position ?? a.index) - (b.position ?? b.index) || a.index - b.index

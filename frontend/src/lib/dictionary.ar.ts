@@ -257,6 +257,7 @@ export const ar = {
     partial: 'اقتباس مجتزأ',
     paraphrase: 'رواية بالمعنى',
     topic: 'تطابق في الموضوع',
+    referenced: 'دليل مشار إليه',
     none: 'لا تطابق',
   } satisfies Record<MatchKind, string>,
 
@@ -335,6 +336,10 @@ export const ar = {
     quoted: 'كما ورد',
     inText: 'في النص',
     inSource: 'في المصدر',
+    // A ruling or statement that points at its evidence: the text shown is what it refers to,
+    // not something it quotes, and showing it raises no state.
+    referencedSource: 'الدليل المشار إليه في المصادر',
+    referencedShort: 'الدليل المشار إليه',
     reference: 'المرجع',
     grade: 'الحكم',
     grades: 'الحكم على الحديث',
@@ -404,7 +409,13 @@ export const ar = {
   share: {
     button: 'مشاركة بطاقة التثبّت',
     short: 'بطاقة مشاركة',
-    description: 'صورة تلخّص الحكم ومصدره. لا تحمل تاريخاً ولا أي شيء عنك.',
+    description: 'صورة أو نص يلخّص الحكم ومصدره، بلا تاريخ ولا أي شيء عنك.',
+    shareAs: 'المشاركة كـ',
+    asImage: 'صورة',
+    asText: 'نص',
+    textPreview: 'النص الذي سيُرسل',
+    copyText: 'نسخ النص',
+    textCopied: 'نُسخ النص ✓',
     size: 'المقاس',
     portrait: 'عمودي',
     square: 'مربّع',
@@ -420,11 +431,15 @@ export const ar = {
     downloaded: 'حُفظت الصورة ✓',
     copied: 'نُسخت الصورة ✓',
     copyFailed: 'هذا المتصفح لا ينسخ الصور. احفظ الصورة بدلاً من ذلك.',
-    // The named apps (docs/DESIGN.md §8.3). A web page can hand them text and an address, not an image.
+    // The named apps (docs/DESIGN.md §8.3). A web page can hand an app text and an address through
+    // its web link; an image reaches an app only through the system's share sheet.
     targets: 'مشاركة إلى تطبيق',
     apps: { whatsapp: 'واتساب', x: 'إكس', telegram: 'تيليغرام', instagram: 'إنستغرام' },
-    targetsHint: 'واتساب وإكس وتيليغرام تستلم الحكم نصاً مع العنوان. الصورة تُرسل من «مشاركة» أو بعد حفظها.',
-    instagramSaved: 'حُفظت الصورة. افتح إنستغرام وانشرها من هناك.',
+    hintImageSheet: 'أزرار التطبيقات تفتح قائمة المشاركة ومعها الصورة، فتختار التطبيق منها.',
+    hintImageSave: 'هذا المتصفح لا يسلّم الصورة إلى تطبيق، فتُحفظ لترفقها أنت فيه.',
+    hintText: 'واتساب وإكس وتيليغرام تُفتح وفيها هذا النص، وإنستغرام يُنسخ له النص لتلصقه فيه.',
+    attachIn: (app: string) => `حُفظت الصورة. أرفقها في ${app}.`,
+    pasteIn: (app: string) => `نُسخ النص. الصقه في ${app}.`,
     moreCitations: (n: number): string =>
       n === 1
         ? 'واستشهاد واحد آخر'

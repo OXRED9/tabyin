@@ -18,7 +18,11 @@ export type Action =
   | 'remove_or_request_source'
   | 'remove_and_warn'
 export type Certainty = 'definitive' | 'ijtihadi' | 'not_applicable'
-export type MatchKind = 'exact' | 'near' | 'partial' | 'paraphrase' | 'topic' | 'none'
+/**
+ * `referenced`: `source` and `grades` hold the evidence a ruling or statement points at. Nothing
+ * is quoted from it and the state is not raised by it (docs/API.md).
+ */
+export type MatchKind = 'exact' | 'near' | 'partial' | 'paraphrase' | 'topic' | 'referenced' | 'none'
 export type InputType = 'text' | 'article_url' | 'video_url' | 'file'
 export type UiLang = 'ar' | 'en'
 

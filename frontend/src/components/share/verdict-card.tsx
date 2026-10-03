@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode, Ref } from 'react'
 
 import { StateGlyph } from '@/components/state-glyph'
 import type { Dictionary } from '@/lib/dictionary'
-import { collate } from '@/lib/collate'
+import { collate, displayWords } from '@/lib/collate'
 import {
   CARD_HEIGHT,
   CARD_PALETTE,
@@ -16,7 +16,7 @@ import {
 } from '@/lib/share-card'
 import type { CardPalette as Palette, CardSize, CardTheme } from '@/lib/share-card'
 import { referenceWithGrade } from '@/lib/share-text'
-import { STATES_BY_RISK, chronological } from '@/lib/states'
+import { byAttention } from '@/lib/states'
 import { summaryParts } from '@/lib/summary'
 import type { Card, EvidenceState, UiLang, VerseRef } from '@/lib/types'
 
@@ -314,7 +314,11 @@ const plain = (text: string) => squash(text).replace(/[.؟?!،,؛;:]+$/u, '')
  */
 function sourceText(card: Card): SourceText {
   if (!card.source) return { words: [], before: false, after: false }
-  const { words, span, marks } = collate(card)
+  // The evidence a ruling points at is not quoted from: its words are set whole, with no marks.
+  const { words, span, marks } =
+    card.match_kind === 'referenced'
+      ? { words: displayWords(card.source.text), span: null, marks: new Set<number>() }
+      : collate(card)
   return {
     words: words.map((text, i) => ({ text, differs: marks.has(i), quoted: !span || (i >= span[0] && i < span[1]) })),
     before: false,
@@ -459,7 +463,7 @@ export function ClaimCardImage({ card, verse, ...shell }: ClaimCardImageProps) {
       {/* What does the source say? Its own wording, its reference, the grading in its word. */}
       {source ? (
         <>
-          <div style={{ flex: 'none', marginTop: whole(20 * k), paddingBottom: whole(6 * k) }}>{label(t.card.inSource)}</div>
+          <div style={{ flex: 'none', marginTop: whole(20 * k), paddingBottom: whole(6 * k) }}>{label(card.match_kind === 'referenced' ? t.card.referencedSource : t.card.inSource)}</div>
           <Rule palette={palette} />
           {fit.sourceShown ? (
             <div
@@ -622,7 +626,7 @@ export function SummaryCardImage({ total, counts, cards, title, ...shell }: Summ
   const rows = useMemo(
     () =>
       [...cards]
-        .sort((a, b) => STATES_BY_RISK.indexOf(a.state) - STATES_BY_RISK.indexOf(b.state) || chronological(a, b))
+        .sort(byAttention)
         .map((card) => ({ card, words: squash(card.text_as_quoted).split(' '), under: referenceWithGrade(card, t) })),
     [cards, t],
   )

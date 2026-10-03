@@ -1,21 +1,23 @@
 /**
- * The words that go with a verdict card when it is sent to a named app (docs/DESIGN.md §8.3). A
- * web page cannot hand an image to WhatsApp, X or Telegram, only text and an address: so the
- * verdict is said in text, built from the card's own fields — the state, the quoted words, the
- * reference, the grading word, the address. Nothing here is written by a model.
+ * The verdict as text (docs/DESIGN.md §8.3): what is sent when a card is shared "as text", shown
+ * in the dialog exactly as it will go. It is built from the card's own fields only — the state,
+ * the quoted words, the source's reference and grading word, the suggested action, the address —
+ * and for a summary the sentence and one line per citation. Nothing here is written by a model.
  */
 import type { Dictionary } from './dictionary'
 import { truncateClaim } from './share-card'
+import { byAttention } from './states'
 import { summarySentence } from './summary'
 import type { Card, EvidenceState } from './types'
 
 export type ShareSubject =
   | { kind: 'claim'; card: Card }
-  | { kind: 'summary'; total: number; counts: Record<EvidenceState, number>; title: string | null }
+  | { kind: 'summary'; total: number; counts: Record<EvidenceState, number>; title: string | null; cards: Card[] }
 
 /**
  * A citation's reference and what its source says of it: one grading in the source's own word (a
- * grading is never cut: one too long to quote is counted), several gradings as their count.
+ * grading is never cut: one too long to quote is counted), several gradings as their count. For
+ * the evidence a ruling points at, the line says so: the reference is not the ruling's own.
  */
 export function referenceWithGrade(card: Card, t: Dictionary): string {
   if (!card.source || card.personal_case) return ''
@@ -26,37 +28,69 @@ export function referenceWithGrade(card: Card, t: Dictionary): string {
       : card.grades.length > 0
         ? t.card.gradesCount(card.grades.length)
         : ''
-  return said ? `${card.source.ref} — ${said}` : card.source.ref
+  const line = said ? `${card.source.ref} — ${said}` : card.source.ref
+  return card.match_kind === 'referenced' ? `${t.card.referencedShort}: ${line}` : line
 }
 
-function lines(subject: ShareSubject, t: Dictionary, quotedMax: number): string[] {
-  if (subject.kind === 'summary') {
+/** How much of the text is kept. Everything, unless a limit makes it give way. */
+interface Shape {
+  /** The most characters of quoted words. */
+  quoted: number
+  /** A summary's citation lines. */
+  rows: number
+  action: boolean
+  reference: boolean
+}
+
+function lines(subject: ShareSubject, t: Dictionary, shape: Shape): string[] {
+  if (subject.kind === 'claim') {
+    const { card } = subject
+    const reference = shape.reference ? referenceWithGrade(card, t) : ''
     return [
-      subject.title ? `${t.share.summaryLabel} — ${truncateClaim(subject.title, quotedMax)}` : t.share.summaryLabel,
-      summarySentence(t, subject.total, subject.counts),
+      `${t.states[card.state]}: «${truncateClaim(card.text_as_quoted, shape.quoted)}»`,
+      ...(reference ? [reference] : []),
+      ...(shape.action ? [t.actionSentences[card.action]] : []),
     ]
   }
-  const { card } = subject
-  const reference = referenceWithGrade(card, t)
-  return [`${t.states[card.state]}: «${truncateClaim(card.text_as_quoted, quotedMax)}»`, ...(reference ? [reference] : [])]
+  const cards = [...subject.cards].sort(byAttention)
+  const shown = cards.slice(0, shape.rows)
+  const rest = cards.length - shown.length
+  return [
+    subject.title ? `${t.share.summaryLabel} — ${truncateClaim(subject.title, 80)}` : t.share.summaryLabel,
+    summarySentence(t, subject.total, subject.counts),
+    ...shown.map((card) => {
+      const reference = shape.reference ? referenceWithGrade(card, t) : ''
+      return `• ${t.stateWords[card.state]}: «${truncateClaim(card.text_as_quoted, shape.quoted)}»${reference ? ` (${reference})` : ''}`
+    }),
+    ...(rest > 0 && shown.length > 0 ? [t.share.moreCitations(rest)] : []),
+  ]
 }
 
 /**
  * The verdict in a few lines. With `address` the last line invites to check and gives it. With
- * `limit` the quoted words give way until the whole text fits (X allows 280 characters).
+ * `limit` (X allows 280 characters) the text gives way in this order: the quoted words, a
+ * summary's citation lines from the end, the suggested action, the reference.
  */
 export function shareText(
   subject: ShareSubject,
   t: Dictionary,
   { address, limit }: { address?: string; limit?: number } = {},
 ): string {
-  const build = (quotedMax: number) =>
-    [...lines(subject, t, quotedMax), ...(address ? [`${t.share.footer}: ${address}`] : [])].join('\n')
-  let quotedMax = 120
-  let text = build(quotedMax)
-  while (limit && Array.from(text).length > limit && quotedMax > 20) {
-    quotedMax -= 10
-    text = build(quotedMax)
+  const shape: Shape = {
+    quoted: 120,
+    rows: subject.kind === 'summary' ? Math.min(subject.cards.length, 30) : 0,
+    action: true,
+    reference: true,
+  }
+  const build = () => [...lines(subject, t, shape), ...(address ? [`${t.share.footer}: ${address}`] : [])].join('\n')
+  let text = build()
+  while (limit && Array.from(text).length > limit) {
+    if (shape.quoted > 20) shape.quoted -= 10
+    else if (shape.rows > 0) shape.rows -= 1
+    else if (shape.action) shape.action = false
+    else if (shape.reference) shape.reference = false
+    else break
+    text = build()
   }
   return text
 }

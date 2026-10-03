@@ -177,16 +177,25 @@ export function canShareFiles(): boolean {
   }
 }
 
-/** Open the system share sheet with the PNG and its words. Resolves false when the user dismisses it. */
-export async function shareFile(blob: Blob, filename: string, title: string, text: string): Promise<boolean> {
-  const file = new File([blob], filename, { type: 'image/png' })
+/** True where the system has a share sheet at all (it takes text everywhere it exists). */
+export const canShareText = (): boolean => typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+
+/** A dismissed share sheet is not a failure. */
+async function share(data: ShareData): Promise<boolean> {
   try {
-    await navigator.share({ files: [file], title, text })
+    await navigator.share(data)
     return true
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === 'AbortError') return false
     throw cause
   }
 }
+
+/** Open the system share sheet with the PNG. Resolves false when the user dismisses it. */
+export const shareFile = (blob: Blob, filename: string, title: string): Promise<boolean> =>
+  share({ files: [new File([blob], filename, { type: 'image/png' })], title })
+
+/** Open the system share sheet with the verdict as text. Resolves false when the user dismisses it. */
+export const shareWords = (title: string, text: string): Promise<boolean> => share({ title, text })
 
 export { copyImage }
