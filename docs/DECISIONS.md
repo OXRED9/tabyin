@@ -33,7 +33,7 @@ religious behaviour or the challenge rules and were decided provisionally; they 
 8. **Misattribution test rows** attribute a sound narration to "أحد الدعاة المعاصرين" rather than
    to a named scholar, so no real person is misquoted.
 
-9. **Reviewer overrides obey the same rules as the engine.** In reviewer mode a human can change a
+9. *(Superseded — the human-review feature was removed, item 77.)* **Reviewer overrides obey the same rules as the engine.** In reviewer mode a human can change a
    card's state, but the UI does not offer «مؤيَّد» for a card that has no retrieved source, limits
    level C to «يحتاج مزيد تحقق» / «لم يُعثر على مصدر», and offers no state change for level D
    (`allowedReviewerStates` in `frontend/src/lib/states.ts`). A reviewer who disagrees records it in
@@ -269,7 +269,7 @@ touch how a religious text is shown and wait for Sulaiman.
     copied from. With several it shows their count («3 أحكام في المصادر»), as the page's notes do,
     so that none is singled out. A grading is never shortened: one too long for the card is counted
     («حكم واحد في المصدر») rather than cut.
-67. **A reviewer's state comes without the rule's sentence, and with its own action.** The sentence
+67. *(Superseded — the human-review feature was removed, item 77.)* **A reviewer's state comes without the rule's sentence, and with its own action.** The sentence
     explains the engine's state («النص مطابق لنص المصحف الشريف.») and would contradict a different
     state set by a person; the card shows the state, «حالة معدَّلة بمراجعة بشرية» and the action that
     belongs to the reviewer's state. A reviewer's «لم يُعثر على مصدر موثوق» also hides the source
