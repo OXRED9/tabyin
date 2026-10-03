@@ -13,7 +13,8 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
 
 from .config import settings
-from .extract import RawClaim, absorb_closed_quotes, merge_claims
+from .evidence_rules.thresholds import THRESHOLDS as t
+from .extract import RawClaim, absorb_closed_quotes, merge_claims, widen_scanned_verses
 from .extract.lexical import extract_by_markers, scan_hadith, scan_hadith_verbatim, scan_quran
 from .extract.llm_extractor import extract_with_llm
 from .ingest.document import Document, IngestError
@@ -44,6 +45,7 @@ STAGE_EN = {
     "report": "Verification report",
 }
 _MATCH_PARALLEL = 6
+_HOLD_SECONDS = 6.0  # how long certain notes wait for the model before they are shown without it
 
 
 def _where(exc: BaseException) -> str:
@@ -136,20 +138,41 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         quick = absorb_closed_quotes(quick, [c for c in closed if c.type == ClaimType.ayah])
         scanned = await asyncio.to_thread(scan_hadith_verbatim, doc, hadith, [(c.start, c.end) for c in quick])
         quick = merge_claims(quick, absorb_closed_quotes(scanned, [c for c in closed if c.type == ClaimType.hadith]))
-        if quick:
-            await put(stage("match", "start", done=0, total=len(quick)))
-            await announce(quick)
+        # "قال الله تعالى:" followed by a verse with a changed word: the scan sees only the intact part.
+        # The marked quotation replaces that fragment when the matcher finds it is the same verse.
+        quick, _ = widen_scanned_verses(quick, [c for c in markers if not c.closed and c.type == ClaimType.ayah], quran, t.ayah_near)
+
+        async def announce_quick() -> None:
+            if quick:
+                await put(stage("match", "start", done=0, total=len(quick)))
+                await announce(quick)
 
         mode = "full"
         rest: list[RawClaim] = []
         if llm.available:
+            # What the scans found is certain, but it is held for a moment: the model may show that an
+            # "exact" fragment is the intact part of a verse quoted with a changed word, and a note
+            # that has been shown cannot be taken back. If the model is slow, the certain notes go out
+            # first as before.
+            extraction = asyncio.create_task(extract_with_llm(doc, llm, max_claims=settings.max_claims))
+            held = True
             try:
-                rest = await extract_with_llm(doc, llm, max_claims=settings.max_claims)
+                try:
+                    rest = await asyncio.wait_for(asyncio.shield(extraction), timeout=_HOLD_SECONDS)
+                except asyncio.TimeoutError:
+                    held = False
+                    await announce_quick()
+                    rest = await extraction
             except LLMError as e:
                 log.warning("LLM extraction failed, switching to lexical-only mode: %s", e)
                 mode = "lexical_only"
+            if held:
+                if mode == "full":
+                    quick, rest = widen_scanned_verses(quick, rest, quran, t.ayah_near)
+                await announce_quick()
         else:
             mode = "lexical_only"
+            await announce_quick()
         if mode == "lexical_only":
             ctx.llm_enabled = False
             await put(("error", error_event("llm_unavailable", "extract", fatal=False)))

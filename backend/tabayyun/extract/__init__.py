@@ -55,4 +55,35 @@ def merge_claims(primary: list[RawClaim], extra: list[RawClaim]) -> list[RawClai
     return merged
 
 
-__all__ = ["RawClaim", "absorb_closed_quotes", "merge_claims", "overlap"]
+def widen_scanned_verses(scanned: list[RawClaim], proposed: list[RawClaim], quran, near: float) -> tuple[list[RawClaim], list[RawClaim]]:
+    """One note for a verse quoted with a changed word.
+
+    The scan finds such a verse only as its intact fragment(s), each of which is "exact" on its own.
+    When the model proposes a wider quotation around a fragment, and the Mushaf matcher finds that
+    the wider wording is still the same verse (similarity >= ``near``), the wider claim replaces the
+    fragment(s): the reader gets one note showing the word that differs, not a "supported" fragment
+    beside it. The model only proposed where the quotation starts and ends; whether it is that verse
+    is the matcher's decision. Returns (the scanned claims after replacement, the proposals left).
+    """
+    kept = list(scanned)
+    left: list[RawClaim] = []
+    for c in proposed:
+        inside = [p for p in kept if p.type == ClaimType.ayah and overlap(p, c) >= 0.9 * (p.end - p.start)] if c.type == ClaimType.ayah else []
+        if not inside or (c.end - c.start) < 1.2 * max(p.end - p.start for p in inside):
+            left.append(c)
+            continue
+        match = quran.match(c.quote)
+        fragments = [p.prematched for p in inside if p.prematched is not None]
+        same_verse = match is not None and match.similarity >= near and any(
+            f.surah == match.surah and f.ayah_start <= match.ayah_end and match.ayah_start <= f.ayah_end for f in fragments
+        )
+        if not same_verse:
+            left.append(c)
+            continue
+        kept = [p for p in kept if all(p is not i for i in inside)]
+        kept.append(c)
+    kept.sort(key=lambda c: c.start)
+    return kept, left
+
+
+__all__ = ["RawClaim", "absorb_closed_quotes", "merge_claims", "overlap", "widen_scanned_verses"]

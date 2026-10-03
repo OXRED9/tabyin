@@ -11,6 +11,7 @@ import pytest
 from tabayyun import pipeline
 from tabayyun.ingest.text import ingest_text
 from tabayyun.sources.dorar import DorarClient
+from tests.llm_stubs import NoLLM as NoModel
 from tests.llm_stubs import ScriptedLLM as ScriptedProvider
 from tests.llm_stubs import claim
 
@@ -106,6 +107,32 @@ def test_a_pointer_from_the_fallback_model_never_lifts_a_claim_to_supported(run,
     for idx in range(5):
         (card,) = run(text, ScriptedProvider(narration, judge_index=idx, judge_from_fallback=True))["cards"]
         assert card["state"] in ("needs_review", "not_found") and card["match_kind"] != "paraphrase"
+
+
+def test_a_verse_with_one_changed_word_is_one_note_not_a_supported_fragment(run, ayah):
+    """Seen with a real screenshot: the scan found the intact tail of a misquoted verse ("supported")
+    and the model the whole misquotation ("with a note") — two notes for one verse."""
+    words = ayah(23, 76)[1].split()
+    assert len(words) == 8
+    donor = ayah(2, 153)[1].split()[-1]
+    altered = " ".join(words[:3] + [donor] + words[4:])  # the fourth word replaced by code
+    text = f"قال الله تعالى:\n{altered}"
+    for provider in (NoModel(), ScriptedProvider([claim(type="ayah", quote=altered)])):  # with and without a model
+        (card,) = run(text, provider)["cards"]
+        assert card["claim_type"] == "ayah" and card["text_as_quoted"] == altered
+        assert card["state"] in ("supported_with_note", "contradicted") and card["diff"] and "76" in card["source"]["ref"]
+    # no marker and no quotation marks: only the model can say where the quotation starts and ends
+    bare = f"وصلتني هذه الرسالة {altered} فهل هي صحيحة"
+    (card,) = run(bare, ScriptedProvider([claim(type="ayah", quote=altered, explicit_attribution=False)]))["cards"]
+    assert card["text_as_quoted"] == altered and card["state"] != "supported" and card["diff"]
+
+
+def test_a_wider_proposal_that_is_not_the_same_verse_does_not_replace_the_exact_fragment(run, ayah):
+    fragment = " ".join(ayah(2, 153)[1].split()[-4:])
+    prose = "اجتمع أهل الحي مساء أمس لمناقشة ما يتداوله الناس من أخبار وقال أحدهم"
+    text = f"{prose} {fragment} ثم انصرفوا إلى بيوتهم بعد صلاة العشاء"
+    report = run(text, ScriptedProvider([claim(type="ayah", quote=text)]))
+    assert any(c["state"] == "supported" and c["text_as_quoted"] == fragment for c in report["cards"])
 
 
 def test_sound_narration_attributed_to_someone_else_is_contradicted(run, matn):
