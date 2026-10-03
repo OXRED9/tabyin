@@ -35,9 +35,10 @@ log = logging.getLogger("tabayyun.llm")
 # measured answers needed up to 460 tokens; the ones that ran away did so at 1200, 1500 and 2500 alike,
 # so a larger budget only makes the runaway dearer and slower.
 MAX_TOKENS = {"extract": 8000, "judge": 900, "vision": 4000, "audio": 12000, "cheap": 800, "baseline": 1200}
-# A pointing call that has not answered in 20 s is abandoned (the claim keeps its conservative state):
-# one runaway answer held a whole report for 40 s.
-TIMEOUT_SECONDS = {"audio": 240.0, "vision": 90.0, "judge": 20.0}
+# A pointing call that has not answered in 12 s is abandoned (the claim keeps its conservative state).
+# Answers that were used took 6-9 s; the ones that ran away held a report for 20-40 s, and the usual
+# victim was a text with no source — the case a daily user asks about most.
+TIMEOUT_SECONDS = {"audio": 240.0, "vision": 90.0, "judge": 12.0}
 _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.IGNORECASE)
 _RETRYABLE = (openai.RateLimitError, openai.APITimeoutError, openai.APIConnectionError, openai.InternalServerError)
 
