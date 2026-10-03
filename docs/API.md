@@ -23,6 +23,7 @@ Static content the UI must not hard-code (religious text always comes from sourc
 
 ```json
 {
+  "terms": [ { "ar": "التوحيد", "en": "Tawhid / Oneness of God", "usage_ar": "…" }, … ],
   "abstention_verse": { "text": "…verbatim Uthmani text…", "ref": "النحل: 43", "ref_en": "An-Nahl 43", "url": "…" },
   "motto_verse": { "text": "…", "ref": "الحجرات: 6", "ref_en": "…", "url": "…" },
   "referral_links": [ { "name_ar": "الإسلام سؤال وجواب", "name_en": "IslamQA", "url": "https://islamqa.info/ar" }, … ],
@@ -35,7 +36,9 @@ Static content the UI must not hard-code (religious text always comes from sourc
 }
 ```
 
-An example whose `url`/`text` is `null` is not configured and must be hidden.
+An example whose `url`/`text` is `null` is not configured and must be hidden. `terms` is the
+approved Arabic→English terminology list (`{ar, en, usage_ar}`) from the challenge's scientific
+package, for the English UI.
 
 ## `POST /api/verify` → `text/event-stream`
 
@@ -51,9 +54,14 @@ Request body:
 
 ### Stream events
 
-Standard SSE framing: `event: <name>\ndata: <json>\n\n`. Order: `stage` events interleaved with
-`source` → `segments` → `claims` → `card` × N → `summary` → `done`. An `error` event may arrive at
-any point; a fatal one is followed by `done`.
+Standard SSE framing: `event: <name>\ndata: <json>\n\n` (plus `: keep-alive` comment lines during
+slow stages). Order: `stage` events interleaved with `source` → `segments` → `claims` → `card` × N →
+`summary` → `done`. An `error` event may arrive at any point; a fatal one is followed by `done`.
+
+`claims` is **additive and may arrive more than once**: verbatim verses and narrations found by the
+model-free scans are announced (and their `card` events may arrive) before the LLM extraction has
+finished; a second `claims` event then adds the rest. Clients upsert skeletons by `id`. For the same
+reason a `match` stage `start` can precede `extract` `done`.
 
 | event | data |
 |---|---|
@@ -95,6 +103,7 @@ interface Timestamp { start: number; end: number | null }
 interface ClaimStub {
   id: string; index: number; claim_type: ClaimType; text_as_quoted: string;
   span: Span | null; timestamp: Timestamp | null;
+  position: number;          // character offset in the whole text: the chronological sort key
 }
 
 interface DiffOp { op: "equal" | "replace" | "delete" | "insert"; quoted: string; source: string }
@@ -136,6 +145,7 @@ interface Card {
   personal_case: boolean;    // level D: show "هذه حالة شخصية تستوجب فتوى من جهة مؤهلة"
   disagreement_noted: boolean; // level C
   timestamp: Timestamp | null; span: Span | null;
+  position: number;          // chronological sort key (same as the stub's)
   warnings: string[];
 }
 
@@ -144,7 +154,7 @@ interface Summary {
   by_state: Record<EvidenceState, number>;
   mode: "full" | "lexical_only";     // lexical_only => show the "reduced coverage" warning
   llm_provider: string | null;
-  warnings: string[];
+  warnings: string[];                // e.g. "dorar_unreachable", "partial_llm_extraction"
   elapsed_seconds: number;
 }
 ```

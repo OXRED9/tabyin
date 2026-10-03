@@ -81,10 +81,12 @@ docs/               SOURCES, LICENSES, METHODOLOGY, OPERATIONS, LIMITATIONS, DES
 ```
 
 - Backend env: `cd backend && uv venv --python 3.11 .venv && uv pip install -e '.[dev]'`
-- Run API: `cd backend && .venv/bin/uvicorn tabayyun.main:app --reload --port 8000`
-- Tests: `cd backend && .venv/bin/pytest -q`
-- Frontend: `cd frontend && npm install && npm run dev` (proxies `/api` to `:8000`)
-- Evaluation: `backend/.venv/bin/python eval/run.py`
+- Data (once): `backend/.venv/bin/python scripts/bootstrap_data.py`
+- Run API: `cd backend && .venv/bin/uvicorn tabayyun.main:app --reload --port 8765`
+  (port 8000 is taken by another app on the dev machine)
+- Tests: `cd backend && .venv/bin/pytest -q -m "not network"` (add `-m network` for live-source tests)
+- Frontend: `cd frontend && npm install && npm run dev` (proxies `/api` to `:8765`)
+- Evaluation: `backend/.venv/bin/python eval/build_testset.py && backend/.venv/bin/python eval/run.py`
 
 ## Working conventions
 
