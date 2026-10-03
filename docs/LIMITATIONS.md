@@ -70,7 +70,7 @@ and unresolved as of 3 October 2026.
   transcript. TikTok is allowed through the same code path but untested.
 - **Dorar availability** differs by network and client. Without it, narrations outside al-Bukhari,
   Muslim and HadeethEnc lose their gradings.
-- **No rate limiting or abuse protection** is implemented.
+- **Abuse protection is minimal**: an in-memory per-address request limit (30 requests per 10 minutes by default). There is no authentication, CAPTCHA or spend cap, so a public deployment with paid API keys should set provider-side budget limits.
 
 ## What the tool is not
 

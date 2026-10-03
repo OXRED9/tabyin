@@ -77,7 +77,7 @@ reason a `match` stage `start` can precede `extract` `done`.
 Error codes: `empty_input`, `input_too_long`, `invalid_url`, `article_fetch_failed`,
 `video_download_failed`, `video_too_long`, `no_speech`, `transcription_unavailable`,
 `unsupported_file`, `file_too_large`, `no_claims` (non-fatal: the text has no religious citation),
-`llm_unavailable` (non-fatal: lexical-only mode), `internal`.
+`llm_unavailable` (non-fatal: lexical-only mode), `rate_limited`, `internal`.
 
 ### Types
 

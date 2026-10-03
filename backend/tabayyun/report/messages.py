@@ -74,6 +74,12 @@ ERRORS: dict[str, dict[str, str]] = {
         "hint_ar": "تُفحص الآيات والأحاديث المنقولة بلفظها، وقد لا تُلتقط الأحكام والروايات بالمعنى.",
         "hint_en": "Verbatim verses and hadith are still checked; rulings and paraphrased narrations may be missed.",
     },
+    "rate_limited": {
+        "message_ar": "طلبات كثيرة من هذا العنوان في وقت قصير.",
+        "message_en": "Too many requests from this address in a short time.",
+        "hint_ar": "انتظر دقيقة ثم أعد المحاولة.",
+        "hint_en": "Wait a minute and try again.",
+    },
     "internal": {
         "message_ar": "حدث خطأ غير متوقع أثناء المعالجة.",
         "message_en": "An unexpected error occurred while processing.",

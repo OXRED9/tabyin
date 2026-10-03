@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     max_upload_mb: int = 50
     max_media_minutes: int = 30
     max_claims: int = 60
+    # Abuse guard for a public demo that spends on paid APIs: per-address requests per window.
+    rate_limit_requests: int = 30
+    rate_limit_window_seconds: int = 600
 
     # --- Optional demo content (no religious text is hard-coded; see /api/meta) ---
     example_video_url: str | None = None

@@ -10,11 +10,13 @@ import json
 import logging
 import os
 import tempfile
+import time
+from collections import defaultdict, deque
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -26,6 +28,7 @@ from .ingest.text import ingest_text
 from .llm.router import get_llm
 from .meta import build_meta
 from .report.export_html import render_report_html
+from .report.messages import error_event
 from .schemas import Report, VerifyRequest
 from .sources.dorar import get_dorar
 from .sources.hadith import get_hadith_index
@@ -49,6 +52,31 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="Tabayyun", version=__version__, lifespan=lifespan, docs_url="/api/docs", openapi_url="/api/openapi.json")
 if settings.cors_origins:
     app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in settings.cors_origins.split(",")], allow_methods=["*"], allow_headers=["*"])
+
+
+# Sliding-window request counter per client address. Held in memory only, never written anywhere.
+_recent: dict[str, deque[float]] = defaultdict(deque)
+
+
+def _rate_limited(request: Request) -> bool:
+    if settings.rate_limit_requests <= 0:
+        return False
+    now = time.monotonic()
+    window = _recent[request.client.host if request.client else "unknown"]
+    while window and now - window[0] > settings.rate_limit_window_seconds:
+        window.popleft()
+    if len(window) >= settings.rate_limit_requests:
+        return True
+    window.append(now)
+    if len(_recent) > 5000:  # forget idle addresses
+        for key in [k for k, v in _recent.items() if not v or now - v[-1] > settings.rate_limit_window_seconds]:
+            del _recent[key]
+    return False
+
+
+async def _refused(code: str) -> AsyncIterator[pipeline.Event]:
+    yield "error", error_event(code, "ingest")
+    yield "done", {}
 
 
 def _sse(event: str, data: dict) -> str:
@@ -107,7 +135,10 @@ async def meta() -> dict:
 
 
 @app.post("/api/verify")
-async def verify(req: VerifyRequest) -> StreamingResponse:
+async def verify(req: VerifyRequest, request: Request) -> StreamingResponse:
+    if _rate_limited(request):
+        return StreamingResponse(_stream(_refused("rate_limited")), media_type="text/event-stream", headers=SSE_HEADERS)
+
     async def ingest() -> Document:
         if req.input_type == "text":
             return ingest_text(req.text)
@@ -124,7 +155,9 @@ async def verify(req: VerifyRequest) -> StreamingResponse:
 
 
 @app.post("/api/verify/file")
-async def verify_file(file: UploadFile = File(...), ui_lang: str = Form("ar")) -> StreamingResponse:
+async def verify_file(request: Request, file: UploadFile = File(...), ui_lang: str = Form("ar")) -> StreamingResponse:
+    if _rate_limited(request):
+        return StreamingResponse(_stream(_refused("rate_limited")), media_type="text/event-stream", headers=SSE_HEADERS)
     suffix = Path(file.filename or "").suffix.lower()
     limit = settings.max_upload_mb * 1024 * 1024
     tmp_path: str | None = None
