@@ -29,20 +29,23 @@ function arCount(
 /*
  * The summary is a sentence, so small numbers are words. Arabic: «استشهاد» is masculine, so three
  * to ten take the feminine numeral («ثلاثة استشهادات») and a plural of things takes a feminine
- * singular adjective («ثلاثة مؤيَّدة»).
+ * singular («ثلاثة لها مرجعية», «ثلاثة تحتاج مراجعة»).
+ *
+ * The state words say what was found about the SOURCE of a text, not whether the text is right
+ * (docs/DESIGN.md §8.2; the backend's table is report/labels.py).
  */
 const AR_NUMBER = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة']
 const arWord = (n: number) => (n >= 1 && n <= 10 ? AR_NUMBER[n] : n.toLocaleString('en-US'))
 // «كلمة» is feminine, so three to ten take the masculine numeral: «ثلاث كلمات».
 const AR_NUMBER_FEMININE_NOUN = ['', '', '', 'ثلاث', 'أربع', 'خمس', 'ست', 'سبع', 'ثماني', 'تسع', 'عشر']
 const AR_STATE_FORMS: Record<EvidenceState, { one: string; two: string; many: string; alone: string; allOf: string }> = {
-  supported: { one: 'مؤيَّد', two: 'مؤيَّدان', many: 'مؤيَّدة', alone: 'مؤيَّد', allOf: 'مؤيَّدة' },
+  supported: { one: 'له مرجعية', two: 'لهما مرجعية', many: 'لها مرجعية', alone: 'له مرجعية', allOf: 'لها مرجعية' },
   supported_with_note: {
-    one: 'مع ملاحظة',
-    two: 'مع ملاحظة',
-    many: 'مع ملاحظة',
-    alone: 'مؤيَّد مع ملاحظة',
-    allOf: 'مؤيَّدة مع ملاحظة',
+    one: 'له مرجعية مع ملاحظة',
+    two: 'لهما مرجعية مع ملاحظة',
+    many: 'لها مرجعية مع ملاحظة',
+    alone: 'له مرجعية مع ملاحظة',
+    allOf: 'لها مرجعية مع ملاحظة',
   },
   needs_review: {
     one: 'يحتاج مراجعة',
@@ -51,7 +54,7 @@ const AR_STATE_FORMS: Record<EvidenceState, { one: string; two: string; many: st
     alone: 'يحتاج مراجعة',
     allOf: 'تحتاج مراجعة',
   },
-  not_found: { one: 'بلا مصدر', two: 'بلا مصدر', many: 'بلا مصدر', alone: 'بلا مصدر', allOf: 'بلا مصدر' },
+  not_found: { one: 'بلا مرجعية', two: 'بلا مرجعية', many: 'بلا مرجعية', alone: 'بلا مرجعية', allOf: 'بلا مرجعية' },
   contradicted: {
     one: 'مخالف للمصدر',
     two: 'مخالفان للمصدر',
@@ -68,6 +71,7 @@ export const ar = {
   transparency: 'تبيّن أداة مدعومة بالذكاء الاصطناعي، لا تغني عن الرجوع إلى أهل العلم',
   skipToContent: 'تخطَّ إلى المحتوى',
   close: 'إغلاق',
+  undo: 'تراجع',
   opensInNewTab: 'يفتح في تبويب جديد',
 
   header: {
@@ -76,12 +80,9 @@ export const ar = {
     english: 'English',
     darkOn: 'تفعيل الوضع الداكن',
     darkOff: 'تفعيل الوضع الفاتح',
-    reviewerMode: 'وضع المراجع',
-    reviewerModeHint: 'يتيح تعديل حالة كل حاشية بمراجعة بشرية',
     export: 'تصدير التقرير',
     exportShort: 'تصدير',
     history: 'آخر ما تحققتَ منه',
-    more: 'المزيد',
     home: 'تبيّن: الصفحة الرئيسية',
   },
 
@@ -186,33 +187,33 @@ export const ar = {
   },
 
   states: {
-    supported: 'مؤيَّد بمصدر معتمد',
-    supported_with_note: 'مؤيَّد مع ملاحظة',
+    supported: 'له مرجعية في مصدر معتمد',
+    supported_with_note: 'له مرجعية مع ملاحظة',
     needs_review: 'يحتاج مزيد تحقق',
     not_found: 'لم يُعثر على مصدر موثوق',
     contradicted: 'مخالف للمصدر',
   } satisfies Record<EvidenceState, string>,
 
   statesShort: {
-    supported: 'مؤيَّد',
-    supported_with_note: 'مع ملاحظة',
-    needs_review: 'يحتاج تحققاً',
-    not_found: 'بلا مصدر',
-    contradicted: 'مخالف',
+    supported: 'له مرجعية',
+    supported_with_note: 'له مرجعية مع ملاحظة',
+    needs_review: 'يحتاج مراجعة',
+    not_found: 'بلا مرجعية',
+    contradicted: 'مخالف للمصدر',
   } satisfies Record<EvidenceState, string>,
 
   // The word beside the ring glyph in the margin (docs/DESIGN.md §2.2). `states` above stays the
-  // full name: it is what the exports and the reviewer's menu print.
+  // full name: it is what the exports and the verdict card print.
   stateWords: {
-    supported: 'مؤيَّد',
-    supported_with_note: 'مؤيَّد مع ملاحظة',
+    supported: 'له مرجعية',
+    supported_with_note: 'له مرجعية مع ملاحظة',
     needs_review: 'يحتاج مراجعة',
-    not_found: 'لا مصدر',
+    not_found: 'بلا مرجعية',
     contradicted: 'مخالف للمصدر',
   } satisfies Record<EvidenceState, string>,
 
   actions: {
-    adopt: 'اعتماد',
+    adopt: 'نقله مع ذكر مرجعه',
     correct_wording: 'تصحيح اللفظ',
     refer_to_scholars: 'إحالة إلى أهل العلم',
     remove_or_request_source: 'حذف أو طلب مصدر',
@@ -221,7 +222,7 @@ export const ar = {
 
   // The same five actions, each said as a sentence in the open note. TODO-SULAIMAN-REVIEW (wording).
   actionSentences: {
-    adopt: 'الإجراء المقترح: اعتماده كما ورد.',
+    adopt: 'الإجراء المقترح: نقله مع ذكر مرجعه.',
     correct_wording: 'الإجراء المقترح: تصحيح اللفظ على ما في المصدر.',
     refer_to_scholars: 'الإجراء المقترح: إحالة المسألة إلى أهل العلم.',
     remove_or_request_source: 'الإجراء المقترح: حذفه أو طلب مصدره.',
@@ -281,12 +282,12 @@ export const ar = {
               : n <= 10
                 ? `${arWord(n)} استشهادات`
                 : arCount(n, { zero: '', one: '', two: '', few: 'استشهادات', many: 'استشهاداً' }),
-      /** One clause of the sentence: «اثنان مؤيَّدان». */
+      /** One clause of the sentence: «اثنان لهما مرجعية». */
       clause: (state: EvidenceState, n: number): string => {
         const forms = AR_STATE_FORMS[state]
         return `${arWord(n)} ${n === 1 ? forms.one : n === 2 ? forms.two : forms.many}`
       },
-      /** When every citation has the same state: «استشهادان، كلاهما مؤيَّد». */
+      /** When every citation has the same state: «استشهادان، كلاهما له مرجعية». */
       uniform: (state: EvidenceState, n: number): string => {
         const forms = AR_STATE_FORMS[state]
         return n === 1 ? ` ${forms.alone}` : n === 2 ? `، كلاهما ${forms.alone}` : `، كلها ${forms.allOf}`
@@ -296,20 +297,11 @@ export const ar = {
       and: 'و',
       showAll: 'عرض كل الحواشي',
       filterHint: (clause: string) => `عرض الحواشي: ${clause}`,
-      reviewed: (n: number): string =>
-        n === 1
-          ? 'استشهاد واحد روجع بشرياً'
-          : n === 2
-            ? 'استشهادان روجعا بشرياً'
-            : n <= 10
-              ? `${arWord(n)} استشهادات روجعت بشرياً`
-              : `${arCount(n, { zero: '', one: '', two: '', few: 'استشهادات', many: 'استشهاداً' })} روجعت بشرياً`,
     },
     sortLabel: 'ترتيب الحواشي',
     sortByState: 'الأهم أولاً',
     sortByOrder: 'حسب الترتيب',
     pendingCount: (n: number) => `${n} قيد التحقق`,
-    modifiedCount: (n: number) => `${n} معدَّلة بمراجعة بشرية`,
     lexicalTitle: 'تغطية مخفَّضة',
     lexicalBody:
       'نموذج اللغة غير متاح الآن، فاقتصر الفحص على الآيات والأحاديث المنقولة بلفظها. قد لا تُلتقط الأحكام والروايات بالمعنى.',
@@ -395,7 +387,6 @@ export const ar = {
       `المستوى ${level}، ${name}. درجة القطعية: ${certainty}.`,
     attributedSentence: (who: string) => `منسوب في المحتوى إلى: ${who}.`,
     gradeBy: (parts: string[]) => parts.join('، '),
-    reviewedShort: (original: string) => `مراجعة بشرية، الحالة الأصلية: ${original}`,
   },
 
   copy: {
@@ -422,29 +413,36 @@ export const ar = {
     dark: 'داكن',
     preview: 'معاينة البطاقة',
     send: 'مشاركة',
-    download: 'تنزيل الصورة',
+    download: 'حفظ الصورة',
     copyImage: 'نسخ الصورة',
     preparing: 'جارٍ تجهيز الصورة…',
     shared: 'تمت المشاركة ✓',
-    downloaded: 'نُزّلت البطاقة ✓',
+    downloaded: 'حُفظت الصورة ✓',
     copied: 'نُسخت الصورة ✓',
-    copyFailed: 'هذا المتصفح لا ينسخ الصور. نزّل البطاقة بدلاً من ذلك.',
+    copyFailed: 'هذا المتصفح لا ينسخ الصور. احفظ الصورة بدلاً من ذلك.',
+    // The named apps (docs/DESIGN.md §8.3). A web page can hand them text and an address, not an image.
+    targets: 'مشاركة إلى تطبيق',
+    apps: { whatsapp: 'واتساب', x: 'إكس', telegram: 'تيليغرام', instagram: 'إنستغرام' },
+    targetsHint: 'واتساب وإكس وتيليغرام تستلم الحكم نصاً مع العنوان. الصورة تُرسل من «مشاركة» أو بعد حفظها.',
+    instagramSaved: 'حُفظت الصورة. افتح إنستغرام وانشرها من هناك.',
+    moreCitations: (n: number): string =>
+      n === 1
+        ? 'واستشهاد واحد آخر'
+        : n === 2
+          ? 'واستشهادان آخران'
+          : n <= 10
+            ? `و${arWord(n)} استشهادات أخرى`
+            : n % 100 >= 3 && n % 100 <= 10
+              ? `و${n} استشهادات أخرى`
+              : `و${n} استشهاداً آخر`,
     failed: 'تعذّر تجهيز البطاقة. أعد المحاولة.',
     cardLabel: 'بطاقة تثبّت',
     summaryLabel: 'خلاصة التحقق',
-    asQuoted: 'النص كما ورد',
     circulating: 'النص المتداول',
     referral: 'تبيّن لا يفتي ولا يرجّح؛ يُرجع في هذه المسألة إلى أهل العلم.',
-    checked: 'المحتوى المفحوص',
     // The server's card says the same sentence (docs/DECISIONS.md, 65). TODO-SULAIMAN-REVIEW (wording).
     verseInMushaf: 'نص الآية أطول من أن تسعه البطاقة؛ يُقرأ كاملاً في موضعه من المصحف.',
-    reference: 'المرجع',
-    grading: 'الحكم (منقول حرفياً)',
-    source: 'المصدر',
     footer: 'تحقّق بنفسك على تبيّن',
-    humanReview: 'حالة معدَّلة بمراجعة بشرية',
-    citationsNoun: (n: number): string =>
-      n === 1 ? 'استشهاد' : n === 2 ? 'استشهادان' : n % 100 >= 3 && n % 100 <= 10 ? 'استشهادات' : 'استشهاداً',
     alt: (state: string) => `بطاقة تثبّت: ${state}`,
     altSummary: 'بطاقة خلاصة التحقق',
   },
@@ -500,30 +498,6 @@ export const ar = {
     empty: 'تعذّر تحميل روابط الإحالة الآن.',
   },
 
-  reviewer: {
-    title: 'مراجعة بشرية',
-    state: 'الحالة بعد المراجعة',
-    chooseState: 'اختر الحالة',
-    note: 'ملاحظة المراجع',
-    notePlaceholder: 'سبب التعديل أو ملاحظة للمحرّر',
-    name: 'اسم المراجع',
-    namePlaceholder: 'الاسم',
-    save: 'حفظ المراجعة',
-    undo: 'تراجع',
-    remove: 'إلغاء المراجعة',
-    modified: 'حالة معدَّلة بمراجعة بشرية',
-    noted: 'ملاحظة مراجعة بشرية',
-    original: 'الحالة الأصلية',
-    by: (name: string) => `المراجع: ${name}`,
-    anonymous: 'بلا اسم',
-    saved: 'حُفظت المراجعة',
-    undone: 'أُلغيت المراجعة',
-    needsSource: 'لا تُعتمد حالة «مؤيَّد» دون نص مصدر مسترجَع.',
-    levelC: 'المسائل الخلافية لا تُرفع إلى «مؤيَّد» ولا تُجعل «مخالف».',
-    levelD: 'الحالات الشخصية لا تُعطى حالة؛ تُحال إلى جهة فتوى مؤهلة.',
-    nothingToSave: 'غيّر الحالة أو اكتب ملاحظة أولاً.',
-  },
-
   transcript: {
     titleMedia: 'التفريغ',
     titleText: 'النص الأصلي',
@@ -544,7 +518,7 @@ export const ar = {
 
   exportMenu: {
     json: 'ملف JSON',
-    jsonHint: 'البيانات كاملة مع المراجعات البشرية',
+    jsonHint: 'بيانات التقرير كاملة',
     html: 'صفحة للطباعة أو PDF',
     htmlHint: 'تقرير مقروء مع المصادر كاملة',
     doneJson: 'نُزِّل ملف JSON',

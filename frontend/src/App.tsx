@@ -30,8 +30,7 @@ import { takeSharedPayload } from '@/lib/pwa'
 import type { SharedPayload } from '@/lib/pwa'
 import { assembleReport } from '@/lib/report'
 import { chronological } from '@/lib/states'
-import { readStored, writeStored } from '@/lib/storage'
-import type { Card, Meta, MetaExample, OcrResult, Report, ReviewerOverride, VerifyInput } from '@/lib/types'
+import type { Card, Meta, MetaExample, OcrResult, Report, VerifyInput } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 const DEFAULT_LIMITS: Meta['limits'] = {
@@ -40,7 +39,6 @@ const DEFAULT_LIMITS: Meta['limits'] = {
   max_media_minutes: 30,
   max_image_mb: 10,
 }
-const REVIEWER_MODE_KEY = 'tabayyun.reviewerMode'
 
 // Not needed to paint the page: each is fetched when first wanted.
 const HistoryPanel = lazy(() => import('@/components/history-panel'))
@@ -59,12 +57,10 @@ function draftFromInput(input: SubmittedInput | VerifyInput): InputDraft {
 
 function Shell() {
   const { t, lang, dir } = useI18n()
-  const { state, start, cancel, reset, restore, clearError, showError, setOverride, removeOverride } =
-    useVerify(lang)
+  const { state, start, cancel, reset, restore, clearError, showError } = useVerify(lang)
 
   const [meta, setMeta] = useState<Meta | null>(null)
   const [draft, setDraft] = useState<InputDraft>(emptyDraft)
-  const [reviewerMode, setReviewerMode] = useState(() => readStored<boolean>(REVIEWER_MODE_KEY, false))
   const history = useSyncExternalStore(subscribeHistory, loadHistory)
   const [historyOpen, setHistoryOpen] = useState(false)
   // The panel stays mounted once it has been opened, so it can close with its transition.
@@ -125,11 +121,10 @@ function Shell() {
       cards,
       summary: state.summary,
       generatedAt: state.generatedAt,
-      overrides: state.overrides,
     })
-  }, [done, state.source, state.summary, state.generatedAt, state.claims, state.cards, state.segments, state.overrides])
+  }, [done, state.source, state.summary, state.generatedAt, state.claims, state.cards, state.segments])
 
-  // Local history: the last ten reports, in this browser only. Re-saved when a reviewer edits.
+  // Local history: the last ten reports, in this browser only.
   useEffect(() => {
     if (!report || !state.input) return
     const first = [...report.cards].sort(chronological)[0]
@@ -186,9 +181,9 @@ function Shell() {
 
   /** One field, four kinds of request: what is in the composer decides which one is sent. */
   const submit = useCallback(
-    (override?: InputDraft) => {
+    (given?: InputDraft) => {
       if (running || image?.status === 'reading') return
-      const current = override ?? draft
+      const current = given ?? draft
       let input: VerifyInput
       if (current.file) {
         const file = current.file
@@ -313,7 +308,7 @@ function Shell() {
     notify((toast) =>
       toast(t.history.cleared, {
         action: {
-          label: t.reviewer.undo,
+          label: t.undo,
           onClick: () => {
             for (const entry of [...previous].reverse()) saveHistoryEntry(entry)
           },
@@ -321,41 +316,6 @@ function Shell() {
       }),
     )
   }, [t])
-
-  const changeReviewerMode = useCallback((on: boolean) => {
-    setReviewerMode(on)
-    writeStored(REVIEWER_MODE_KEY, on)
-  }, [])
-
-  // Reviewer edits are undoable from the toast as well as from the note itself.
-  const saveOverride = useCallback(
-    (override: ReviewerOverride) => {
-      const previous = state.overrides.find((o) => o.card_id === override.card_id)
-      setOverride(override)
-      notify((toast) =>
-        toast.success(t.reviewer.saved, {
-          action: {
-            label: t.reviewer.undo,
-            onClick: () => (previous ? setOverride(previous) : removeOverride(override.card_id)),
-          },
-        }),
-      )
-    },
-    [removeOverride, setOverride, state.overrides, t],
-  )
-
-  const dropOverride = useCallback(
-    (cardId: string) => {
-      const previous = state.overrides.find((o) => o.card_id === cardId)
-      removeOverride(cardId)
-      notify((toast) =>
-        toast(t.reviewer.undone, {
-          action: previous ? { label: t.reviewer.undo, onClick: () => setOverride(previous) } : undefined,
-        }),
-      )
-    },
-    [removeOverride, setOverride, state.overrides, t],
-  )
 
   // The export code is fetched when a report exists and the page is quiet, so that the click
   // itself can open the print window without waiting (a late window.open is blocked by browsers).
@@ -510,8 +470,6 @@ function Shell() {
         <div className="flex min-h-dvh flex-col">
           <AppHeader
             hasReport={hasReport}
-            reviewerMode={reviewerMode}
-            onReviewerModeChange={changeReviewerMode}
             onExportJson={exportJson}
             onExportHtml={exportPrintable}
             onCopyReport={features.copy ? copyReport : undefined}
@@ -537,10 +495,7 @@ function Shell() {
                     running={running}
                     onCancel={autorunPending ? undefined : cancel}
                     meta={meta}
-                    reviewerMode={reviewerMode}
                     error={errorNode}
-                    onSaveOverride={saveOverride}
-                    onRemoveOverride={dropOverride}
                     onVerifyAnother={verifyAnother}
                   />
                 </>

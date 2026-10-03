@@ -14,9 +14,9 @@ export interface SummaryClause {
 
 /**
  * The report in one sentence, with number words and agreement:
- * «أربعة استشهادات: اثنان مؤيَّدان، واحد مع ملاحظة، وواحد بلا مصدر».
+ * «أربعة استشهادات: اثنان لهما مرجعية، واحد له مرجعية مع ملاحظة، وواحد بلا مرجعية».
  * When every citation has the same state there are no clauses, only a tail:
- * «استشهادان، كلاهما مؤيَّد».
+ * «استشهادان، كلاهما له مرجعية».
  */
 export function summaryParts(
   t: Dictionary,

@@ -22,7 +22,7 @@ import { useI18n } from '@/lib/i18n'
 import { lazyWithPreload } from '@/lib/lazy'
 import { countStates, sourcesUsed } from '@/lib/report'
 import { STATES_BY_RISK, STATE_STYLE, chronological } from '@/lib/states'
-import type { Card, ClaimStub, EvidenceState, Meta, ReviewerOverride } from '@/lib/types'
+import type { Card, ClaimStub, EvidenceState, Meta } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface ReportViewProps {
@@ -31,11 +31,8 @@ interface ReportViewProps {
   running: boolean
   onCancel: (() => void) | undefined
   meta: Meta | null
-  reviewerMode: boolean
   /** A failure that arrived after some notes did: shown above what was received. */
   error: ReactNode
-  onSaveOverride: (override: ReviewerOverride) => void
-  onRemoveOverride: (cardId: string) => void
   onVerifyAnother: () => void
 }
 
@@ -78,10 +75,7 @@ export function ReportView({
   running,
   onCancel,
   meta,
-  reviewerMode,
   error,
-  onSaveOverride,
-  onRemoveOverride,
   onVerifyAnother,
 }: ReportViewProps) {
   const { t, pick } = useI18n()
@@ -109,7 +103,7 @@ export function ReportView({
   const [inked, setInked] = useState(!running)
 
   const done = state.phase === 'done'
-  const { claims, cards, overrides, source, segments, summary } = state
+  const { claims, cards, source, segments, summary } = state
   const features = useMemo(() => featuresOf(meta), [meta])
 
   // Reading order; claims with no place in the text go at the end of the margin.
@@ -117,16 +111,12 @@ export function ReportView({
     () => [...claims].sort((a, b) => Number(!a.span) - Number(!b.span) || chronological(a, b)),
     [claims],
   )
-  const overrideByCard = useMemo(() => new Map(overrides.map((o) => [o.card_id, o])), [overrides])
   const readyCards = useMemo(() => ordered.map((c) => cards[c.id]).filter((c): c is Card => !!c), [ordered, cards])
-  const states = useMemo(
-    () => new Map(readyCards.map((card) => [card.id, overrideByCard.get(card.id)?.state ?? card.state])),
-    [readyCards, overrideByCard],
-  )
-  const counts = useMemo(() => countStates(readyCards, overrides), [readyCards, overrides])
+  const states = useMemo(() => new Map(readyCards.map((card) => [card.id, card.state])), [readyCards])
+  const counts = useMemo(() => countStates(readyCards), [readyCards])
   const used = useMemo(() => sourcesUsed(readyCards), [readyCards])
 
-  // A filter that no longer matches anything (a reviewer changed the last such note) lets go.
+  // A filter that matches nothing lets go.
   const activeFilter = filter && counts[filter] > 0 ? filter : null
   const visible = useMemo(
     () => (activeFilter ? ordered.filter((c) => states.get(c.id) === activeFilter) : ordered),
@@ -179,8 +169,6 @@ export function ReportView({
     ids.join(','),
     [...openInPlace].join(','),
     readyCards.length,
-    overrides.map((o) => `${o.card_id}:${o.state}:${o.at}`).join(','),
-    reviewerMode,
     segments.length,
     state.notices.length,
     summary ? 1 : 0,
@@ -295,12 +283,9 @@ export function ReportView({
   const shareClaim = useCallback(
     (cardId: string) => {
       const card = cards[cardId]
-      if (!card) return
-      const override = overrides.find((o) => o.card_id === cardId)
-      const changed = override && override.state !== override.original_state ? override.state : null
-      setShareTarget({ kind: 'claim', card, overrideState: changed })
+      if (card) setShareTarget({ kind: 'claim', card })
     },
-    [cards, overrides],
+    [cards],
   )
 
   const lexicalNotice = state.notices.find((n) => n.code === 'llm_unavailable')
@@ -333,11 +318,8 @@ export function ReportView({
     meta,
     features,
     stageSeconds: summary?.stage_seconds,
-    reviewerMode,
     onReferral: openReferral,
     onShare: shareClaim,
-    onSaveOverride,
-    onRemoveOverride,
   }
 
   // Phone only: the list can put the notes that matter most first.
@@ -384,7 +366,6 @@ export function ReportView({
             <SummarySentence
               total={ordered.length}
               counts={counts}
-              modified={overrides.length}
               filter={activeFilter}
               onFilter={setFilter}
             />
@@ -494,7 +475,6 @@ export function ReportView({
                   key={claim.id}
                   {...bodyProps}
                   card={card}
-                  override={overrideByCard.get(card.id)}
                   inPlace={inPlace}
                   open={openInPlace.has(card.id)}
                   active={activeId === card.id}
@@ -516,7 +496,7 @@ export function ReportView({
       {singleInline && single ? (
         <div className="mt-6 max-w-[36rem] space-y-4">
           {notices}
-          <InlineNote {...bodyProps} card={single} override={overrideByCard.get(single.id)} />
+          <InlineNote {...bodyProps} card={single} />
         </div>
       ) : null}
 
@@ -535,7 +515,6 @@ export function ReportView({
                 key={claim.id}
                 claim={claim}
                 card={cards[claim.id]}
-                override={overrideByCard.get(claim.id)}
                 onOpen={setSheetId}
               />
             ))}
@@ -577,7 +556,7 @@ export function ReportView({
                     summary,
                     counts,
                     total: ordered.length,
-                    reviewed: overrides.some((o) => o.state !== o.original_state),
+                    cards: readyCards,
                     title: source?.title ?? null,
                   })
                 }
@@ -602,7 +581,6 @@ export function ReportView({
             open
             onClose={() => setSheetId(null)}
             card={sheetCard}
-            override={overrideByCard.get(sheetCard.id)}
             onLocate={locate}
           />
         ) : null}

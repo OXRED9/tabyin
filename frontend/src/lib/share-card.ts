@@ -2,7 +2,7 @@
  * F3 «بطاقة تثبّت»: the logic behind the shareable verdict card. The card is drawn in the browser
  * from a fixed-size HTML template (html-to-image); if that throws, the backend draws the same
  * content (`POST /api/share-card`). Nothing about the user is ever put on the card: no date, no
- * reviewer name, no video link or timestamp.
+ * name, no video link or timestamp.
  */
 import { getFontEmbedCSS, toBlob } from 'html-to-image'
 import qrcode from 'qrcode-generator'
@@ -177,11 +177,11 @@ export function canShareFiles(): boolean {
   }
 }
 
-/** Open the system share sheet with the PNG. Resolves false when the user dismisses it. */
-export async function shareFile(blob: Blob, filename: string, text: string): Promise<boolean> {
+/** Open the system share sheet with the PNG and its words. Resolves false when the user dismisses it. */
+export async function shareFile(blob: Blob, filename: string, title: string, text: string): Promise<boolean> {
   const file = new File([blob], filename, { type: 'image/png' })
   try {
-    await navigator.share({ files: [file], title: text, text })
+    await navigator.share({ files: [file], title, text })
     return true
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === 'AbortError') return false

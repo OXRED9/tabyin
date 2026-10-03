@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode, Ref } from 'react'
 
 import { StateGlyph } from '@/components/state-glyph'
 import type { Dictionary } from '@/lib/dictionary'
-import { diffCoversSource, hasDifferences } from '@/lib/diff'
+import { collate } from '@/lib/collate'
 import {
   CARD_HEIGHT,
   CARD_PALETTE,
@@ -15,7 +15,8 @@ import {
   truncateClaim,
 } from '@/lib/share-card'
 import type { CardPalette as Palette, CardSize, CardTheme } from '@/lib/share-card'
-import { ACTION_OF_STATE } from '@/lib/states'
+import { referenceWithGrade } from '@/lib/share-text'
+import { STATES_BY_RISK, chronological } from '@/lib/states'
 import { summaryParts } from '@/lib/summary'
 import type { Card, EvidenceState, UiLang, VerseRef } from '@/lib/types'
 
@@ -29,13 +30,13 @@ import type { Card, EvidenceState, UiLang, VerseRef } from '@/lib/types'
  *
  * It speaks the page's language: paper, hairlines, ink. No band, no pill, no shadow. The claim is
  * set as the passage is on the page (Naskh, the state's ink, an underline in the state's
- * colour); gold appears only in the verified ring.
+ * colour); gold appears only in the verified ring and in the brand's own mark.
  *
  * The template is a fixed 1080px-wide block styled with inline pixel values and its own copy of
  * the tokens, so the PNG looks the same whatever the page's theme, zoom or viewport is. The same
  * content, in the same order, is drawn on the server (`POST /api/share-card`) as the fallback.
  *
- * Never drawn: a date or time, a reviewer's name, a link to the clip, anything about the user.
+ * Never drawn: a date or time, a name, a link to the clip, anything about the user.
  */
 
 const UI_FONT: Record<UiLang, string> = {
@@ -71,6 +72,22 @@ const glyphColours = (palette: Palette) =>
 
 function Glyph({ state, size }: { state: EvidenceState; size: number }) {
   return <StateGlyph state={state} style={{ width: size, height: size, flex: 'none' }} />
+}
+
+/**
+ * The brand's mark, on the start side of the logotype: the shapes of public/favicon.svg. Its gold
+ * is the same in both themes; on the dark card its tile takes the dark theme's fill green.
+ */
+function Mark({ size, theme }: { size: number; theme: CardTheme }) {
+  const green = theme === 'dark' ? '#1f7867' : '#1b6b5e'
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size} aria-hidden="true" style={{ flex: 'none' }}>
+      <rect width="32" height="32" rx="7" fill={green} />
+      <rect x="13" y="13" width="13" height="13" rx="4" fill="#ffffff" fillOpacity="0.18" stroke="#ffffff" strokeOpacity="0.7" strokeWidth="2" />
+      <rect x="6" y="6" width="14" height="14" rx="4.5" fill="#c9a227" />
+      <circle cx="13" cy="13" r="3.6" fill={green} />
+    </svg>
+  )
 }
 
 function Rule({ palette }: { palette: Palette }) {
@@ -162,8 +179,11 @@ function Frame({
           padding: `${whole(34 * k)}px ${whole(52 * k)}px ${whole(30 * k)}px`,
         }}
       >
-        <div style={{ flex: 'none', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 24, paddingBottom: whole(16 * k) }}>
-          <span style={{ fontFamily: NASKH_FONT, fontSize: whole(58 * k), lineHeight: 1.25 }}>{t.appName}</span>
+        <div style={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, paddingBottom: whole(16 * k) }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: whole(16 * k) }}>
+            <Mark size={whole(56 * k)} theme={theme} />
+            <span style={{ fontFamily: NASKH_FONT, fontSize: whole(58 * k), lineHeight: 1.25 }}>{t.appName}</span>
+          </span>
           <span style={{ fontSize: whole(28 * k), lineHeight: 1.4, color: palette.quiet }}>{label}</span>
         </div>
         <Rule palette={palette} />
@@ -287,28 +307,19 @@ const squash = (text: string) => text.replace(/\s+/g, ' ').trim()
 const plain = (text: string) => squash(text).replace(/[.؟?!،,؛;:]+$/u, '')
 
 /**
- * What the card sets under «في المصدر». With no differences it is the source's text as it is.
- * With differences it is the source's side of the collation, differing words marked: the whole
- * text when the collation covers it, otherwise the part that was compared (a narration without
- * its chain, say), with «…» where the source goes on.
+ * What the card sets under «في المصدر»: the source's own words, whole. The quotation is located
+ * in them (lib/collate.ts): the words it corresponds to are the quoted span, and those among them
+ * that the quotation changed are underlined. When it cannot be located, the whole text counts as
+ * the span.
  */
-function sourceText(source: Card['source'], diff: Card['diff']): SourceText {
-  if (!source) return { words: [], before: false, after: false }
-  const whole = squash(source.text)
-  if (!hasDifferences(diff)) {
-    return { words: whole.split(' ').map((text) => ({ text, differs: false, quoted: true })), before: false, after: false }
+function sourceText(card: Card): SourceText {
+  if (!card.source) return { words: [], before: false, after: false }
+  const { words, span, marks } = collate(card)
+  return {
+    words: words.map((text, i) => ({ text, differs: marks.has(i), quoted: !span || (i >= span[0] && i < span[1]) })),
+    before: false,
+    after: false,
   }
-  const words = diff.flatMap((op) =>
-    op.source
-      ? squash(op.source)
-          .split(' ')
-          .map((text) => ({ text, differs: op.op === 'replace', quoted: op.op !== 'insert' }))
-      : [],
-  )
-  if (diffCoversSource(diff, source.text)) return { words, before: false, after: false }
-  const part = words.map((word) => word.text).join(' ')
-  const at = whole.indexOf(part)
-  return { words, before: at > 0, after: at !== -1 && at + part.length < whole.length }
 }
 
 /** The first and last words of the quoted span (the whole text when nothing marks one). */
@@ -340,31 +351,25 @@ function fitSource(text: SourceText, fit: Fit): SourceText {
 
 export interface ClaimCardImageProps extends Shell {
   card: Card
-  /** A reviewer's state, drawn with the "human review" mark and no name. */
-  overrideState: EvidenceState | null
   verse: VerseRef | null
 }
 
-export function ClaimCardImage({ card, overrideState, verse, ...shell }: ClaimCardImageProps) {
+export function ClaimCardImage({ card, verse, ...shell }: ClaimCardImageProps) {
   const { size, theme, lang, t } = shell
   const palette = CARD_PALETTE[theme]
   const k = scaleOf(size)
-  const state = overrideState ?? card.state
+  const state = card.state
   const colours = palette.states[state]
   const align = lang === 'ar' ? 'right' : 'left'
-  // A reviewer's state comes without the rule's sentence, which explains the engine's state and
-  // could contradict the reviewer's, and with the action that belongs to it. A reviewer's «لم
-  // يُعثر» also hides the source the engine had matched. A personal case never shows a source.
-  const reviewed = !!overrideState && overrideState !== card.state
-  const source = card.personal_case || (reviewed && state === 'not_found') ? null : card.source
+  // A personal case never shows a source, even if one is attached to the card.
+  const source = card.personal_case ? null : card.source
   const quranSource = source?.kind === 'quran'
   // A verse is set in the Mushaf's face and is never cut: the source's own verse, or the verse
   // the card abstains with when there is no source.
   const isVerse = quranSource || (!source && state === 'not_found')
 
   const note = lang === 'ar' ? card.note_ar || card.note_en : card.note_en || card.note_ar
-  const verdict = reviewed ? '' : firstSentence(note) || (state === 'not_found' ? t.card.abstention : '')
-  const action = reviewed ? ACTION_OF_STATE[state] : card.action
+  const verdict = firstSentence(note) || (state === 'not_found' ? t.card.abstention : '')
   // The reason a claim has nothing to quote, unless the sentence under the state already says it.
   const said = (sentence: string) => plain(sentence) === plain(verdict)
   const reasons = [card.personal_case ? t.card.personalCase : '', card.disagreement_noted ? t.card.disagreement : ''].filter(
@@ -373,7 +378,7 @@ export function ClaimCardImage({ card, overrideState, verse, ...shell }: ClaimCa
   // One grading is drawn in the source's words; a grading too long for its line is counted, never cut.
   const gradeLine = card.grades.length === 1 ? card.grades[0].text.split('\n')[0].trim() : ''
   const grade = gradeLine && Array.from(gradeLine).length <= 60 ? card.grades[0] : null
-  const wholeSource = useMemo(() => sourceText(source, card.diff), [source, card.diff])
+  const wholeSource = useMemo(() => (source ? sourceText(card) : sourceText({ ...card, source: null })), [card, source])
 
   // The card gives way a step at a time until its body no longer overflows (measured below).
   // Nothing is clipped on the way: the body's children are `flex: none`, so what does not fit
@@ -385,7 +390,7 @@ export function ClaimCardImage({ card, overrideState, verse, ...shell }: ClaimCa
     document.fonts.addEventListener('loadingdone', refit)
     return () => document.fonts.removeEventListener('loadingdone', refit)
   }, [])
-  const fitKey = `${card.id}|${state}|${size}|${lang}|${faces}`
+  const fitKey = `${card.id}|${size}|${lang}|${faces}`
   const [fit, setFit] = useState(() => FIRST_FIT(isVerse))
   const [fitted, setFitted] = useState(fitKey)
   if (fitted !== fitKey) {
@@ -427,9 +432,6 @@ export function ClaimCardImage({ card, overrideState, verse, ...shell }: ClaimCa
         <Glyph state={state} size={whole(64 * k)} />
         <div style={{ minWidth: 0, fontSize: whole(52 * k), fontWeight: 600, lineHeight: 1.3, color: colours.ink }}>{t.states[state]}</div>
       </div>
-      {reviewed ? (
-        <div style={{ flex: 'none', fontSize: whole(26 * k), lineHeight: 1.5, color: palette.quiet }}>{t.share.humanReview}</div>
-      ) : null}
       {verdict ? (
         <div style={{ flex: 'none', marginTop: whole(10 * k), fontSize: whole(34 * k), lineHeight: 1.6, ...clamp(fit.verdictLines) }}>{verdict}</div>
       ) : null}
@@ -566,7 +568,7 @@ export function ClaimCardImage({ card, overrideState, verse, ...shell }: ClaimCa
 
       {/* What should I do with it? */}
       <div style={{ flex: 'none', marginTop: whole(12 * k), paddingBottom: whole(16 * k), fontSize: whole(30 * k), fontWeight: 600, lineHeight: 1.6 }}>
-        {t.actionSentences[action]}
+        {t.actionSentences[card.action]}
       </div>
     </Frame>
   )
@@ -577,24 +579,98 @@ export function ClaimCardImage({ card, overrideState, verse, ...shell }: ClaimCa
 export interface SummaryCardImageProps extends Shell {
   total: number
   counts: Record<EvidenceState, number>
-  /** True when some of the counted states were set by a human reviewer. */
-  reviewed: boolean
+  /** The report's citations: each gets a row, as many as fit. */
+  cards: Card[]
   /** The title of what was checked, when the report has one. */
   title: string | null
 }
 
-/** The whole report in one sentence, each clause in its state's ink with its ring. No claim text. */
-export function SummaryCardImage({ total, counts, reviewed, title, ...shell }: SummaryCardImageProps) {
-  const { size, theme, t } = shell
+/**
+ * The quotations that overflow their one line, each with the number of words to keep: one fewer
+ * than the line holds whole, because the «…» that follows needs its room. Measured, not derived.
+ */
+function overflowingQuotes(body: HTMLElement): Record<string, number> | null {
+  const cut: Record<string, number> = {}
+  for (const line of body.querySelectorAll<HTMLElement>('[data-quote]')) {
+    if (line.scrollWidth <= line.clientWidth + 1) continue
+    const box = line.getBoundingClientRect()
+    const words = [...line.querySelectorAll<HTMLElement>('[data-word]')]
+    const inside = words.filter((word) => {
+      const rect = word.getBoundingClientRect()
+      return rect.left >= box.left - 0.5 && rect.right <= box.right + 0.5
+    }).length
+    cut[line.dataset.quote ?? ''] = Math.max(1, Math.min(inside, words.length) - 1)
+  }
+  return Object.keys(cut).length > 0 ? cut : null
+}
+
+/** No summary card draws more rows than this, however small they are. */
+const MOST_ROWS = 12
+
+/**
+ * The report on one card (docs/DESIGN.md §8.1): its sentence, each clause in its state's ink with
+ * its ring, then one row per citation — the state, the quoted words on one line, under them the
+ * reference and the grading word. What most needs attention comes first; as many rows as fit
+ * above the footer are drawn, whole, and the rest are counted in a closing line.
+ */
+export function SummaryCardImage({ total, counts, cards, title, ...shell }: SummaryCardImageProps) {
+  const { size, theme, lang, t } = shell
   const palette = CARD_PALETTE[theme]
   const k = scaleOf(size)
+  const align = lang === 'ar' ? 'right' : 'left'
   const { head, tail, clauses } = summaryParts(t, total, counts)
-  // A sentence with all five clauses on the square card is set a step smaller.
-  const sentence = whole((size === 'square' && clauses.length > 3 ? 38 : 44) * k)
+  const rows = useMemo(
+    () =>
+      [...cards]
+        .sort((a, b) => STATES_BY_RISK.indexOf(a.state) - STATES_BY_RISK.indexOf(b.state) || chronological(a, b))
+        .map((card) => ({ card, words: squash(card.text_as_quoted).split(' '), under: referenceWithGrade(card, t) })),
+    [cards, t],
+  )
+
+  // Fitted by measuring, as the claim card is: rows leave from the end until the body no longer
+  // overflows, and each row's quoted words are cut at a word until they fit their one line.
+  const [faces, setFaces] = useState(0)
+  useEffect(() => {
+    const refit = () => setFaces((n) => n + 1)
+    document.fonts.addEventListener('loadingdone', refit)
+    return () => document.fonts.removeEventListener('loadingdone', refit)
+  }, [])
+  const fitKey = `${rows.map((row) => row.card.id).join(',')}|${size}|${lang}|${faces}`
+  const [fitted, setFitted] = useState(fitKey)
+  const [shown, setShown] = useState(() => Math.min(rows.length, MOST_ROWS))
+  const [kept, setKept] = useState<Record<string, number>>({})
+  if (fitted !== fitKey) {
+    setFitted(fitKey)
+    setShown(Math.min(rows.length, MOST_ROWS))
+    setKept({})
+  }
+  const body = useRef<HTMLDivElement | null>(null)
+  useLayoutEffect(() => {
+    const element = body.current
+    if (!element) return
+    if (element.scrollHeight > element.clientHeight + 1) {
+      setShown((count) => Math.max(0, count - 1))
+      return
+    }
+    // The rows fit; now each quotation on its line.
+    const cut = overflowingQuotes(element)
+    if (element.isConnected && cut) {
+      setKept((current) => ({ ...current, ...cut }))
+    }
+  }, [fitKey, shown, kept, theme])
+
+  const rest = rows.length - shown
+  const glyph = whole(30 * k)
 
   return (
-    <Frame {...shell} label={t.share.summaryLabel} alt={t.share.altSummary}>
-      <div style={{ flex: 'none', fontSize: sentence, fontWeight: 600, lineHeight: 1.75 }}>
+    <Frame {...shell} label={t.share.cardLabel} bodyRef={body} alt={t.share.altSummary} fit={`${shown}/${rows.length}`}>
+      <div style={{ flex: 'none', fontSize: whole(34 * k), fontWeight: 600, lineHeight: 1.5 }}>{t.share.summaryLabel}</div>
+      {title ? (
+        <div dir="auto" style={{ flex: 'none', fontSize: whole(26 * k), lineHeight: 1.5, color: palette.quiet, textAlign: align, ...clamp(1) }}>
+          {title}
+        </div>
+      ) : null}
+      <div style={{ flex: 'none', marginTop: whole(8 * k), paddingBottom: whole(14 * k), fontSize: whole(34 * k), fontWeight: 600, lineHeight: 1.7 }}>
         {head}
         {tail}
         {clauses.map((clause) => (
@@ -603,7 +679,7 @@ export function SummaryCardImage({ total, counts, reviewed, title, ...shell }: S
             <span style={{ color: palette.states[clause.state].ink, whiteSpace: 'nowrap' }}>
               <StateGlyph
                 state={clause.state}
-                style={{ display: 'inline-block', width: whole(sentence * 0.9), height: whole(sentence * 0.9), verticalAlign: '-0.14em', marginInlineEnd: whole(8 * k) }}
+                style={{ display: 'inline-block', width: glyph, height: glyph, verticalAlign: '-0.14em', marginInlineEnd: whole(8 * k) }}
               />
               {clause.joiner}
               {clause.text}
@@ -611,17 +687,68 @@ export function SummaryCardImage({ total, counts, reviewed, title, ...shell }: S
           </span>
         ))}
       </div>
-      {reviewed ? (
-        <div style={{ flex: 'none', marginTop: whole(12 * k), fontSize: whole(26 * k), lineHeight: 1.5, color: palette.quiet }}>{t.share.humanReview}</div>
-      ) : null}
-      {title ? (
-        <div style={{ flex: 'none', marginTop: whole(28 * k) }}>
-          <div style={{ fontSize: whole(26 * k), lineHeight: 1.5, color: palette.quiet }}>{t.share.checked}</div>
-          <div dir="auto" style={{ fontFamily: NASKH_FONT, fontSize: whole(40 * k), lineHeight: 1.9, textAlign: shell.lang === 'ar' ? 'right' : 'left', ...clamp(3) }}>
-            {title}
-          </div>
+      <Rule palette={palette} />
+
+      {shown > 0 ? (
+        <div
+          style={{
+            flex: 'none',
+            display: 'grid',
+            gridTemplateColumns: 'max-content minmax(0, 1fr)',
+            columnGap: whole(24 * k),
+            rowGap: whole(12 * k),
+            paddingTop: whole(14 * k),
+          }}
+        >
+          {rows.slice(0, shown).map(({ card, words, under }) => {
+            const count = Math.min(kept[card.id] ?? words.length, words.length)
+            return (
+              <div key={card.id} style={{ display: 'contents' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: whole(10 * k), height: whole(54 * k), color: palette.states[card.state].ink }}>
+                  <Glyph state={card.state} size={glyph} />
+                  <span style={{ fontSize: whole(26 * k), fontWeight: 600, lineHeight: 1.4, whiteSpace: 'nowrap' }}>{t.stateWords[card.state]}</span>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    data-quote={card.id}
+                    dir="auto"
+                    style={{
+                      height: whole(54 * k),
+                      fontFamily: NASKH_FONT,
+                      fontSize: whole(32 * k),
+                      lineHeight: `${whole(54 * k)}px`,
+                      textAlign: align,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    «
+                    {words.slice(0, count).map((word, i) => (
+                      <span key={i} data-word="">
+                        {i > 0 ? ' ' : null}
+                        {word}
+                      </span>
+                    ))}
+                    {count < words.length ? '…' : null}»
+                  </div>
+                  {under ? (
+                    <div dir="auto" style={{ fontSize: whole(24 * k), lineHeight: 1.5, color: palette.quiet, textAlign: align, ...clamp(1) }}>
+                      {under}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            )
+          })}
         </div>
       ) : null}
+      {rest > 0 && shown > 0 ? (
+        <div style={{ flex: 'none', paddingTop: whole(12 * k), paddingBottom: whole(6 * k), fontSize: whole(26 * k), lineHeight: 1.5, color: palette.quiet }}>
+          {t.share.moreCitations(rest)}
+        </div>
+      ) : (
+        <div style={{ flex: 'none', height: whole(10 * k) }} />
+      )}
     </Frame>
   )
 }

@@ -13,8 +13,8 @@ import { cn } from '@/lib/utils'
  */
 export default function InlineNote(body: Omit<NoteBodyProps, 'showQuoted'>) {
   const { t, pick } = useI18n()
-  const { card, override } = body
-  const state = override?.state ?? card.state
+  const { card } = body
+  const state = card.state
   return (
     <article
       id={`note-${card.id}`}
@@ -28,7 +28,7 @@ export default function InlineNote(body: Omit<NoteBodyProps, 'showQuoted'>) {
         <StateWord state={state} className="text-base" />
         <span className="text-sm text-ink">— {t.claimTypes[card.claim_type]}</span>
       </p>
-      <p className="pb-3 text-sm text-quiet">{referenceLine(card, override, t, pick(card.note_ar, card.note_en))}</p>
+      <p className="pb-3 text-sm text-quiet">{referenceLine(card, t, pick(card.note_ar, card.note_en))}</p>
       {/* Its words are right above, underlined: they are repeated only for a claim with no place in the text. */}
       <NoteBody {...body} showQuoted={!card.span} />
     </article>

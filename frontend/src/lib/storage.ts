@@ -1,5 +1,5 @@
 /**
- * localStorage helpers. Everything the app remembers (language, theme, reviewer name, the last
+ * localStorage helpers. Everything the app remembers (language, theme, the last
  * ten reports) stays in this browser; nothing here is ever sent to a server.
  */
 

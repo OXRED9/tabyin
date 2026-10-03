@@ -1,28 +1,15 @@
 import { chronological } from './states'
-import type {
-  Card,
-  ClaimStub,
-  EvidenceState,
-  Report,
-  ReviewerOverride,
-  Segment,
-  SourceInfo,
-  Summary,
-} from './types'
+import type { Card, ClaimStub, EvidenceState, Report, Segment, SourceInfo, Summary } from './types'
 
 export const DISCLAIMER_AR = 'تبيّن أداة مدعومة بالذكاء الاصطناعي، لا تغني عن الرجوع إلى أهل العلم'
 
-/**
- * Assemble the `Report` the contract describes. Cards keep the state the rules produced; a human
- * change travels separately in `reviewer_overrides`, so the export can show both.
- */
+/** Assemble the `Report` the contract describes: the cards as the rules produced them. */
 export function assembleReport(parts: {
   source: SourceInfo
   segments: Segment[]
   cards: Card[]
   summary: Summary
   generatedAt: string
-  overrides: ReviewerOverride[]
 }): Report {
   return {
     source: parts.source,
@@ -32,7 +19,6 @@ export function assembleReport(parts: {
     generated_at: parts.generatedAt,
     tool: 'Tabayyun',
     disclaimer_ar: DISCLAIMER_AR,
-    reviewer_overrides: parts.overrides,
   }
 }
 
@@ -44,14 +30,10 @@ export const emptyCounts = (): Record<EvidenceState, number> => ({
   contradicted: 0,
 })
 
-/** Counts by the state each card currently shows (reviewer overrides included). */
-export function countStates(
-  cards: Card[],
-  overrides: ReviewerOverride[],
-): Record<EvidenceState, number> {
+/** How many cards there are in each state. */
+export function countStates(cards: Card[]): Record<EvidenceState, number> {
   const counts = emptyCounts()
-  const byCard = new Map(overrides.map((o) => [o.card_id, o]))
-  for (const card of cards) counts[byCard.get(card.id)?.state ?? card.state] += 1
+  for (const card of cards) counts[card.state] += 1
   return counts
 }
 

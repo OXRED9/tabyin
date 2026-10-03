@@ -4,7 +4,7 @@ import { StateGlyph } from '@/components/state-glyph'
 import { useI18n } from '@/lib/i18n'
 import { referenceLine } from '@/lib/reference-line'
 import { STATE_STYLE } from '@/lib/states'
-import type { Card, ClaimStub, ReviewerOverride } from '@/lib/types'
+import type { Card, ClaimStub } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 export type NoteOrder = 'order' | 'state'
@@ -44,16 +44,14 @@ export function OrderToggle({ value, onChange }: { value: NoteOrder; onChange: (
 export function NoteRow({
   claim,
   card,
-  override,
   onOpen,
 }: {
   claim: ClaimStub
   card: Card | undefined
-  override: ReviewerOverride | undefined
   onOpen: (claimId: string) => void
 }) {
   const { t, pick } = useI18n()
-  const state = card ? (override?.state ?? card.state) : null
+  const state = card ? card.state : null
 
   const lines = (
     <>
@@ -67,7 +65,7 @@ export function NoteRow({
         <span className={cn(state && 'font-semibold', state && STATE_STYLE[state].ink)}>
           {state ? t.stateWords[state] : t.notes.pendingWord}
         </span>
-        {card ? ` — ${referenceLine(card, override, t, pick(card.note_ar, card.note_en))}` : null}
+        {card ? ` — ${referenceLine(card, t, pick(card.note_ar, card.note_en))}` : null}
       </span>
     </>
   )

@@ -7,20 +7,18 @@ import { cn } from '@/lib/utils'
 
 /**
  * The whole report as one sentence, with number words and agreement:
- * «أربعة استشهادات: اثنان مؤيَّدان، واحد مع ملاحظة، وواحد بلا مصدر».
+ * «أربعة استشهادات: اثنان لهما مرجعية، واحد له مرجعية مع ملاحظة، وواحد بلا مرجعية».
  * Each clause is a switch: pressing it shows only the notes in that state.
  */
 export function SummarySentence({
   total,
   counts,
-  modified,
   filter,
   onFilter,
   className,
 }: {
   total: number
   counts: Record<EvidenceState, number>
-  modified: number
   filter: EvidenceState | null
   onFilter: (state: EvidenceState | null) => void
   className?: string
@@ -57,7 +55,6 @@ export function SummarySentence({
           )
         })}
       </p>
-      {modified > 0 ? <p className="text-sm text-quiet">{t.report.summary.reviewed(modified)}</p> : null}
     </div>
   )
 }

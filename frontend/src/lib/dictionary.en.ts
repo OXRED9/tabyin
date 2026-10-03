@@ -12,11 +12,11 @@ const EN_NUMBER = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'e
 const enWord = (n: number) => (n >= 1 && n <= 10 ? EN_NUMBER[n] : n.toLocaleString('en-US'))
 const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 const EN_STATE_FORMS: Record<EvidenceState, { one: string; many: string }> = {
-  supported: { one: 'supported', many: 'supported' },
-  supported_with_note: { one: 'with a note', many: 'with a note' },
+  supported: { one: 'has a reference', many: 'have a reference' },
+  supported_with_note: { one: 'has a reference with a note', many: 'have a reference with a note' },
   needs_review: { one: 'needs review', many: 'need review' },
-  not_found: { one: 'with no source', many: 'with no source' },
-  contradicted: { one: 'contradicts the source', many: 'contradict the source' },
+  not_found: { one: 'has no reference', many: 'have no reference' },
+  contradicted: { one: 'differs from the source', many: 'differ from the source' },
 }
 
 export const en: Dictionary = {
@@ -26,6 +26,7 @@ export const en: Dictionary = {
     'Tabayyun is an AI-assisted tool. It does not replace consulting qualified scholars.',
   skipToContent: 'Skip to content',
   close: 'Close',
+  undo: 'Undo',
   opensInNewTab: 'Opens in a new tab',
 
   header: {
@@ -34,12 +35,9 @@ export const en: Dictionary = {
     english: 'English',
     darkOn: 'Switch to dark mode',
     darkOff: 'Switch to light mode',
-    reviewerMode: 'Reviewer mode',
-    reviewerModeHint: 'Lets a human reviewer change the state of each note',
     export: 'Export report',
     exportShort: 'Export',
     history: 'What you verified recently',
-    more: 'More',
     home: 'Tabayyun: home',
   },
 
@@ -135,31 +133,31 @@ export const en: Dictionary = {
   },
 
   states: {
-    supported: 'Supported by an approved source',
-    supported_with_note: 'Supported, with a note',
+    supported: 'Has a reference in an approved source',
+    supported_with_note: 'Has a reference, with a note',
     needs_review: 'Needs further verification',
     not_found: 'No reliable source found',
     contradicted: 'Contradicts the source',
   },
 
   statesShort: {
-    supported: 'supported',
-    supported_with_note: 'with a note',
+    supported: 'has a reference',
+    supported_with_note: 'has a reference, with a note',
     needs_review: 'needs review',
-    not_found: 'no source',
-    contradicted: 'contradicted',
+    not_found: 'no reference found',
+    contradicted: 'differs from the source',
   },
 
   stateWords: {
-    supported: 'Supported',
-    supported_with_note: 'Supported, with a note',
+    supported: 'Has a reference',
+    supported_with_note: 'Has a reference, with a note',
     needs_review: 'Needs review',
-    not_found: 'No source',
-    contradicted: 'Contradicts the source',
+    not_found: 'No reference found',
+    contradicted: 'Differs from the source',
   },
 
   actions: {
-    adopt: 'Adopt',
+    adopt: 'Cite it with its reference',
     correct_wording: 'Correct the wording',
     refer_to_scholars: 'Refer to scholars',
     remove_or_request_source: 'Remove or request a source',
@@ -167,7 +165,7 @@ export const en: Dictionary = {
   },
 
   actionSentences: {
-    adopt: 'Suggested action: adopt it as quoted.',
+    adopt: 'Suggested action: cite it with its reference.',
     correct_wording: 'Suggested action: correct the wording to match the source.',
     refer_to_scholars: 'Suggested action: refer the matter to scholars.',
     remove_or_request_source: 'Suggested action: remove it, or ask for its source.',
@@ -223,13 +221,11 @@ export const en: Dictionary = {
       and: 'and ',
       showAll: 'Show all notes',
       filterHint: (clause: string) => `Show notes: ${clause}`,
-      reviewed: (n: number) => `${capital(enWord(n))} ${n === 1 ? 'citation' : 'citations'} reviewed by a human`,
     },
     sortLabel: 'Note order',
     sortByState: 'Most important first',
     sortByOrder: 'In text order',
     pendingCount: (n: number) => `${n} in progress`,
-    modifiedCount: (n: number) => `${n} changed by human review`,
     lexicalTitle: 'Reduced coverage',
     lexicalBody:
       'The language model is unavailable, so only verbatim verses and hadith were checked. Rulings and paraphrased narrations may be missed.',
@@ -315,7 +311,6 @@ export const en: Dictionary = {
       `Level ${level}, ${name.charAt(0).toLowerCase()}${name.slice(1)}. Certainty: ${certainty.charAt(0).toLowerCase()}${certainty.slice(1)}.`,
     attributedSentence: (who: string) => `Attributed in the content to: ${who}.`,
     gradeBy: (parts: string[]) => parts.join(', '),
-    reviewedShort: (original: string) => `Human review, original state: ${original}`,
   },
 
   copy: {
@@ -342,27 +337,25 @@ export const en: Dictionary = {
     dark: 'Dark',
     preview: 'Card preview',
     send: 'Share',
-    download: 'Download image',
+    download: 'Save image',
     copyImage: 'Copy image',
     preparing: 'Preparing the image…',
     shared: 'Shared ✓',
-    downloaded: 'Card downloaded ✓',
+    downloaded: 'Image saved ✓',
     copied: 'Image copied ✓',
-    copyFailed: 'This browser cannot copy images. Download the card instead.',
+    copyFailed: 'This browser cannot copy images. Save the image instead.',
+    targets: 'Share to an app',
+    apps: { whatsapp: 'WhatsApp', x: 'X', telegram: 'Telegram', instagram: 'Instagram' },
+    targetsHint: 'WhatsApp, X and Telegram receive the verdict as text with the address. The image goes through “Share”, or after saving it.',
+    instagramSaved: 'Image saved. Open Instagram and post it from there.',
+    moreCitations: (n: number) => `and ${enWord(n)} more ${n === 1 ? 'citation' : 'citations'}`,
     failed: 'The card could not be prepared. Try again.',
     cardLabel: 'Verification card',
     summaryLabel: 'Verification summary',
-    asQuoted: 'As quoted',
     circulating: 'The text in circulation',
     referral: 'Tabayyun issues no fatwa and prefers no opinion; this matter is for qualified scholars.',
-    checked: 'What was checked',
     verseInMushaf: 'The verse is longer than this card can hold; it is read in full in its place in the Mushaf.',
-    reference: 'Reference',
-    grading: 'Grading (verbatim)',
-    source: 'Source',
     footer: 'Check it yourself on Tabayyun',
-    humanReview: 'State changed by human review',
-    citationsNoun: (n: number) => (n === 1 ? 'citation' : 'citations'),
     alt: (state: string) => `Verification card: ${state}`,
     altSummary: 'Verification summary card',
   },
@@ -418,30 +411,6 @@ export const en: Dictionary = {
     empty: 'The referral links could not be loaded right now.',
   },
 
-  reviewer: {
-    title: 'Human review',
-    state: 'State after review',
-    chooseState: 'Choose a state',
-    note: 'Reviewer note',
-    notePlaceholder: 'Reason for the change, or a note for the editor',
-    name: 'Reviewer name',
-    namePlaceholder: 'Name',
-    save: 'Save review',
-    undo: 'Undo',
-    remove: 'Remove review',
-    modified: 'State changed by human review',
-    noted: 'Human reviewer note',
-    original: 'Original state',
-    by: (name: string) => `Reviewer: ${name}`,
-    anonymous: 'unnamed',
-    saved: 'Review saved',
-    undone: 'Review removed',
-    needsSource: '“Supported” cannot be set without a retrieved source text.',
-    levelC: 'Disputed matters cannot be raised to “supported” or set to “contradicted”.',
-    levelD: 'Personal cases get no state; they are referred to a qualified fatwa body.',
-    nothingToSave: 'Change the state or write a note first.',
-  },
-
   transcript: {
     titleMedia: 'Transcript',
     titleText: 'Original text',
@@ -462,7 +431,7 @@ export const en: Dictionary = {
 
   exportMenu: {
     json: 'JSON file',
-    jsonHint: 'All data, including human reviews',
+    jsonHint: 'The whole report as data',
     html: 'Printable page or PDF',
     htmlHint: 'A readable report with full attribution',
     doneJson: 'JSON file downloaded',

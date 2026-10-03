@@ -287,16 +287,6 @@ export interface OcrResult {
   removed: string[]
 }
 
-export interface ReviewerOverride {
-  card_id: string
-  original_state: EvidenceState
-  state: EvidenceState
-  note: string
-  reviewer: string
-  /** ISO timestamp */
-  at: string
-}
-
 /** What the client assembles from the stream: the JSON export and the HTML export input. */
 export interface Report {
   source: SourceInfo
@@ -306,7 +296,6 @@ export interface Report {
   generated_at: string
   tool: string
   disclaimer_ar: string
-  reviewer_overrides: ReviewerOverride[]
 }
 
 export type VerifyInput =

@@ -102,8 +102,7 @@ function explainBlock(card: Card, explain: Explain, report: Report, { t, lang }:
 
 function cardBlock(card: Card, report: Report, ctx: Context): string {
   const { t, lang, meta } = ctx
-  const override = report.reviewer_overrides.find((o) => o.card_id === card.id)
-  const state = override?.state ?? card.state
+  const state = card.state
   const note = lang === 'ar' ? card.note_ar || card.note_en : card.note_en || card.note_ar
   const lines: string[] = [
     `## ${card.index}. ${t.states[state]} — ${t.claimTypes[card.claim_type]}`,
@@ -112,14 +111,6 @@ function cardBlock(card: Card, report: Report, ctx: Context): string {
     '',
   ]
 
-  if (override) {
-    const changed = override.state !== override.original_state
-    const parts = [`**${changed ? t.reviewer.modified : t.reviewer.noted}**`]
-    if (changed) parts.push(`${t.reviewer.original}: ${t.states[override.original_state]}`)
-    parts.push(t.reviewer.by(override.reviewer || t.reviewer.anonymous))
-    if (override.note) parts.push(oneLine(override.note))
-    lines.push(`- ${parts.join(' — ')}`)
-  }
   if (card.personal_case) lines.push(`- **${t.card.personalCase}**`)
   if (card.disagreement_noted) lines.push(`- ${t.card.disagreement}`)
   if (state === 'not_found') {
@@ -165,7 +156,7 @@ function cardBlock(card: Card, report: Report, ctx: Context): string {
 
 export function buildMarkdownReport(report: Report, ctx: Context): string {
   const { t, lang } = ctx
-  const counts = countStates(report.cards, report.reviewer_overrides)
+  const counts = countStates(report.cards)
   const summary = [
     t.report.citations(report.cards.length),
     ...STATES_FOR_SUMMARY.filter((s) => counts[s] > 0).map((s) => `${counts[s]} ${t.statesShort[s]}`),
@@ -176,7 +167,6 @@ export function buildMarkdownReport(report: Report, ctx: Context): string {
   if (source) head.push(`- ${t.exportMenu.inputSource}: ${mdLink(source, report.source.url)}`)
   head.push(`- ${t.exportMenu.generatedAt}: ${formatDateTime(report.generated_at, lang)}`)
   if (report.summary.mode === 'lexical_only') head.push(`- **${t.report.lexicalTitle}:** ${t.report.lexicalBody}`)
-  if (report.reviewer_overrides.length > 0) head.push(`- ${t.report.modifiedCount(report.reviewer_overrides.length)}`)
 
   const used = sourcesUsed(report.cards)
   const tail = ['---', '']

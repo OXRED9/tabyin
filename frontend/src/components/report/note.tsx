@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, UserRoundCheck } from 'lucide-react'
+import { ChevronDown, ChevronLeft } from 'lucide-react'
 import { Suspense, memo, useId } from 'react'
 import type { CSSProperties } from 'react'
 
@@ -49,10 +49,10 @@ export const MarginNote = memo(function MarginNote({
 }: MarginNoteProps) {
   const { t, pick } = useI18n()
   const bodyId = useId()
-  const { card, override } = body
-  const state = override?.state ?? card.state
+  const { card } = body
+  const state = card.state
   const style = STATE_STYLE[state]
-  const reference = referenceLine(card, override, t, pick(card.note_ar, card.note_en))
+  const reference = referenceLine(card, t, pick(card.note_ar, card.note_en))
 
   return (
     <div
@@ -96,9 +96,6 @@ export const MarginNote = memo(function MarginNote({
             <StateGlyph state={state} />
             <span className={cn('shrink-0 font-semibold', style.ink)}>{t.stateWords[state]}</span>
             <span className="shrink-0 text-ink max-lg:hidden">— {t.claimTypes[card.claim_type]}</span>
-            {override ? (
-              <UserRoundCheck aria-label={t.reviewer.title} role="img" className="size-4 shrink-0 text-quiet" />
-            ) : null}
             <span className="min-w-0 flex-1 truncate text-quiet">{open ? null : reference}</span>
             {inPlace ? (
               <ChevronDown

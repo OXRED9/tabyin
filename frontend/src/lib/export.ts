@@ -164,10 +164,8 @@ function explainBlock(card: Card, explain: Explain, report: Report, t: Dictionar
 
 function cardBlock(card: Card, report: Report, ctx: { t: Dictionary; lang: UiLang; meta: Meta | null }): string {
   const { t, lang, meta } = ctx
-  const override = report.reviewer_overrides.find((o) => o.card_id === card.id)
-  const state = override?.state ?? card.state
+  const state = card.state
   const note = lang === 'ar' ? card.note_ar || card.note_en : card.note_en || card.note_ar
-  const stateChanged = override && override.state !== override.original_state
 
   const grades =
     card.grades.length > 0
@@ -199,15 +197,6 @@ function cardBlock(card: Card, report: Report, ctx: { t: Dictionary; lang: UiLan
       <span class="muted">${esc(t.claimTypes[card.claim_type])}</span>
       ${card.timestamp ? `<span class="muted time">${esc(t.card.occurredAt(formatClock(card.timestamp.start)))}</span>` : ''}
     </header>
-    ${
-      override
-        ? `<p class="override"><strong>${esc(stateChanged ? t.reviewer.modified : t.reviewer.noted)}</strong>
-            ${stateChanged ? ` — ${esc(t.reviewer.original)}: ${esc(t.states[override.original_state])}` : ''}
-            — ${esc(t.reviewer.by(override.reviewer || t.reviewer.anonymous))}
-            <span class="muted">(${esc(formatDateTime(override.at, lang))})</span>
-            ${override.note ? `<br>${esc(override.note)}` : ''}</p>`
-        : ''
-    }
     <p class="quoted" lang="ar" dir="rtl">${esc(card.text_as_quoted)}</p>
     ${card.personal_case ? `<p class="notice">${esc(t.card.personalCase)}</p>` : ''}
     ${card.disagreement_noted ? `<p class="notice">${esc(t.card.disagreement)}</p>` : ''}
@@ -241,7 +230,7 @@ export function buildPrintableHtml(
 ): string {
   const { t, lang, meta } = ctx
   const dir = lang === 'ar' ? 'rtl' : 'ltr'
-  const counts = countStates(report.cards, report.reviewer_overrides)
+  const counts = countStates(report.cards)
   const summary = [
     t.report.citations(report.cards.length),
     ...STATES_FOR_SUMMARY.filter((s) => counts[s] > 0).map((s) => `${counts[s]} ${t.statesShort[s]}`),
@@ -282,8 +271,7 @@ export function buildPrintableHtml(
   .quoted { font-size: 17px; font-weight: 600; margin: 8px 0; }
   blockquote { margin: 4px 0; padding: 8px 12px; background: #f6f7f5; border-radius: 8px; }
   .quran { font-family: "Amiri Quran", "Amiri", "Scheherazade New", "Traditional Arabic", serif; font-size: 20px; line-height: 2.2; }
-  .note, .notice, .abstention, .override, .ai, .commentary, .translation { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: #f6f7f5; }
-  .override { background: #faf3d9; border: 1px solid #c9a227; }
+  .note, .notice, .abstention, .ai, .commentary, .translation { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: #f6f7f5; }
   .ai { border: 1px dashed #4a5b56; }
   .grades { margin: 4px 0; padding-inline-start: 20px; }
   code { font-size: 12px; direction: ltr; unicode-bidi: isolate; }
@@ -321,7 +309,6 @@ export function buildPrintableHtml(
   <p class="disclaimer">${esc(t.transparency)}</p>
   <p class="summary">${esc(summary)}</p>
   ${report.summary.mode === 'lexical_only' ? `<p class="notice"><strong>${esc(t.report.lexicalTitle)}:</strong> ${esc(t.report.lexicalBody)}</p>` : ''}
-  ${report.reviewer_overrides.length > 0 ? `<p class="muted">${esc(t.report.modifiedCount(report.reviewer_overrides.length))}</p>` : ''}
   ${report.cards.map((card) => cardBlock(card, report, ctx)).join('\n')}
   <footer>
     ${

@@ -11,8 +11,8 @@ export default function NoteSheet({
   ...body
 }: Omit<NoteBodyProps, 'showQuoted'> & { open: boolean; onClose: () => void }) {
   const { t } = useI18n()
-  const { card, override } = body
-  const state = override?.state ?? card.state
+  const { card } = body
+  const state = card.state
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent

@@ -6,7 +6,6 @@ import { readSseStream } from './sse'
 import type {
   ApiError,
   Card,
-  EvidenceState,
   Meta,
   OcrResult,
   Report,
@@ -227,8 +226,9 @@ export type ShareCardRequest = {
   theme: 'light' | 'dark'
   lang: UiLang
 } & (
-  | { kind: 'claim'; card: Card; override_state: EvidenceState | null }
-  | { kind: 'summary'; summary: Summary; human_reviewed: boolean }
+  | { kind: 'claim'; card: Card }
+  // The summary card lists the citations: the cards go with it (at most 60), and what was checked.
+  | { kind: 'summary'; summary: Summary; cards: Card[]; title: string | null }
 )
 
 /** F3 fallback: let the backend draw the verdict card when client-side rendering fails. */

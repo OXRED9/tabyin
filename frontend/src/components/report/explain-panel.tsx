@@ -4,10 +4,9 @@ import type { ReactNode } from 'react'
 
 import { SourceLink } from '@/components/report/source-link'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { formatDateTime } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import { formatDuration, formatSimilarity } from '@/lib/markdown'
-import type { Card, Explain, ExplainCandidate, ReviewerOverride, StageSeconds } from '@/lib/types'
+import type { Card, Explain, ExplainCandidate, StageSeconds } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 function Label({ children }: { children: ReactNode }) {
@@ -131,14 +130,12 @@ export function ExplainPanel({
   card,
   explain,
   stageSeconds,
-  override,
 }: {
   card: Card
   explain: Explain
   stageSeconds: StageSeconds | undefined
-  override: ReviewerOverride | undefined
 }) {
-  const { t, lang, pick } = useI18n()
+  const { t, pick } = useI18n()
   const [open, setOpen] = useState(false)
   const bodyId = useId()
   const rule = pick(explain.rule_ar, explain.rule_en)
@@ -231,12 +228,6 @@ export function ExplainPanel({
               ))}
             </dd>
           </div>
-          {override ? (
-            <div className="min-w-0">
-              <dt className="text-quiet">{t.reviewer.title}</dt>
-              <dd className="tabular">{formatDateTime(override.at, lang)}</dd>
-            </div>
-          ) : null}
         </dl>
 
         <p className="border-t pt-3 text-sm">

@@ -7,7 +7,6 @@ import type {
   ApiError,
   Card,
   ClaimStub,
-  ReviewerOverride,
   Segment,
   SourceInfo,
   StageEvent,
@@ -41,7 +40,6 @@ export interface VerifyState {
   notices: ApiError[]
   startedAt: number | null
   generatedAt: string | null
-  overrides: ReviewerOverride[]
   /** True when the report was reopened from local history rather than just produced. */
   restored: boolean
 }
@@ -62,7 +60,6 @@ const initialState: VerifyState = {
   notices: [],
   startedAt: null,
   generatedAt: null,
-  overrides: [],
   restored: false,
 }
 
@@ -76,8 +73,6 @@ type Action =
   | { type: 'restore'; entry: HistoryEntry }
   | { type: 'clear-error' }
   | { type: 'local-error'; error: ApiError }
-  | { type: 'set-override'; override: ReviewerOverride }
-  | { type: 'remove-override'; cardId: string }
 
 const interrupted: ApiError = {
   code: 'stream_interrupted',
@@ -179,7 +174,6 @@ function reducer(state: VerifyState, action: Action): VerifyState {
         cards: Object.fromEntries(report.cards.map((card) => [card.id, card])),
         summary: report.summary,
         generatedAt: report.generated_at,
-        overrides: report.reviewer_overrides ?? [],
         restored: true,
       }
     }
@@ -187,16 +181,6 @@ function reducer(state: VerifyState, action: Action): VerifyState {
       return state.fatalError ? { ...state, fatalError: null } : state
     case 'local-error':
       return { ...state, fatalError: action.error }
-    case 'set-override':
-      return {
-        ...state,
-        overrides: [
-          ...state.overrides.filter((o) => o.card_id !== action.override.card_id),
-          action.override,
-        ],
-      }
-    case 'remove-override':
-      return { ...state, overrides: state.overrides.filter((o) => o.card_id !== action.cardId) }
     default:
       return state
   }
@@ -262,16 +246,8 @@ export function useVerify(lang: UiLang) {
 
   const clearError = useCallback(() => dispatch({ type: 'clear-error' }), [])
   const showError = useCallback((error: ApiError) => dispatch({ type: 'local-error', error }), [])
-  const setOverride = useCallback(
-    (override: ReviewerOverride) => dispatch({ type: 'set-override', override }),
-    [],
-  )
-  const removeOverride = useCallback(
-    (cardId: string) => dispatch({ type: 'remove-override', cardId }),
-    [],
-  )
 
-  return { state, start, cancel, reset, restore, clearError, showError, setOverride, removeOverride }
+  return { state, start, cancel, reset, restore, clearError, showError }
 }
 
 /** Overall progress, 0–100, from the highest stage seen plus the matcher's done/total. */

@@ -39,7 +39,7 @@ export default function HistoryPanel({
         ) : (
           <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
             {entries.map((entry) => {
-              const counts = countStates(entry.report.cards, entry.report.reviewer_overrides ?? [])
+              const counts = countStates(entry.report.cards)
               return (
                 <li key={entry.id}>
                   <button

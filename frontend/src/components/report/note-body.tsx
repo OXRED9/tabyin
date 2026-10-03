@@ -1,17 +1,16 @@
-import { ChevronDown, GraduationCap, LocateFixed, Share2, UserRoundCheck } from 'lucide-react'
+import { ChevronDown, GraduationCap, LocateFixed, Share2 } from 'lucide-react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { CopySourceButton } from '@/components/report/copy-source-button'
 import { DiffView, MarkedSource } from '@/components/report/diff-view'
 import { ExplainPanel } from '@/components/report/explain-panel'
-import { ReviewerPanel } from '@/components/report/reviewer-panel'
 import { SourceLink } from '@/components/report/source-link'
 import { StateGlyph } from '@/components/state-glyph'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { diffCoversSource, hasDifferences, hasUnquoted } from '@/lib/diff'
-import { formatClock, formatDateTime, formatPercent, safeHref } from '@/lib/format'
+import { formatClock, formatPercent, safeHref } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import type {
   Card,
@@ -19,7 +18,6 @@ import type {
   Features,
   Grade,
   Meta,
-  ReviewerOverride,
   SourceInfo,
   SourceRef,
   StageSeconds,
@@ -190,47 +188,37 @@ function OtherSource({ source, state }: { source: SourceRef; state: EvidenceStat
 
 export interface NoteBodyProps {
   card: Card
-  override: ReviewerOverride | undefined
   source: SourceInfo | null
   meta: Meta | null
   features: Features
   /** Per-stage timing from the summary, once it has arrived (shown under "why this verdict"). */
   stageSeconds: StageSeconds | undefined
-  reviewerMode: boolean
   /** Print the words as quoted first: on a phone, and for a claim with no place in the text. */
   showQuoted: boolean
   onReferral: () => void
   onShare: (cardId: string) => void
   /** "Show in the text", where the note is not already beside its words. */
   onLocate?: (cardId: string) => void
-  onSaveOverride: (override: ReviewerOverride) => void
-  onRemoveOverride: (cardId: string) => void
 }
 
 /**
  * What an open note says, in the order a muhaddith's footnote does: the source's words, the
- * takhrij and the grading, the collation, what to do about it; then the actions, the referral
- * and, in reviewer mode, the reviewer's line. The same body fills the margin note on a wide
- * screen and the bottom sheet on a phone.
+ * takhrij and the grading, the collation, what to do about it; then the actions and the referral.
+ * The same body fills the margin note on a wide screen and the bottom sheet on a phone.
  */
 export default function NoteBody({
   card,
-  override,
   source,
   meta,
   features,
   stageSeconds,
-  reviewerMode,
   showQuoted,
   onReferral,
   onShare,
   onLocate,
-  onSaveOverride,
-  onRemoveOverride,
 }: NoteBodyProps) {
   const { t, lang, pick } = useI18n()
-  const state = override?.state ?? card.state
-  const stateChanged = !!override && override.state !== override.original_state
+  const state = card.state
   const note = pick(card.note_ar, card.note_en)
   const showDiff = hasDifferences(card.diff)
   // When the comparison already prints the source text word for word, do not print it twice.
@@ -245,24 +233,6 @@ export default function NoteBody({
 
   return (
     <div className="space-y-4">
-      {override ? (
-        <div className="text-sm">
-          <p className="flex items-start gap-2 font-semibold text-ink">
-            <UserRoundCheck aria-hidden="true" className="mt-1 size-4 shrink-0 text-quiet" />
-            {stateChanged ? t.reviewer.modified : t.reviewer.noted}
-          </p>
-          <p className="text-quiet">
-            {t.card.gradeBy(
-              [
-                stateChanged ? `${t.reviewer.original}: ${t.states[override.original_state]}` : '',
-                t.reviewer.by(override.reviewer || t.reviewer.anonymous),
-              ].filter(Boolean),
-            )}
-          </p>
-          {override.note ? <p className="text-ink">{override.note}</p> : null}
-        </div>
-      ) : null}
-
       {showQuoted ? (
         <div>
           <p className="text-sm text-quiet">{t.notes.quotedWords}</p>
@@ -394,7 +364,7 @@ export default function NoteBody({
 
       <div className="border-b">
         {explain ? (
-          <ExplainPanel card={card} explain={explain} stageSeconds={stageSeconds} override={override} />
+          <ExplainPanel card={card} explain={explain} stageSeconds={stageSeconds} />
         ) : null}
         {card.source?.explanation ? (
           <Disclosure title={t.card.explanation} hint={t.card.explanationHint}>
@@ -427,26 +397,10 @@ export default function NoteBody({
                   <dd className="tabular">{formatPercent(card.similarity)}</dd>
                 </div>
               ) : null}
-              {override ? (
-                <div>
-                  <dt className="text-quiet">{t.reviewer.title}</dt>
-                  <dd className="tabular">{formatDateTime(override.at, lang)}</dd>
-                </div>
-              ) : null}
             </dl>
           </Disclosure>
         )}
       </div>
-
-      {reviewerMode ? (
-        <ReviewerPanel
-          key={override?.at ?? 'none'}
-          card={card}
-          override={override}
-          onSave={onSaveOverride}
-          onRemove={() => onRemoveOverride(card.id)}
-        />
-      ) : null}
     </div>
   )
 }

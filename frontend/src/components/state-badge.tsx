@@ -14,7 +14,7 @@ export function StateWord({
   className,
 }: {
   state: EvidenceState
-  /** The full name («مؤيَّد بمصدر معتمد») instead of the margin's short word. */
+  /** The full name («له مرجعية في مصدر معتمد») instead of the margin's short word. */
   full?: boolean
   className?: string
 }) {
