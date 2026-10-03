@@ -19,8 +19,8 @@ import { chromium } from 'playwright'
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173'
 const axe = fs.readFileSync(path.resolve(import.meta.dirname, '../node_modules/axe-core/axe.min.js'), 'utf8')
 const COPY = {
-  ar: { tab: 'رابط مقطع', done: 'اكتمل التحقق', expand: 'عرض التفاصيل', reviewer: 'وضع المراجع', referral: 'إحالة إلى أهل العلم' },
-  en: { tab: 'Video link', done: 'Verification complete', expand: 'Show details', reviewer: 'Reviewer mode', referral: 'Refer to scholars' },
+  ar: { done: 'اكتمل التحقق', reviewer: 'وضع المراجع', more: 'المزيد', referral: 'إحالة إلى أهل العلم', example: 'رابط مقطع يوتيوب', dark: 'داكن' },
+  en: { done: 'Verification complete', reviewer: 'Reviewer mode', more: 'More', referral: 'Refer to scholars', example: 'YouTube link', dark: 'Dark' },
 }
 const DESKTOP = { width: 1440, height: 900 }
 const MOBILE = { width: 390, height: 844 }
@@ -106,43 +106,78 @@ function measureContrast() {
   return { checked, lowest, failures }
 }
 
+/**
+ * States:
+ *   empty      the composer            link       the composer with a recognised link and its tag
+ *   error      a validation error      running    mid-run: text on the page, notes arriving
+ *   report     every note open, every «لماذا هذا الحكم؟» open
+ *   reviewer   the same in reviewer mode           dialog   the referral dialog
+ *   share      the share dialog on a claim         share-summary   on the summary
+ *   sheet      (phone) a note open as a bottom sheet, in reviewer mode
+ */
 async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, state = 'empty' }) {
   const mobile = viewport === MOBILE
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce', isMobile: mobile, hasTouch: mobile })
   const page = await context.newPage()
   const t = COPY[lang]
-  const verify = page.locator('[data-testid="verify"]:visible').first()
-  await page.goto(`${BASE}/?mock=1&speed=10&theme=${theme}&lang=${lang}`)
-  await verify.waitFor()
+  const composer = state === 'empty' || state === 'link' || state === 'error'
+  // Reports are reached through mock mode's own route: `scenario=<name>&autorun=1`.
+  const route = composer ? '' : `&scenario=video&autorun=1&speed=${state === 'running' ? 1 : 10}`
+  await page.goto(`${BASE}/?mock=1&theme=${theme}&lang=${lang}${route}`)
   await page.evaluate(() => document.fonts.ready)
-  // Let /api/meta land, so the examples and the motto verse are part of the audit.
-  await page.waitForTimeout(400)
 
-  if (state === 'error') {
-    await verify.click()
-    await page.getByRole('alert').waitFor()
-    await page.waitForTimeout(300)
-  } else if (state !== 'empty') {
-    await page.getByRole('tab', { name: t.tab }).click()
-    await page.getByRole('textbox').first().fill('https://www.youtube.com/watch?v=TABAYYUN-MOCK')
-    await verify.click()
-    await page.getByText(t.done).first().waitFor({ timeout: 30_000 })
-    if (state === 'reviewer' || state === 'dialog') await page.getByRole('switch', { name: t.reviewer }).click()
-    for (let i = 0; i < 20 && (await page.getByRole('button', { name: t.expand }).count()) > 0; i++) {
-      await page.getByRole('button', { name: t.expand }).first().click()
+  if (composer) {
+    const verify = page.getByTestId('verify')
+    await verify.waitFor()
+    // Let /api/meta land, so the example chips are part of the audit.
+    await page.getByRole('button', { name: t.example }).waitFor()
+    if (state === 'link') {
+      await page.getByRole('button', { name: t.example }).click()
+      await page.getByTestId('link-tag').waitFor()
     }
-    // F5: open every «لماذا هذا الحكم؟» panel so its table, meter and labels are audited.
+    if (state === 'error') {
+      await verify.click()
+      await page.getByRole('alert').waitFor()
+    }
+    await page.waitForTimeout(300)
+  } else if (state === 'running') {
+    await page.locator('[data-note][data-state]:not([data-state="pending"])').nth(1).waitFor({ timeout: 30_000 })
+    await page.locator('[data-note][data-state="pending"]').first().waitFor({ timeout: 30_000 })
+  } else {
+    await page.getByText(t.done).first().waitFor({ timeout: 30_000 })
+    if (state === 'reviewer' || state === 'dialog' || state === 'sheet') {
+      if (mobile) {
+        await page.getByRole('button', { name: t.more }).click()
+        await page.getByRole('menuitemcheckbox', { name: t.reviewer }).click()
+      } else {
+        await page.getByRole('switch', { name: t.reviewer }).click()
+      }
+    }
+    if (mobile) {
+      // A phone has no margin: one note is opened as a bottom sheet.
+      if (state === 'sheet') {
+        await page.locator('li[data-note="c2"] button').click()
+        await page.locator('[data-note-sheet="c2"]').waitFor()
+      }
+    } else {
+      const closed = page.locator('[data-margin] [data-note] > button[aria-expanded="false"]')
+      for (let i = 0; i < 30 && (await closed.count()) > 0; i++) await closed.first().click()
+    }
+    // F5: open every «لماذا هذا الحكم؟» panel so its list, meter and labels are audited.
     const closedPanels = page.locator('[data-testid="explain"] > button[aria-expanded="false"]')
-    for (let i = 0; i < 20 && (await closedPanels.count()) > 0; i++) await closedPanels.first().click()
+    for (let i = 0; i < 30 && (await closedPanels.count()) > 0; i++) await closedPanels.first().click()
     if (state === 'share' || state === 'share-summary') {
       // F3: the share dialog, with the verdict-card template inside it.
-      const trigger = state === 'share' ? page.locator('[role="article"][data-state="not_found"]').first().getByTestId('share-card') : page.getByTestId('share-summary')
+      const trigger =
+        state === 'share'
+          ? page.locator('[data-note][data-state="not_found"]').first().getByTestId('share-card')
+          : page.getByTestId('share-summary')
       await trigger.click()
       await page.getByRole('dialog').waitFor()
-      if (theme === 'dark') await page.getByRole('dialog').getByRole('button', { name: lang === 'ar' ? 'داكن' : 'Dark', exact: true }).click()
+      if (theme === 'dark') await page.getByRole('dialog').getByRole('button', { name: t.dark, exact: true }).click()
     }
     if (state === 'dialog') {
-      await page.locator('[role="article"][data-state="not_found"]').first().getByRole('button', { name: t.referral }).click()
+      await page.locator('[data-note][data-state="not_found"]').first().getByRole('button', { name: t.referral }).click()
       await page.getByRole('dialog').waitFor()
     }
     await page.waitForTimeout(400)
@@ -175,9 +210,13 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
 
 await audit('empty · light · ar', {})
 await audit('empty · dark · ar', { theme: 'dark' })
+await audit('composer with a link · light · ar', { state: 'link' })
+await audit('composer with a link · dark · en', { state: 'link', theme: 'dark', lang: 'en' })
 await audit('error · light · ar', { state: 'error' })
+await audit('error · dark · ar', { state: 'error', theme: 'dark' })
 for (const theme of ['light', 'dark']) {
-  await audit(`report, all cards expanded · ${theme} · ar`, { theme, state: 'report' })
+  await audit(`mid-run · ${theme} · ar`, { theme, state: 'running' })
+  await audit(`report, all notes open · ${theme} · ar`, { theme, state: 'report' })
   await audit(`reviewer mode · ${theme} · ar`, { theme, state: 'reviewer' })
   await audit(`referral dialog · ${theme} · ar`, { theme, state: 'dialog' })
 }
@@ -185,9 +224,13 @@ for (const theme of ['light', 'dark']) {
   await audit(`share dialog, claim card · ${theme} · ar`, { theme, state: 'share' })
 }
 await audit('share dialog, summary card · light · en', { lang: 'en', state: 'share-summary' })
-await audit('report, all cards expanded · light · en', { lang: 'en', state: 'report' })
+await audit('report, all notes open · light · en', { lang: 'en', state: 'report' })
 await audit('reviewer mode · dark · en', { lang: 'en', theme: 'dark', state: 'reviewer' })
-await audit('report · light · ar · 390px', { viewport: MOBILE, state: 'report' })
+for (const theme of ['light', 'dark']) {
+  await audit(`report · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'report' })
+  await audit(`note sheet, reviewer mode · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'sheet' })
+}
+await audit('mid-run · light · ar · 390px', { viewport: MOBILE, state: 'running' })
 
 await browser.close()
 if (failures > 0) {

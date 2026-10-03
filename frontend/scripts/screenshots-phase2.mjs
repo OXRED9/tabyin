@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 /**
+ * NOTE (design v2): this script drives the first UI (input tabs, claim cards). Those selectors no
+ * longer exist, so it does not run against the current page; it is kept as the record of how
+ * docs/screenshots/phase2-*.png were made. The current captures come from `screenshots-v2.mjs`.
+ *
  * Phase 2 captures (F3 verdict card, F4 copy, F5 explainability) into docs/screenshots/phase2-*.
  * Mock mode, headless Chromium. Start the dev server first, then: `npm run screenshots:phase2`.
  *
