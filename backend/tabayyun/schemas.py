@@ -146,7 +146,8 @@ class Card(BaseModel):
     action: Action
     rule_id: str  # which deterministic rule produced the state (transparency / debugging)
     similarity: float | None = None
-    match_kind: Literal["exact", "near", "partial", "paraphrase", "topic", "none"] = "none"
+    # "referenced": the source text is the evidence a ruling or statement points at; it is shown, the state is not raised
+    match_kind: Literal["exact", "near", "partial", "paraphrase", "topic", "referenced", "none"] = "none"
 
     source: SourceRef | None = None
     other_sources: list[SourceRef] = Field(default_factory=list)

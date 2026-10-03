@@ -154,3 +154,14 @@ after the rule: C can never be `supported` or `contradicted`; D gets no verdict.
   end, not the correctness of Dorar.
 
 Results: `eval/results/results.md`.
+
+### Evidence that a ruling points at
+
+For a ruling or a factual statement the retrieved candidates are the verse the model named by number
+(level A only, fetched from the Mushaf) and up to six HadeethEnc narrations found by keyword, each
+with its grading. The pointing model answers with one index and a relation: `explicit_support` (the
+text states the claim), `referenced` (the text is the evidence the claim refers to), or none. An
+`explicit_support` pointer at an accepted text, on a level-A or level-B matter, with shared
+vocabulary, makes the claim «له مرجعية». Every other pointer only *shows* the text — verbatim, with
+its grading — and leaves the state where the rules put it.
+

@@ -147,6 +147,40 @@ def test_a_personal_case_stays_a_personal_case_whatever_the_model_calls_it(run):
         assert card["state"] == "needs_review" and card["source"] is None
 
 
+RULING = "صيام شهر رمضان واجب على كل مسلم بالغ قادر."
+
+
+@pytest.mark.parametrize("level", ["A", "B", "C"])
+def test_a_text_the_ruling_points_at_is_shown_without_raising_the_state(run, level):
+    """Asked for by the team: a ruling that refers to its evidence shows that evidence from the sources
+    — verbatim, with its grading — while the ruling itself stays for the scholars."""
+    extracted = [claim(quote=RULING.rstrip("."), search_query="وجوب صيام رمضان", content_level=level)]
+    report = run(RULING, ScriptedProvider(extracted, judge_index=0, evidence_relation="referenced"))
+    (card,) = report["cards"]
+    assert card["state"] == "needs_review" and card["match_kind"] == "referenced"
+    assert card["source"]["text"] and card["source"]["ref"] and card["source"]["url"]
+    assert card["grades"] and card["grades"][0]["text"]  # never shown without its grading, copied verbatim
+    assert "لا يعني ترجيحاً" in card["note_ar"]
+
+
+def test_explicit_support_still_needs_an_accepted_text_and_a_settled_matter(run):
+    extracted = [claim(quote=RULING.rstrip("."), search_query="وجوب صيام رمضان", evidence_ref="2:183")]
+    (settled,) = run(RULING, ScriptedProvider(extracted, judge_index=0))["cards"]
+    assert settled["state"] == "supported" and settled["match_kind"] == "topic"
+    disputed = [claim(quote=RULING.rstrip("."), search_query="وجوب صيام رمضان", content_level="C")]
+    (card,) = run(RULING, ScriptedProvider(disputed, judge_index=0))["cards"]  # the model says "explicit support"
+    assert card["state"] == "needs_review" and card["match_kind"] == "referenced" and card["referral"]
+
+
+def test_no_evidence_is_shown_for_a_personal_case_or_when_the_model_points_at_nothing(run):
+    personal = [claim(quote=RULING.rstrip("."), search_query="وجوب صيام رمضان", content_level="D")]
+    (card,) = run(RULING, ScriptedProvider(personal, judge_index=0, evidence_relation="referenced"))["cards"]
+    assert card["source"] is None and card["match_kind"] == "none"
+    nothing = [claim(quote=RULING.rstrip("."), search_query="وجوب صيام رمضان", content_level="C")]
+    (card,) = run(RULING, ScriptedProvider(nothing, judge_index=-1))["cards"]
+    assert card["source"] is None and card["match_kind"] == "none"
+
+
 def test_sound_narration_attributed_to_someone_else_is_contradicted(run, matn):
     narration = matn("4560")
     text = f"قال أحد الدعاة المعاصرين من كلامه: «{narration}»"

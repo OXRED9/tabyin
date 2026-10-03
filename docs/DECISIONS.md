@@ -381,3 +381,21 @@ app, the browser's verdict card, sharing) and the product owner's changes that f
     English five-state sentence is longer still and moves the page by one or two lines.
 91. **The link to the notes counts in the page's digits** («الحواشي (9)»), as every other number in
     the interface does.
+
+## The evidence a ruling points at (asked for and confirmed by the team, 4 October 2026)
+
+92. **A ruling or statement that refers to its evidence shows that evidence** («ثبت عنه النهي عن …»,
+    «لنهي النبي ﷺ»). The pointing model is asked one more thing in the call it already answers: whether
+    one of the retrieved texts is the verse or narration the claim refers to. If so — and the two share
+    vocabulary — the text is shown on the note with its reference and its grading in the source's words
+    (`match_kind = "referenced"`), with the sentence «أقرب نص في المصادر لما أُشير إليه … عرضه لا يعني
+    ترجيحاً ولا حكماً من تبيّن». **The state is never raised by it**: a disputed matter stays "needs
+    review" with its referral. One text per claim, not a list — a collection of texts around a disputed
+    ruling would read as arguing for one opinion.
+93. **A weak narration that is pointed at is shown too, with its grading** (the team's choice): hiding it
+    would hide what the speaker's argument rests on. No narration is shown as evidence without a grading.
+    Only an accepted text on a level-A or level-B matter can make a claim «له مرجعية», as before.
+94. **The pointing call is cut at 20 seconds and 900 output tokens.** With level-C matters now pointed
+    at as well, one runaway answer held a report for 40 s; a pointer that does not come in time is
+    simply not used. No personal case (level D) and no request for evidence gets any text.
+

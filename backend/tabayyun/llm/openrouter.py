@@ -32,10 +32,12 @@ log = logging.getLogger("tabayyun.llm")
 
 # Output budgets per task: enough for the job, small enough that a runaway answer cannot cost much.
 # Reasoning tokens count against the budget, which is why "judge" (a two-field answer) is not smaller:
-# measured answers needed up to 460 tokens; the one that ran away did so at 1200 and at 2500 alike,
-# so a larger budget only makes the runaway dearer.
-MAX_TOKENS = {"extract": 8000, "judge": 1500, "vision": 4000, "audio": 12000, "cheap": 800, "baseline": 1200}
-TIMEOUT_SECONDS = {"audio": 240.0, "vision": 90.0}
+# measured answers needed up to 460 tokens; the ones that ran away did so at 1200, 1500 and 2500 alike,
+# so a larger budget only makes the runaway dearer and slower.
+MAX_TOKENS = {"extract": 8000, "judge": 900, "vision": 4000, "audio": 12000, "cheap": 800, "baseline": 1200}
+# A pointing call that has not answered in 20 s is abandoned (the claim keeps its conservative state):
+# one runaway answer held a whole report for 40 s.
+TIMEOUT_SECONDS = {"audio": 240.0, "vision": 90.0, "judge": 20.0}
 _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.IGNORECASE)
 _RETRYABLE = (openai.RateLimitError, openai.APITimeoutError, openai.APIConnectionError, openai.InternalServerError)
 

@@ -81,14 +81,14 @@ CLAIMS_SCHEMA: dict = {
 
 class LLMJudgement(BaseModel):
     best_index: int
-    relation: Literal["same_narration", "explicit_support", "none"]
+    relation: Literal["same_narration", "explicit_support", "referenced", "none"]
 
 
 JUDGEMENT_SCHEMA: dict = {
     "type": "object",
     "properties": {
         "best_index": {"type": "integer"},
-        "relation": {"type": "string", "enum": ["same_narration", "explicit_support", "none"]},
+        "relation": {"type": "string", "enum": ["same_narration", "explicit_support", "referenced", "none"]},
     },
     "required": ["best_index", "relation"],
     "additionalProperties": False,

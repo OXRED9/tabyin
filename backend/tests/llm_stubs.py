@@ -33,7 +33,8 @@ class ScriptedLLM:
     available = True
     spend_guard = False
 
-    def __init__(self, claims=None, judge_index=-1, fail=False, fallback=False, judge_from_fallback=False):
+    def __init__(self, claims=None, judge_index=-1, fail=False, fallback=False, judge_from_fallback=False, evidence_relation="explicit_support"):
+        self.evidence_relation = evidence_relation
         self.claims = claims or []
         self.judge_index = judge_index
         self.fail = fail
@@ -60,7 +61,7 @@ class ScriptedLLM:
         assert task == "judge" and system == JUDGE_SYSTEM
         self.calls.append("judge")
         self.last_call_fallback = self.judge_from_fallback
-        relation = "none" if self.judge_index < 0 else ("same_narration" if 'task = "hadith_match"' in user else "explicit_support")
+        relation = "none" if self.judge_index < 0 else ("same_narration" if 'task = "hadith_match"' in user else self.evidence_relation)
         return LLMJudgement(best_index=self.judge_index, relation=relation)
 
 

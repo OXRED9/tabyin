@@ -40,6 +40,9 @@ and unresolved as of 3 October 2026.
 
 ## Coverage
 
+- **The evidence shown beside a ruling is the closest text, chosen by the model's pointer.** It can be a
+  related narration that is not the one the speaker meant; the note says «أقرب نص». One text is shown,
+  never a survey of the evidence, and the ruling itself is not judged.
 - **Rulings and facts** are only supported when a verse or a HadeethEnc narration explicitly states
   them and the LLM points at it. Fatwa sites (islamqa, binbaz, binothaimeen) are linked for
   referral but not searched, so many true level-A/B statements end as `needs_review`.

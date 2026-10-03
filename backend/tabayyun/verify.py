@@ -103,8 +103,8 @@ def _lexical_floor(claim_text: str, source_text: str, minimum: float) -> bool:
     return _shared_vocabulary(claim_text, source_text)[1] >= minimum
 
 
-async def judge(ctx: Context, task: str, claim_text: str, texts: list[str]) -> int | None:
-    """Ask the LLM which retrieved text (if any) corresponds to the claim. Returns an index or None."""
+async def judge_relation(ctx: Context, task: str, claim_text: str, texts: list[str]) -> tuple[int, str] | None:
+    """Ask the LLM which retrieved text (if any) corresponds to the claim, and how. Returns (index, relation) or None."""
     if not ctx.llm_enabled or not texts:
         return None
     listing = "\n\n".join(f"[{i}] {t[:1800]}" for i, t in enumerate(texts))
@@ -125,10 +125,16 @@ async def judge(ctx: Context, task: str, claim_text: str, texts: list[str]) -> i
     if getattr(ctx.llm, "last_call_fallback", False):
         log.warning("judge answer came from the fallback model and is not used")
         return None
-    expected = "same_narration" if task == "hadith_match" else "explicit_support"
-    if result.relation != expected or not (0 <= result.best_index < len(texts)):
+    if result.relation == "none" or not (0 <= result.best_index < len(texts)):
         return None
-    return result.best_index
+    return result.best_index, result.relation
+
+
+async def judge(ctx: Context, task: str, claim_text: str, texts: list[str]) -> int | None:
+    """The index of the text that is the same narration (task "hadith_match") or states the claim explicitly (task "evidence")."""
+    hit = await judge_relation(ctx, task, claim_text, texts)
+    expected = "same_narration" if task == "hadith_match" else "explicit_support"
+    return hit[0] if hit is not None and hit[1] == expected else None
 
 
 # Rules under which the shown source is only "the closest text", not asserted to be what was quoted:
@@ -560,20 +566,32 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
                 if qm is not None:
                     evidence_match = qm
                     candidates.append((clean, _quran_source(qm, ctx, None), []))
-    for c in await asyncio.to_thread(ctx.hadith.topic_search, f"{query} {claim.quote}", k=5):
-        if classify_grade(c.grade_text) == GradeCategory.accepted:
-            g = Grade(text=c.grade_text or "", source_name=HADEETHENC_NAME_AR, source_url=c.url)
-            candidates.append((c.text, _hadith_source(c, ctx), [g]))
+    accepted: list[bool] = [True] * len(candidates)  # the verse fetched by number
+    for c in await asyncio.to_thread(ctx.hadith.topic_search, f"{query} {claim.quote}", k=6):
+        if not c.grade_text:
+            continue  # a narration is never shown as evidence without its grading
+        g = Grade(text=c.grade_text, source_name=HADEETHENC_NAME_AR, source_url=c.url)
+        candidates.append((c.text, _hadith_source(c, ctx), [g]))
+        accepted.append(classify_grade(c.grade_text) == GradeCategory.accepted)
 
+    # The model points; the rules decide what the pointer is worth:
+    #   "explicit_support" on an accepted text, level A or B  -> the claim has a reference (as before);
+    #   any other pointer ("referenced", a weak narration, a level-C matter) -> the text is SHOWN as the
+    #   evidence the speaker points at, with its grading, and the state is not raised.
     chosen: tuple[str, SourceRef, list[Grade]] | None = None
-    if level in (ContentLevel.A, ContentLevel.B) and candidates:
-        idx = await judge(ctx, "evidence", claim.quote, [c[0] for c in candidates])
-        if idx is not None:
+    referenced: tuple[str, SourceRef, list[Grade]] | None = None
+    if level in (ContentLevel.A, ContentLevel.B, ContentLevel.C) and candidates:
+        hit = await judge_relation(ctx, "evidence", claim.quote, [c[0] for c in candidates])
+        if hit is not None and hit[1] in ("explicit_support", "referenced"):
+            idx, relation = hit
             shared, ratio = _shared_vocabulary(f"{claim.quote} {query}", candidates[idx][0])
             # the pointed-at text must share vocabulary with the claim: one stem for a verse the
             # system fetched by number, more for a narration that only keyword search surfaced
             if shared >= 1 if candidates[idx][1].kind == "quran" else (shared >= 2 or ratio >= 0.2):
-                chosen = candidates[idx]
+                if relation == "explicit_support" and accepted[idx] and level != ContentLevel.C:
+                    chosen = candidates[idx]
+                else:
+                    referenced = candidates[idx]
 
     if claim.type == ClaimType.ruling or level in (ContentLevel.B, ContentLevel.C):
         decision = decide_ruling(level=level, explicit_text_found=chosen is not None)
@@ -591,8 +609,12 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
             qm = ctx.quran.match(chosen[0])
             if qm:
                 chosen[1].translation = await quranenc.translation(qm.surah, qm.ayah_start, qm.ayah_end, "en")
-    elif chosen and level == ContentLevel.C:
-        kw = dict(other_sources=[chosen[1]])
+    else:
+        shown = referenced or chosen  # a pointer that did not make the claim "supported" is still worth showing
+        if shown:
+            kw = dict(source=shown[1], grades=shown[2], match_kind="referenced")
+            decision.note_ar += " أقرب نص في المصادر لما أُشير إليه معروض مع حكمه؛ عرضه لا يعني ترجيحاً ولا حكماً من تبيّن."
+            decision.note_en += " The closest text in the sources to what is referred to is shown with its grading; showing it is neither a preference nor a ruling by Tabayyun."
     if not ctx.llm_enabled and decision.state != EvidenceState.supported:
         decision.warnings.append("lexical_only")
     considered = [

@@ -169,7 +169,8 @@ interface Card {
   state: EvidenceState; action: Action;
   rule_id: string;           // which deterministic rule fired, e.g. "ayah.exact"
   similarity: number | null; // 0..1
-  match_kind: "exact" | "near" | "partial" | "paraphrase" | "topic" | "none";
+  match_kind: "exact" | "near" | "partial" | "paraphrase" | "topic" | "referenced" | "none";
+  // match_kind "referenced": `source` and `grades` hold the evidence a ruling or statement points at; the state is not raised by it
   source: SourceRef | null;  // always present for supported / supported_with_note
   other_sources: SourceRef[];
   grades: Grade[];           // more than one => show all, no preference

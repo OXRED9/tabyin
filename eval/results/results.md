@@ -1,12 +1,12 @@
 # Evaluation results
 
-Generated 2026-10-03T21:44:59+00:00 · 79 claims (0 reviewed by the Sharia reviewer so far) · 1 runs per system.
+Generated 2026-10-03T22:42:31+00:00 · 79 claims (0 reviewed by the Sharia reviewer so far) · 1 runs per system.
 
 | System | Accuracy | Fabricated attributions | Wrongly endorsed | Correct abstention | Seconds / claim |
 |---|---|---|---|---|---|
 | Lexical search only | 43.0% | 0.0% | 6.3% | 100.0% | 0.05 |
 | General LLM, no retrieval (openai/gpt-6.1-sol) | 77.2% | 0.0% | 0.0% | 90.0% | 4.08 |
-| Tabayyun (qwen/qwen3.8-flash) | 88.6% | 0.0% | 0.0% | 90.0% | 5.59 |
+| Tabayyun (qwen/qwen3.8-flash) | 88.6% | 0.0% | 0.0% | 90.0% | 5.89 |
 
 Mean ± standard deviation over the runs (no ± shown when every run gave the same result).
 
