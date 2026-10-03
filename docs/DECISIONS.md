@@ -427,3 +427,25 @@ ruling points at).
     graded «حسن», the one the fourth claim quotes): a level-C stand-in ruling whose speaker points
     back at "the narration that was mentioned". HadeethEnc has no weak gradings, so the mock cannot
     show one. The video scenario now has ten claims.
+
+## «الثابت في الباب», reporting an error, and speed (the team: "go for all of them", 4 October 2026)
+
+99. **⚑ Authentic alternatives (F2) — on the same subject, retrieved, never generated.** For words attributed
+    to the Prophet that come back with no reference, or with a weak or rejected grading, the note offers
+    up to three ACCEPTED narrations from HadeethEnc, each with its text, reference, link and grading
+    verbatim. Keyword search proposes; a vocabulary floor filters (at least three shared stems, or two
+    and 30% of the claim's); the model — without reasoning, since it cannot change a verdict — says
+    which are on the same subject. Never for a verse, a ruling, a request for evidence, or a level C/D
+    matter. The brief asked for embeddings and a tuned similarity threshold; this uses the retrieval
+    that exists and the same "model points, rules bound" pattern, because there is no labelled data to
+    tune a threshold on. **Relevance has not been reviewed by a scholar**: on the fifteen fabricated,
+    weak and no-source test items it offered 11 narrations, several clearly apt and a few only loosely
+    related before the floor was tightened.
+100. **"Report an error" sends nothing to the server.** The browser composes the report (the text, the
+    state, the rule, the data version) and opens the reader's own mail or WhatsApp, addressed to
+    `FEEDBACK_EMAIL` / `FEEDBACK_WHATSAPP`; with neither set it offers the share sheet and copy.
+101. **Model calls have a wall-clock limit.** The HTTP timeout did not bound a call, because keep-alive bytes
+    arrive while the model works; a "12 s" pointing call ran for 20 s. Limits are now real: 10 s for
+    pointing, 6 s for choosing alternatives. A text with no source takes 14–19 s (was 22 s) — the pointing
+    call runs to its limit on such texts — and other narrations 4–6 s.
+

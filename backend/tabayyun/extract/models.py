@@ -84,6 +84,18 @@ class LLMJudgement(BaseModel):
     relation: Literal["same_narration", "explicit_support", "referenced", "none"]
 
 
+class LLMSelection(BaseModel):
+    indices: list[int]
+
+
+SELECTION_SCHEMA: dict = {
+    "type": "object",
+    "properties": {"indices": {"type": "array", "items": {"type": "integer"}}},
+    "required": ["indices"],
+    "additionalProperties": False,
+}
+
+
 JUDGEMENT_SCHEMA: dict = {
     "type": "object",
     "properties": {

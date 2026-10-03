@@ -17,7 +17,7 @@ from pydantic import BaseModel
 T = TypeVar("T", bound=BaseModel)
 
 # What a call is for. Each task has its own model (MODEL_* in .env) and output budget.
-TASKS = ("extract", "judge", "vision", "audio", "cheap", "baseline")
+TASKS = ("extract", "judge", "select", "vision", "audio", "cheap", "baseline")
 
 
 class LLMError(Exception):

@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     features_copy: bool = True  # F4: one-click copy of the correct text
     features_explain: bool = True  # F5: "why this verdict?" panel
     features_image: bool = True  # F1: read the text of a screenshot (needs MODEL_VISION and a key)
+    features_alternatives: bool = True  # F2: accepted narrations on the same subject, retrieved never generated
+    # "Report an error": where a reader's report goes. Nothing is sent to this server — the browser opens
+    # the reader's own mail or WhatsApp with the report as text. Empty = share sheet / copy only.
+    feedback_email: str | None = None
+    feedback_whatsapp: str | None = None  # digits only, with country code
     max_image_mb: int = 10
     # Public base URL of this deployment, printed (and QR-encoded) on verdict cards.
     public_url: str | None = None

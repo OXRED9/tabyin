@@ -51,6 +51,12 @@ and unresolved as of 3 October 2026.
   saying of a scholar therefore comes back `not_found`.
 - **Weak and fabricated narrations** are recognised only through Dorar. If Dorar is unreachable they
   come back `not_found` (abstention), not `contradicted`.
+- **«الثابت في الباب» is topical, not equivalent.** The narrations offered beside a text with no reference
+  are accepted narrations on the same subject as chosen by keyword search and the model; they are not
+  the "correct version" of the text, their relevance has not been reviewed by a scholar, and when
+  nothing fits nothing is shown.
+- **A text with no source is the slowest answer** (14–19 s): the pointing call runs to its 10 s limit
+  before the tool abstains.
 - **Paraphrased narrations are never confirmed.** When the wording is far from every source text, the
   model may point at the narration it seems to report by meaning; the card then shows that narration
   and says `needs_review`. There are no embeddings: a paraphrase that shares little vocabulary with

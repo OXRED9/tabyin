@@ -28,13 +28,14 @@ from .evidence_rules import (
     decide_ruling,
 )
 from .evidence_rules.explain import LEVEL_REASONS, Facts, describe
-from .extract.models import JUDGEMENT_SCHEMA, LLMJudgement, RawClaim
-from .extract.prompts import JUDGE_SYSTEM
+from .extract.models import JUDGEMENT_SCHEMA, SELECTION_SCHEMA, LLMJudgement, LLMSelection, RawClaim
+from .extract.prompts import JUDGE_SYSTEM, SELECT_SYSTEM
 from .ingest.document import Document
 from .llm.base import LLMError
 from .llm.router import LLMSession
 from .normalize import arabic_ratio, normalize_ar, normalize_latin
 from .schemas import (
+    Alternative,
     Card,
     Certainty,
     ClaimType,
@@ -682,9 +683,65 @@ async def _dispatch(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card
     return await verify_statement(claim, cid, index, ctx)
 
 
+async def authentic_alternatives(card: Card, claim: RawClaim, ctx: Context) -> list[Alternative]:
+    """F2 — «الثابت في الباب»: for words attributed to the Prophet that have no reference, or a weak or
+    rejected one, up to three ACCEPTED narrations on the same subject, retrieved from HadeethEnc with
+    their gradings. Never for a verse, a ruling, a request, or a disputed or personal matter; nothing
+    is generated, and when nothing fits nothing is shown.
+
+    Keyword search proposes, a vocabulary floor filters, the model only says which of the retrieved
+    texts are on the same subject. The verdict of the card is not touched.
+    """
+    if not (settings.features_alternatives and ctx.llm_enabled) or card.claim_type != ClaimType.hadith:
+        return []
+    if card.content_level not in (ContentLevel.A, ContentLevel.B):
+        return []
+    if not (card.state in (EvidenceState.contradicted, EvidenceState.not_found) or card.rule_id == "hadith.weak"):
+        return []
+    pool: list[HadithCandidate] = []
+    for c in await asyncio.to_thread(ctx.hadith.topic_search, claim.quote, k=14):
+        if not (c.grade_text and c.url) or classify_grade(c.grade_text) != GradeCategory.accepted:
+            continue
+        if card.source is not None and c.url == card.source.url:
+            continue  # the narration the card is already about
+        shared, ratio = _shared_vocabulary(claim.quote, c.text)
+        if shared < 2 or (shared < 3 and ratio < 0.3):
+            continue  # a narration that shares a word or two with the claim is not "on the same subject"
+        pool.append(c)
+        if len(pool) >= 6:
+            break
+    if not pool:
+        return []
+    listing = "\n\n".join(f"[{i}] {c.text[:1200]}" for i, c in enumerate(pool))
+    try:
+        picked = await ctx.llm.complete_json(
+            task="select",
+            system=SELECT_SYSTEM,
+            user=f"<claim>\n{claim.quote}\n</claim>\n\n<source_texts>\n{listing}\n</source_texts>",
+            schema=SELECTION_SCHEMA,
+            model_cls=LLMSelection,
+            use_fallback=False,
+        )
+    except LLMError as e:
+        log.warning("alternatives unavailable: %s", e)
+        return []
+    out: list[Alternative] = []
+    for i in dict.fromkeys(picked.indices):
+        if not (0 <= i < len(pool)) or len(out) >= 3:
+            continue
+        c = pool[i]
+        src = _hadith_source(c, ctx)
+        out.append(
+            Alternative(text=src.text, ref=src.ref, source_name=src.source_name, source_url=src.url, grade_text=c.grade_text,
+                        grade_source_name=HADEETHENC_NAME_EN if ctx.ui_lang == "en" else HADEETHENC_NAME_AR, grade_source_url=c.url)
+        )  # fmt: skip
+    return out
+
+
 async def verify_claim(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card:
     started = time.perf_counter()
     card = await _dispatch(claim, cid, index, ctx)
+    card.alternatives = await authentic_alternatives(card, claim, ctx)
     if card.explain is not None:
         card.explain.match_ms = int((time.perf_counter() - started) * 1000)
     return card

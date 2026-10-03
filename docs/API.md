@@ -20,6 +20,22 @@ streamed. Types below mirror `backend/tabayyun/schemas.py` (source of truth) and
 }
 ```
 
+### `Alternative` (F2)
+
+```ts
+interface Alternative {
+  text: string;               // the narration, verbatim from the source
+  ref: string; source_name: string; source_url: string;
+  grade_text: string;         // verbatim; only accepted gradings are offered
+  grade_source_name: string; grade_source_url: string;
+}
+```
+
+`meta.features.alternatives` says whether the feature is on. `meta.feedback` is
+`{ email: string | null, whatsapp: string | null }`: where a reader's "report an error" message is
+addressed. The report is composed in the browser and sent by the reader's own mail or WhatsApp;
+this API has no endpoint that receives it.
+
 ## `POST /api/ocr` (image input, F1)
 
 `multipart/form-data` with one field, `file`: PNG, JPG, WebP or HEIC, at most `limits.max_image_mb`.
@@ -171,6 +187,8 @@ interface Card {
   similarity: number | null; // 0..1
   match_kind: "exact" | "near" | "partial" | "paraphrase" | "topic" | "referenced" | "none";
   // match_kind "referenced": `source` and `grades` hold the evidence a ruling or statement points at; the state is not raised by it
+  alternatives: Alternative[];   // F2 «الثابت في الباب»: up to 3 accepted narrations on the same subject, for a hadith with
+                                 // no reference or a weak / rejected one. Empty otherwise. Retrieved, never generated.
   source: SourceRef | null;  // always present for supported / supported_with_note
   other_sources: SourceRef[];
   grades: Grade[];           // more than one => show all, no preference

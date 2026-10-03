@@ -11,6 +11,7 @@ switches everything to the fallback model once DAILY_SPEND_LIMIT_USD is reached.
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import logging
@@ -34,11 +35,11 @@ log = logging.getLogger("tabayyun.llm")
 # Reasoning tokens count against the budget, which is why "judge" (a two-field answer) is not smaller:
 # measured answers needed up to 460 tokens; the ones that ran away did so at 1200, 1500 and 2500 alike,
 # so a larger budget only makes the runaway dearer and slower.
-MAX_TOKENS = {"extract": 8000, "judge": 900, "vision": 4000, "audio": 12000, "cheap": 800, "baseline": 1200}
-# A pointing call that has not answered in 12 s is abandoned (the claim keeps its conservative state).
+MAX_TOKENS = {"extract": 8000, "judge": 900, "select": 300, "vision": 4000, "audio": 12000, "cheap": 800, "baseline": 1200}
+# A pointing call that has not answered in 10 s is abandoned (the claim keeps its conservative state).
 # Answers that were used took 6-9 s; the ones that ran away held a report for 20-40 s, and the usual
 # victim was a text with no source — the case a daily user asks about most.
-TIMEOUT_SECONDS = {"audio": 240.0, "vision": 90.0, "judge": 12.0}
+TIMEOUT_SECONDS = {"audio": 240.0, "vision": 90.0, "judge": 10.0, "select": 6.0}
 _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.IGNORECASE)
 _RETRYABLE = (openai.RateLimitError, openai.APITimeoutError, openai.APIConnectionError, openai.InternalServerError)
 
@@ -118,6 +119,7 @@ class OpenRouterLLM:
         return {
             "extract": settings.model_extract,
             "judge": settings.model_extract,
+            "select": settings.model_extract,
             "vision": settings.model_vision,
             "audio": settings.model_audio,
             "cheap": settings.model_cheap or settings.model_extract,
@@ -171,7 +173,8 @@ class OpenRouterLLM:
             body["temperature"] = 0
         # Per task, as measured: extraction and pointing have their own settings; the other tasks keep
         # "low" (some endpoints, e.g. the audio model's, reject a request that switches reasoning off).
-        effort = {"extract": settings.llm_reasoning_effort, "judge": settings.llm_reasoning_effort_judge}.get(task, "low")
+        # "select" only chooses which accepted narrations to show beside a verdict; it cannot change one.
+        effort = {"extract": settings.llm_reasoning_effort, "judge": settings.llm_reasoning_effort_judge, "select": "none"}.get(task, "low")
         if info and info.supports("reasoning") and effort:
             body["extra_body"]["reasoning"] = {"effort": effort, "exclude": True}
         return body
@@ -184,7 +187,10 @@ class OpenRouterLLM:
         parsed: T | None = None
         try:
             body = self._request(model, task, system, user, schema, max_tokens)
-            response = await self._client.chat.completions.create(**body, timeout=TIMEOUT_SECONDS.get(task, settings.llm_timeout_seconds))
+            limit = TIMEOUT_SECONDS.get(task, settings.llm_timeout_seconds)
+            # A wall-clock limit: the HTTP read timeout alone does not bound a call, because keep-alive
+            # bytes arrive while the model is still working (a "12 s" pointing call ran for 20 s).
+            response = await asyncio.wait_for(self._client.chat.completions.create(**body, timeout=limit), timeout=limit)
             usage = response.usage
             if usage is not None:
                 info.prompt_tokens = usage.prompt_tokens or 0
@@ -214,10 +220,12 @@ class OpenRouterLLM:
             error = e
         except (openai.APIError, ValueError) as e:
             error = e
+        except asyncio.TimeoutError:
+            error = TimeoutError(f"no answer within {TIMEOUT_SECONDS.get(task, settings.llm_timeout_seconds):.0f} s")
         info.latency_ms = int((time.perf_counter() - started) * 1000)
         if error is not None:
             status = getattr(error, "status_code", None)
-            info.error = f"{type(error).__name__}" + (f" {status}" if status else "") + (f": {error}" if isinstance(error, ValueError) else "")
+            info.error = f"{type(error).__name__}" + (f" {status}" if status else "") + (f": {error}" if isinstance(error, (ValueError, TimeoutError)) else "")
         get_usage_log().record(
             task=task, model=model, prompt_tokens=info.prompt_tokens, completion_tokens=info.completion_tokens, cached_tokens=info.cached_tokens,
             cost_usd=info.cost_usd, latency_ms=info.latency_ms, ok=info.ok, fallback=fallback, error=info.error,

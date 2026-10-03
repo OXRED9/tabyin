@@ -1,7 +1,7 @@
 """Stand-ins for the LLM client used by tests (no network, no key)."""
 from __future__ import annotations
 
-from tabayyun.extract.models import LLMClaim, LLMClaims, LLMJudgement
+from tabayyun.extract.models import LLMSelection, LLMClaim, LLMClaims, LLMJudgement
 from tabayyun.extract.prompts import EXTRACT_SYSTEM, JUDGE_SYSTEM
 from tabayyun.llm.base import LLMError
 
@@ -33,8 +33,9 @@ class ScriptedLLM:
     available = True
     spend_guard = False
 
-    def __init__(self, claims=None, judge_index=-1, fail=False, fallback=False, judge_from_fallback=False, evidence_relation="explicit_support"):
+    def __init__(self, claims=None, judge_index=-1, fail=False, fallback=False, judge_from_fallback=False, evidence_relation="explicit_support", select=()):
         self.evidence_relation = evidence_relation
+        self.select = list(select)  # indices the "model" picks for «الثابت في الباب»
         self.claims = claims or []
         self.judge_index = judge_index
         self.fail = fail
@@ -58,6 +59,10 @@ class ScriptedLLM:
             self.calls.append("extract")
             self.last_call_fallback = False
             return LLMClaims(claims=self.claims)
+        if task == "select":
+            self.calls.append("select")
+            self.last_call_fallback = False
+            return LLMSelection(indices=self.select)
         assert task == "judge" and system == JUDGE_SYSTEM
         self.calls.append("judge")
         self.last_call_fallback = self.judge_from_fallback

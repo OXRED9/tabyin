@@ -132,6 +132,19 @@ class Span(BaseModel):
     end: int
 
 
+class Alternative(BaseModel):
+    """F2 — an accepted narration on the same subject as a text that has no reference or a weak one.
+    Retrieved from an approved source, never generated: without its text, link and grading it cannot exist."""
+
+    text: str = Field(min_length=1)
+    ref: str = Field(min_length=1)
+    source_name: str = Field(min_length=1)
+    source_url: str = Field(min_length=1)
+    grade_text: str = Field(min_length=1)  # verbatim from the source
+    grade_source_name: str = Field(min_length=1)
+    grade_source_url: str = Field(min_length=1)
+
+
 class Card(BaseModel):
     id: str
     index: int
@@ -151,6 +164,7 @@ class Card(BaseModel):
 
     source: SourceRef | None = None
     other_sources: list[SourceRef] = Field(default_factory=list)
+    alternatives: list[Alternative] = Field(default_factory=list, max_length=3)  # F2: «الثابت في الباب»
     grades: list[Grade] = Field(default_factory=list)
     grade_unavailable: bool = False  # hadith found but no grading could be copied from a source
     diff: list[DiffOp] | None = None
