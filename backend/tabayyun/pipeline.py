@@ -14,7 +14,7 @@ from pathlib import Path
 
 from .config import settings
 from .evidence_rules.thresholds import THRESHOLDS as t
-from .extract import RawClaim, absorb_closed_quotes, merge_claims, widen_scanned_verses
+from .extract import RawClaim, absorb_closed_quotes, keep_personal_cases, merge_claims, widen_scanned_verses
 from .extract.lexical import extract_by_markers, scan_hadith, scan_hadith_verbatim, scan_quran
 from .extract.llm_extractor import extract_with_llm
 from .ingest.document import Document, IngestError
@@ -166,6 +166,8 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
             except LLMError as e:
                 log.warning("LLM extraction failed, switching to lexical-only mode: %s", e)
                 mode = "lexical_only"
+            if mode == "full":
+                rest = keep_personal_cases(rest, markers)
             if held:
                 if mode == "full":
                     quick, rest = widen_scanned_verses(quick, rest, quran, t.ayah_near)

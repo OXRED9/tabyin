@@ -151,9 +151,9 @@ def describe(rule_id: str, f: Facts, t: Thresholds = THRESHOLDS) -> RuleExplanat
             f"The best candidate has similarity {s} (between {need:.2f} and {t.hadith_exact:.2f}: a slight difference or a partial quotation), and {_grade_en(f)}.",
             "hadith_found", need,
         ),
-        "hadith.accepted_paraphrase": (
-            f"التشابه اللفظي {s} دون حد المطابقة ({need:.2f})، وأشار النموذج اللغوي إلى أنه رواية بالمعنى لهذا الحديث ووافقه اشتراك الألفاظ، و{_grade_ar(f)}.",
-            f"Lexical similarity {s} is below the match threshold ({need:.2f}); the language model pointed at this narration as the one paraphrased and the shared vocabulary agreed, and {_grade_en(f)}.",
+        "hadith.possible_paraphrase": (
+            f"التشابه اللفظي {s} دون حد المطابقة ({need:.2f}). أشار النموذج اللغوي إلى أنه قد يكون رواية بالمعنى لهذا الحديث، وإشارة النموذج وحدها لا تكفي للجزم؛ لذلك «يحتاج مزيد تحقق».",
+            f"Lexical similarity {s} is below the match threshold ({need:.2f}). The language model pointed at this narration as possibly the one paraphrased; the model's pointer alone does not settle it, hence “needs review”.",
             "paraphrase", need,
         ),
         "hadith.weak": (

@@ -44,9 +44,10 @@ and unresolved as of 3 October 2026.
   saying of a scholar therefore comes back `not_found`.
 - **Weak and fabricated narrations** are recognised only through Dorar. If Dorar is unreachable they
   come back `not_found` (abstention), not `contradicted`.
-- **Paraphrased narrations** depend on the LLM pointing at the right candidate among the top BM25
-  hits. There are no embeddings: a paraphrase that shares little vocabulary with the source is not
-  retrieved at all and comes back `not_found`.
+- **Paraphrased narrations are never confirmed.** When the wording is far from every source text, the
+  model may point at the narration it seems to report by meaning; the card then shows that narration
+  and says `needs_review`. There are no embeddings: a paraphrase that shares little vocabulary with
+  the source is not retrieved at all and comes back `not_found`.
 - **English**: only HadeethEnc's own English translations are matched. Another translator's wording
   needs the LLM paraphrase path. English renderings of verses are not matched to the Mushaf.
 - **Other languages** are not handled.
@@ -118,6 +119,9 @@ and unresolved as of 3 October 2026.
 - **Video platforms** block datacentre addresses unpredictably. YouTube worked from the development
   network; it may fail from a host, in which case the UI asks for a file upload or a pasted
   transcript. TikTok is allowed through the same code path but untested.
+- **Links to Dorar are searches, not addresses.** Dorar has no page per narration; a link searches
+  its site for a few words of the narration, and for narrations taken from the hadith books about a
+  quarter of such searches find nothing because Dorar's wording differs.
 - **Dorar availability** differs by network and client. Without it, narrations outside al-Bukhari,
   Muslim and HadeethEnc lose their gradings.
 - **Abuse protection is minimal**: an in-memory per-address request limit (30 requests per 10 minutes by default). There is no authentication or CAPTCHA. The daily spend guard (`DAILY_SPEND_LIMIT_USD`) moves every call to the free fallback model once the day's logged cost reaches the limit, but its log restarts with the machine on a host without a volume, so the credit limit on the OpenRouter key is the real cap.

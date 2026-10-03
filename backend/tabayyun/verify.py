@@ -133,7 +133,7 @@ async def judge(ctx: Context, task: str, claim_text: str, texts: list[str]) -> i
 
 # Rules under which the shown source is only "the closest text", not asserted to be what was quoted:
 # there is no "correct text" to copy for those.
-_NO_COPY_RULES = {"hadith.partial", "hadith.too_short", "ayah.partial_unattributed", "ayah.below_threshold", "ayah.none", "hadith.none", "quote.none"}
+_NO_COPY_RULES = {"hadith.possible_paraphrase", "hadith.partial", "hadith.too_short", "ayah.partial_unattributed", "ayah.below_threshold", "ayah.none", "hadith.none", "quote.none"}
 
 
 def _excerpt(text: str, limit: int = 160) -> str:
@@ -578,7 +578,10 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
     if claim.type == ClaimType.ruling or level in (ContentLevel.B, ContentLevel.C):
         decision = decide_ruling(level=level, explicit_text_found=chosen is not None)
     else:  # a level-A factual statement
-        decision = decide_ruling(level=level, explicit_text_found=True) if chosen else decide_quote(found=False, similarity=0.0, attribution_matches=None)
+        # Without an explicit text it is not asserted — and it is not "no source" either: that verdict
+        # is for words claimed to be a quotation. A remark such as "the collector opened his book with
+        # this narration" is a statement the sources here cannot confirm, which is "needs review".
+        decision = decide_ruling(level=level, explicit_text_found=chosen is not None)
     decision = apply_level_caps(decision, level)
 
     kw: dict = {}

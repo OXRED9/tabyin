@@ -50,8 +50,14 @@ class DorarHit:
     url: str
 
 
+LINK_WORDS = 7
+
+
 def search_url(text: str) -> str:
-    return f"https://dorar.net/hadith/search?q={urlquote(text)}"
+    """A link that opens Dorar on this narration. Dorar has no address per narration, and its site
+    search answers "no results" for a long query (measured: 40 words find nothing, 7 do), so the
+    link searches for the opening words of the narration as Dorar itself prints it."""
+    return f"https://dorar.net/hadith/search?q={urlquote(' '.join(text.split()[:LINK_WORDS]))}"
 
 
 def parse_result_html(html: str, query: str) -> list[DorarHit]:
@@ -83,7 +89,7 @@ def parse_result_html(html: str, query: str) -> list[DorarHit]:
                 book=fields.get("book") or None,
                 number=fields.get("number") or None,
                 grade=fields.get("grade") or None,
-                url=search_url(query),
+                url=search_url(text),  # the hit's own wording, not what the user typed
             )
         )
     return hits
@@ -111,7 +117,7 @@ class DorarClient:
         key = cache.key("dorar", query)
         cached = cache.get(key, max_age=30 * 86400)
         if cached is not None:
-            return [DorarHit(**h) for h in cached]
+            return [DorarHit(**{**h, "url": search_url(h["text"])}) for h in cached]  # links are rebuilt, not kept
         try:
             async with httpx.AsyncClient(timeout=settings.http_timeout_seconds, headers={"User-Agent": settings.user_agent}) as client:
                 r = await client.get(API_URL, params={"skey": query})

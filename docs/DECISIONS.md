@@ -291,3 +291,32 @@ touch how a religious text is shown and wait for Sulaiman.
     the claim stays whole while at least one line of the source's wording fits, and gives up lines
     after that. The summary card does not draw the title of what was checked: `ShareCardRequest`
     does not carry it.
+
+## Accuracy fixes from the team's own tests (4 October 2026)
+
+71. **⚑ A paraphrase is never "supported".** The pointing model accepted a no-source text as a paraphrase
+    of a real narration once in three full evaluation runs — a fabricated attribution. Such a text
+    shares 30–62% of its word stems with one real narration, so no vocabulary threshold separates it
+    from a genuine report by meaning. The rule now returns `needs_review` (`hadith.possible_paraphrase`):
+    the narration it may correspond to is shown with its grading, and a person decides. No correct
+    answer in the test set depended on the old behaviour. This narrows what the tool supports.
+72. **A verse quoted with one changed word is one note.** The scan used to report its intact part as an
+    exact match beside the note for the whole misquotation. A wider quotation (marked by «قال الله
+    تعالى:», or proposed by the model) now replaces the fragment when the Mushaf matcher finds it is
+    still the same verse (≥ 0.85). For an unmarked quotation the certain notes wait up to 6 s for the
+    model, because a note that was shown cannot be withdrawn.
+73. **«حديث "…"» is a quotation without the model**, and a sentence that only introduces, sources or
+    praises a quoted text is no longer reported as a claim of its own (extraction prompt). The team's
+    case — a famous narration introduced by its collector and followed by a remark about it — used to
+    end as "no source"; it now gives one note for the narration, with its reference and grading.
+74. **An unverifiable statement is "needs review", not "no source".** "No source" is the verdict for words
+    claimed to be a quotation. A level-A factual statement for which no explicit text was retrieved
+    now gets `needs_review` (`ruling.no_text`), as `CLAUDE.md` already required for level B.
+75. **A personal case stays level D whatever the model calls it.** The marker rules recognise a question
+    about the asker's own situation; where the model typed it otherwise (seen once: "request" → "no
+    source"), the claim is made a level-D ruling. The level only moves to the more sensitive side.
+76. **Dorar links search for the narration's own opening words.** Dorar has no address per narration and
+    its site search answers "no results" for long queries, which is what the links used to send (the
+    whole quotation). A Dorar hit now links to a search for the first seven words of Dorar's own text
+    (reliable); a narration from the hadith books links to a search for its last five words (found in
+    9 of 12 sampled cases — Dorar's wording sometimes differs from the books' text).

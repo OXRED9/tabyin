@@ -82,9 +82,11 @@ def test_paraphrased_narration_needs_the_models_pointer_and_shared_vocabulary(ru
     for idx in range(5):
         (card,) = run(text, ScriptedProvider(extracted, judge_index=idx))["cards"]
         states.add(card["state"])
-        if card["state"] == "supported_with_note":
-            assert card["match_kind"] == "paraphrase" and card["source"]["text"] and card["grades"]
-    assert "supported" not in states  # a paraphrase is never plain "supported"
+        if card["match_kind"] == "paraphrase":  # the narration it may correspond to is shown, with its grading
+            assert card["state"] == "needs_review" and card["rule_id"] == "hadith.possible_paraphrase"
+            assert card["source"]["text"] and card["grades"] and card["referral"] and card["copy_text"] is None
+    # the model's word alone never makes a paraphrase "supported" (it accepted a no-source text in the eval)
+    assert states <= {"needs_review", "not_found"}
     (card,) = run(text, ScriptedProvider(extracted, judge_index=-1))["cards"]
     assert card["state"] in ("needs_review", "not_found")
 
@@ -133,6 +135,16 @@ def test_a_wider_proposal_that_is_not_the_same_verse_does_not_replace_the_exact_
     text = f"{prose} {fragment} ثم انصرفوا إلى بيوتهم بعد صلاة العشاء"
     report = run(text, ScriptedProvider([claim(type="ayah", quote=text)]))
     assert any(c["state"] == "supported" and c["text_as_quoted"] == fragment for c in report["cards"])
+
+
+def test_a_personal_case_stays_a_personal_case_whatever_the_model_calls_it(run):
+    """Seen in the evaluation: the model once typed a question about the asker's own divorce as a
+    "request", and the answer became "no source" instead of the referral."""
+    text = "طلقت زوجتي وأنا في حالة غضب شديد فهل يقع طلاقي؟"
+    for proposed in ([claim(type="request", quote=text, content_level="B")], [claim(type="fact", quote=text, content_level="A")], []):
+        (card,) = run(text, ScriptedProvider(proposed))["cards"]
+        assert card["content_level"] == "D" and card["personal_case"] and card["referral"]
+        assert card["state"] == "needs_review" and card["source"] is None
 
 
 def test_sound_narration_attributed_to_someone_else_is_contradicted(run, matn):

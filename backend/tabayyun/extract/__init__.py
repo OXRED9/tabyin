@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ..schemas import ContentLevel
 from ..schemas import ClaimType
 from .models import RawClaim
 
@@ -86,4 +87,25 @@ def widen_scanned_verses(scanned: list[RawClaim], proposed: list[RawClaim], qura
     return kept, left
 
 
-__all__ = ["RawClaim", "absorb_closed_quotes", "merge_claims", "overlap", "widen_scanned_verses"]
+def keep_personal_cases(proposed: list[RawClaim], markers: list[RawClaim]) -> list[RawClaim]:
+    """A question about the asker's own situation is level D whatever the model called it.
+
+    The marker rules recognise such questions without a model ("طلقت … فهل يقع؟"). Where one overlaps
+    a claim the model proposed, that claim becomes a level-D ruling — the level only ever moves to the
+    more sensitive side — and where the model reported nothing there, the marker's claim is added.
+    """
+    out = list(proposed)
+    for m in markers:
+        if m.content_level != ContentLevel.D:
+            continue
+        hit = [c for c in out if overlap(c, m) >= 0.5 * min(c.end - c.start, m.end - m.start)]
+        for c in hit:
+            if c.type not in _QUOTED:  # a verse or narration quoted inside the question is still verified
+                c.type, c.content_level, c.certainty = m.type, ContentLevel.D, m.certainty
+        if not hit:
+            out.append(m)
+    out.sort(key=lambda c: c.start)
+    return out
+
+
+__all__ = ["RawClaim", "absorb_closed_quotes", "keep_personal_cases", "merge_claims", "overlap", "widen_scanned_verses"]

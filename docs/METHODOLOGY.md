@@ -50,10 +50,13 @@ are also dropped, because speakers add and omit them freely.
   the span — not the whole record — is what is compared.
 - English quotes are matched against HadeethEnc's published English translations.
 - Paraphrase («رواية بالمعنى»): when nothing reaches the match threshold, the LLM is shown the top
-  retrieved texts and asked which, if any, is the same narration. Its answer is honoured only if
-  the two texts also share vocabulary (≥ 34% of the quote's word stems) and the answer came from the
-  model chosen for the task — a pointer from the fallback model is ignored. The card then shows the
-  source's own wording and can at most be `supported_with_note`.
+  retrieved texts and asked which, if any, is the same narration. Its answer is used only if the
+  two texts also share vocabulary (≥ 34% of the quote's word stems) and it came from the model chosen
+  for the task. Even then the card is **`needs_review`**, never supported: it shows the narration
+  the words may correspond to, with its grading, and refers the reader on. (Until 4 October 2026
+  this gave `supported_with_note`; in the evaluation the model accepted a text with no source this
+  way, and no vocabulary threshold separates such a text from a real paraphrase — measured on the
+  five no-source items, 30–62% of their stems are in one real narration.)
 - Gradings: HadeethEnc's `grade` field, and Dorar entries whose text aligns with the quote (same
   narrator when our source names one). The text is copied verbatim; a keyword classifier maps it to
   accepted / weak / fabricated / mixed / unknown **only to drive the rule**. Anything it does not
@@ -79,7 +82,8 @@ Initial thresholds came from the product brief; the changes made after measureme
 | Condition | State |
 |---|---|
 | similarity ≥ 0.95 and an accepted grading, or the narration is in al-Bukhari/Muslim | `supported` |
-| 0.80 ≤ similarity < 0.95, or confirmed paraphrase, with an accepted grading | `supported_with_note` |
+| 0.80 ≤ similarity < 0.95, with an accepted grading | `supported_with_note` |
+| below 0.80, the model points at a narration as the one paraphrased | `needs_review`, with that narration shown |
 | graded weak | `needs_review`, grading verbatim |
 | graded fabricated / no basis / batil | `contradicted`, grading verbatim |
 | accepted and rejected gradings both present (not in the two Sahihs) | `needs_review`, all shown, no preference |

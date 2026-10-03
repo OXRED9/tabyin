@@ -197,11 +197,16 @@ def decide_hadith(
                 "The text matches a narration in an approved source; the grading is copied from the source.",
             )
         if paraphrase:
+            # Only the model says these words mean the same as the source's; their wording is too far
+            # apart for the matcher to confirm it. In the evaluation the model accepted a text with no
+            # source this way, so a paraphrase is shown with the narration it may correspond to and is
+            # never "supported": a person decides.
             return Decision(
-                S.supported_with_note,
-                "hadith.accepted_paraphrase",
-                "الحديث مرويّ بالمعنى؛ اللفظ الوارد في المصدر معروض للمقارنة.",
-                "The narration is reported by meaning; the wording found in the source is shown for comparison.",
+                S.needs_review,
+                "hadith.possible_paraphrase",
+                "قد يكون رواية بالمعنى لهذا الحديث؛ اللفظ بعيد عن لفظ المصدر فلا يُجزم به، ونص المصدر معروض للمقارنة.",
+                "This may be the narration below reported by meaning; the wording is too far from the source's to confirm, so the source's text is shown for comparison.",
+                referral=True,
             )
         return Decision(
             S.supported_with_note,

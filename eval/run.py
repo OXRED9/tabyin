@@ -296,6 +296,9 @@ async def main() -> None:
         "llm_models": llm.status()["models"],
         "systems": {},
     }
+    previous = RESULTS / "results.json"
+    if previous.exists():  # a partial run (--only) keeps the other systems' last results
+        out["systems"] = {k: v for k, v in json.loads(previous.read_text(encoding="utf-8")).get("systems", {}).items() if k in SYSTEMS}
     for name in [s for s in args.only.split(",") if s in SYSTEMS]:
         if name == "llm" and not llm.can("baseline"):
             out["systems"][name] = {"label": LABELS[name], "status": "not_run", "reason": "no OpenRouter key or MODEL_BASELINE_LLM configured"}

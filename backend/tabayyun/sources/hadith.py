@@ -136,7 +136,8 @@ class HadithIndex:
         _id, book, num, text = row
         meta = BOOKS[book]
         # A search link on Dorar lets the reader verify the narration and read scholars' gradings.
-        probe = " ".join(normalize_ar(text, drop_honorifics=True).split()[-12:])
+        # Five words: Dorar's site search answers "no results" for long queries (measured: 9 of 12 found with 5, 8 with 7).
+        probe = " ".join(normalize_ar(text, drop_honorifics=True).split()[-5:])
         return HadithCandidate(
             corpus="books",
             key=f"{book}:{num}",

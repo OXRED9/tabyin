@@ -104,8 +104,9 @@ def test_hadith_without_any_grading_is_never_supported():
     assert d.state == S.needs_review and "حالياً" in d.note_ar
 
 
-def test_hadith_paraphrase_is_supported_with_note_only_with_an_accepted_grading():
-    assert hadith(similarity=0.4, paraphrase=True).state == S.supported_with_note
+def test_a_paraphrase_the_model_pointed_at_is_never_supported():
+    d = hadith(similarity=0.4, paraphrase=True)  # even with an accepted grading on the narration it may be
+    assert d.state == S.needs_review and d.rule_id == "hadith.possible_paraphrase" and d.referral
     assert hadith(similarity=0.4, paraphrase=True, grade_categories=[W]).state == S.needs_review
     assert hadith(similarity=0.4, paraphrase=True, grade_categories=[]).state == S.needs_review
 
