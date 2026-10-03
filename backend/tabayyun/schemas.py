@@ -4,7 +4,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ClaimType(str, Enum):
@@ -224,6 +224,9 @@ class VerifyRequest(BaseModel):
 class Report(BaseModel):
     """What the client assembles from the stream; also the JSON export / HTML export input."""
 
+    # A saved report from an older client may carry fields this API has dropped: they are ignored.
+    model_config = ConfigDict(extra="ignore")
+
     source: SourceInfo
     segments: list[Segment]
     cards: list[Card]
@@ -231,21 +234,21 @@ class Report(BaseModel):
     generated_at: str
     tool: str = "Tabayyun"
     disclaimer_ar: str = "تبيّن أداة مدعومة بالذكاء الاصطناعي، لا تغني عن الرجوع إلى أهل العلم"
-    reviewer_overrides: list[dict] = Field(default_factory=list)
 
 
 class ShareCardRequest(BaseModel):
     """F3 server-side fallback: everything needed to draw one verdict card. Nothing is stored."""
+
+    # An older client may still send fields this API has dropped: they are ignored, not rejected.
+    model_config = ConfigDict(extra="ignore")
 
     kind: Literal["claim", "summary"] = "claim"
     size: Literal["portrait", "square"] = "portrait"
     theme: Literal["light", "dark"] = "light"
     lang: Literal["ar", "en"] = "ar"
     card: Card | None = None
-    override_state: EvidenceState | None = None
     summary: Summary | None = None
-    human_reviewed: bool = False  # summary: some counted states were set by a human reviewer
-    # summary: the citations listed on the card (reviewer changes already applied) and what was checked
+    # summary: the citations listed on the card, and what was checked
     cards: list[Card] = Field(default_factory=list, max_length=60)
     title: str | None = Field(default=None, max_length=300)
 

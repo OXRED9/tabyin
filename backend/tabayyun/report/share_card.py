@@ -7,7 +7,7 @@ source's own wording with its reference and grading, the suggested action, then 
 QR code and the transparency line.
 
 Drawn with Pillow; Arabic shaping and bidirectional layout come from libraqm. Nothing is stored, and
-nothing about the user is drawn: no date or time, no reviewer name, no link to a clip.
+nothing about the user is drawn: no date or time, no name, no link to a clip.
 
 Three rules of the product are enforced here and not left to the layout's luck:
 
@@ -33,7 +33,7 @@ from rapidfuzz.distance import Levenshtein
 from ..normalize import arabic_ratio
 from ..schemas import STATE_ACTION, Card, ContentLevel, EvidenceState, Summary
 from ..textalign import words_with_offsets
-from .labels import STATE
+from .labels import STATE_SHORT
 
 FONTS = Path(__file__).resolve().parents[1] / "assets" / "fonts"
 SIZES = {"portrait": (1080, 1350), "square": (1080, 1080)}
@@ -69,7 +69,7 @@ STATE_TOKENS = {
 # The five canonical actions, each said as a sentence — the same wording as the open note in the UI
 # (frontend dictionary `actionSentences`). TODO-SULAIMAN-REVIEW (wording).
 ACTION_SENTENCE = {
-    "adopt": ("الإجراء المقترح: اعتماده كما ورد.", "Suggested action: adopt it as quoted."),
+    "adopt": ("الإجراء المقترح: نقله كما ورد مع ذكر مرجعه.", "Suggested action: cite it as quoted, with its reference."),
     "correct_wording": ("الإجراء المقترح: تصحيح اللفظ على ما في المصدر.", "Suggested action: correct the wording to match the source."),
     "refer_to_scholars": ("الإجراء المقترح: إحالة المسألة إلى أهل العلم.", "Suggested action: refer the matter to scholars."),
     "remove_or_request_source": ("الإجراء المقترح: حذفه أو طلب مصدره.", "Suggested action: remove it, or ask for its source."),
@@ -88,11 +88,10 @@ TEXT = {
     "personal_case": ("هذه حالة شخصية تستوجب فتوى من جهة مؤهلة", "This is a personal case that requires a fatwa from a qualified body"),
     "disagreement": ("مسألة خلافية: يعرض تبيّن ما ورد في المصادر كما هو، دون ترجيح.", "A disputed matter: Tabayyun shows what the sources say as is, with no preference."),
     "referral": ("تبيّن لا يفتي ولا يرجّح؛ يُرجع في هذه المسألة إلى أهل العلم.", "Tabayyun issues no fatwa and prefers no opinion; this matter is for qualified scholars."),
-    "overridden": ("حالة معدَّلة بمراجعة بشرية", "State changed by human review"),
     "check": ("تحقّق بنفسك على تبيّن", "Check it yourself on Tabayyun"),
     "disclaimer": ("تبيّن أداة مدعومة بالذكاء الاصطناعي، لا تغني عن الرجوع إلى أهل العلم", "Tabayyun is an AI-assisted tool. It does not replace consulting qualified scholars."),
     # Shown in place of a wording that cannot be drawn whole where it must be. TODO-SULAIMAN-REVIEW (wording).
-    "verse_too_long": ("نص الآية أطول من أن تسعه البطاقة؛ يُقرأ كاملاً في موضعه من المصحف.", "The verse is too long for this card; read it in full at its reference."),
+    "verse_too_long": ("نص الآية أطول من أن تسعه البطاقة؛ يُقرأ كاملاً في موضعه من المصحف.", "The verse is longer than this card can hold; it is read in full in its place in the Mushaf."),
     "text_too_long": ("نص المصدر أطول من أن تسعه البطاقة؛ يُقرأ كاملاً في مصدره.", "The source's text is too long for this card; read it in full at its reference."),
 }
 CLAIM_MAX_CHARS = 240
@@ -158,14 +157,20 @@ def _font(face: str, size: int) -> ImageFont.FreeTypeFont:
 
 
 def _direction(text: str) -> str | None:
-    """The direction a string is shaped in: "rtl" when it has Arabic letters, "ltr" when it has
-    other letters or digits, None for marks alone (they take the direction of the paragraph)."""
-    ltr = False
+    """The direction a string is shaped in by itself: "rtl" when its letters are Arabic, "ltr" when
+    it has other letters or digits and no Arabic. None when it has both scripts or marks alone: it
+    then takes the direction of its paragraph."""
+    arabic = latin = digit = False
     for ch in text:
         if "\u0590" <= ch <= "\u08ff" or "\ufb1d" <= ch <= "\ufefc":
-            return "rtl"
-        ltr = ltr or ch.isalnum()
-    return "ltr" if ltr else None
+            arabic = True
+        elif ch.isalpha():
+            latin = True
+        elif ch.isdigit():
+            digit = True
+    if arabic:
+        return None if latin else "rtl"
+    return "ltr" if latin or digit else None
 
 
 def _shaping(direction: str) -> dict:
@@ -504,14 +509,15 @@ class _Sheet:
             previous = chunk
         return ink, x
 
-    def para(self, name: str, p: _Para, y: int) -> None:
-        """Draw a paragraph with its first line's box at ``y`` and record it as a block."""
-        start = self.right if p.rtl else self.left
+    def para(self, name: str, p: _Para, y: int, left: int | None = None, right: int | None = None) -> None:
+        """Draw a paragraph with its first line's box at ``y`` and record it as a block. It is set
+        flush to the edge it starts from — the card's column, or the column given."""
+        start = (self.right if right is None else right) if p.rtl else (self.left if left is None else left)
         ink: tuple[int, int, int, int] | None = None
         far = float(start)
         for i, line in enumerate(p.lines):
             base = y + i * p.line_height + p.baseline
-            line_ink, end = self._line(line, p.rtl, base)
+            line_ink, end = self._line(line, p.rtl, base, start)
             if line_ink:
                 ink = _union(ink, line_ink)
             far = min(far, end) if p.rtl else max(far, end)
@@ -753,20 +759,31 @@ def _step(sizes: tuple[int, int], i: int) -> int:
     return max(sizes[1], sizes[0] - 2 * i)
 
 
+def _drawn_state(card: Card) -> str:
+    """The state a citation is drawn with: the card's own, under the levels' ceilings whatever the
+    request says — a personal case has no verdict, and a disputed matter is never «له مرجعية» nor
+    «مخالف للمصدر»."""
+    state = card.state.value
+    if card.personal_case or card.content_level == ContentLevel.D:
+        return "needs_review"
+    if card.content_level == ContentLevel.C and state not in ("needs_review", "not_found"):
+        return "needs_review"
+    return state
+
+
 class _Claim:
     """One claim's card: what it says (decided once) and how it is fitted (tried in steps)."""
 
-    def __init__(self, sheet: _Sheet, card: Card, state: str, overridden: bool, abstention_verse: dict | None) -> None:
+    def __init__(self, sheet: _Sheet, card: Card, abstention_verse: dict | None) -> None:
         self.sh = sheet
         self.card = card
-        self.state = state
-        self.overridden = overridden
+        self.state = state = _drawn_state(card)
         self.solid, self.state_ink = sheet.states[state]
         en = sheet.en
 
-        # Is it right? — one plain sentence. A reviewer's state has no sentence of the rules' behind it.
+        # Is it right? — one plain sentence.
         note = (card.note_en or card.note_ar) if en else (card.note_ar or card.note_en)
-        self.verdict = "" if overridden else _first_sentence(note)
+        self.verdict = _first_sentence(note)
         self.claim, self.claim_trimmed = _claim_text(card.text_as_quoted)
         self.claim_rtl = sheet.reads_rtl(self.claim)
         self.action = ACTION_SENTENCE[STATE_ACTION[EvidenceState(state)].value][en]
@@ -801,7 +818,7 @@ class _Claim:
         sh = self.sh
         size = sh.px(64)
         gap = sh.px(20)
-        word = _W(STATE[self.state][sh.en], sh.ink("plex600", 52, self.state_ink))
+        word = _W(STATE_SHORT[self.state][sh.en], sh.ink("plex600", 52, self.state_ink))
         while word.ink.size > 30 and _width(word.text, word.ink.face, word.ink.size, sh.rtl) > sh.width - size - gap:
             word = replace(word, ink=replace(word.ink, size=word.ink.size - 2))  # the longest name stays on the ring's line
 
@@ -813,10 +830,7 @@ class _Claim:
             ink, end = sh._line([word], sh.rtl, base, start)
             sh.blocks.append(Block("state", (math.floor(min(start, end)), y, math.ceil(max(start, end)), y + size), ink, word.text))
 
-        items = [_Item(size, draw)]
-        if self.overridden:  # a person changed the state: said right after it, and no name
-            items += [_gap(sh.px(2)), sh.item("review-mark", sh.tool(sh.say("overridden"), sh.ink("plex", 26, "quiet"), max_lines=1))]
-        return items
+        return [_Item(size, draw)]
 
     def _wording(self, a: int, b: int, size: int) -> list[_W]:
         """Words ``a``..``b`` of the source as drawn: «…» on each side that was cut, a verse between
@@ -1023,45 +1037,54 @@ class _Claim:
         return items, {**facts, "source": source}
 
 
-def draw_claim_card(card: Card, *, size: str, theme: str, lang: str, app_url: str, abstention_verse: dict | None, override_state: EvidenceState | None = None) -> Drawn:
-    state = (override_state or card.state).value
+def draw_claim_card(card: Card, *, size: str, theme: str, lang: str, app_url: str, abstention_verse: dict | None) -> Drawn:
     sheet = _Sheet(size, theme, lang)
     top = sheet.header("title")
     bottom = sheet.footer(app_url)
-    claim = _Claim(sheet, card, state, bool(override_state and override_state != card.state), abstention_verse)
+    claim = _Claim(sheet, card, abstention_verse)
     items, facts = claim.fit(bottom - top)
     sheet.place(items, top)
     return sheet.done({**facts, "body": (top, bottom)})
 
 
-def render_claim_card(card: Card, *, size: str, theme: str, lang: str, app_url: str, abstention_verse: dict | None, override_state: EvidenceState | None = None) -> bytes:
-    return draw_claim_card(card, size=size, theme=theme, lang=lang, app_url=app_url, abstention_verse=abstention_verse, override_state=override_state).png()
+def render_claim_card(card: Card, *, size: str, theme: str, lang: str, app_url: str, abstention_verse: dict | None) -> bytes:
+    return draw_claim_card(card, size=size, theme=theme, lang=lang, app_url=app_url, abstention_verse=abstention_verse).png()
 
 
 # --------------------------------------------------------------------------- the summary card
 
 # The report in one sentence, with number words and agreement — the same sentence as the page's
-# summary (frontend `summary.ts` and its dictionaries).
+# summary. The singular form is the state's short name (labels.STATE_SHORT); the dual and the plural
+# agree with it (a plural of things takes the feminine singular).
 _AR_NUMBER = ("", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة", "عشرة")
 _EN_NUMBER = ("", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
-_AR_FORMS = {  # one, two, many, alone, all of
-    "supported": ("مؤيَّد", "مؤيَّدان", "مؤيَّدة", "مؤيَّد", "مؤيَّدة"),
-    "supported_with_note": ("مع ملاحظة", "مع ملاحظة", "مع ملاحظة", "مؤيَّد مع ملاحظة", "مؤيَّدة مع ملاحظة"),
-    "needs_review": ("يحتاج مراجعة", "يحتاجان مراجعة", "تحتاج مراجعة", "يحتاج مراجعة", "تحتاج مراجعة"),
-    "not_found": ("بلا مصدر", "بلا مصدر", "بلا مصدر", "بلا مصدر", "بلا مصدر"),
-    "contradicted": ("مخالف للمصدر", "مخالفان للمصدر", "مخالفة للمصدر", "مخالف للمصدر", "مخالفة للمصدر"),
+_AR_FORMS = {  # two, three and more
+    "supported": ("لهما مرجعية", "لها مرجعية"),
+    "supported_with_note": ("لهما مرجعية مع ملاحظة", "لها مرجعية مع ملاحظة"),
+    "needs_review": ("يحتاجان مراجعة", "تحتاج مراجعة"),
+    "not_found": ("بلا مرجعية", "بلا مرجعية"),
+    "contradicted": ("مخالفان للمصدر", "مخالفة للمصدر"),
 }
-_EN_FORMS = {  # one, many
-    "supported": ("supported", "supported"),
-    "supported_with_note": ("with a note", "with a note"),
+_EN_FORMS = {  # one, more than one
+    "supported": ("has a reference", "have a reference"),
+    "supported_with_note": ("has a reference with a note", "have a reference with a note"),
     "needs_review": ("needs review", "need review"),
-    "not_found": ("with no source", "with no source"),
-    "contradicted": ("contradicts the source", "contradict the source"),
+    "not_found": ("has no reference", "have no reference"),
+    "contradicted": ("differs from the source", "differ from the source"),
 }
+# The list reads from what most needs attention to what needs none.
+_LIST_ORDER = ("contradicted", "not_found", "needs_review", "supported_with_note", "supported")
+_LIST_MOST = 12
 
 
 def _number(n: int, en: bool) -> str:
     return (_EN_NUMBER if en else _AR_NUMBER)[n] if 1 <= n <= 10 else f"{n:,}"
+
+
+def _form(state: str, n: int, en: bool) -> str:
+    if en:
+        return _EN_FORMS[state][0 if n == 1 else 1]
+    return STATE_SHORT[state][0] if n == 1 else _AR_FORMS[state][0 if n == 2 else 1]
 
 
 def _total(n: int, en: bool) -> str:
@@ -1074,42 +1097,124 @@ def _total(n: int, en: bool) -> str:
     return f"{n} {'استشهادات' if 3 <= n % 100 <= 10 else 'استشهاداً'}"
 
 
+def _more(n: int, en: bool) -> str:
+    """The closing line of the list: the citations that did not fit, counted."""
+    if en:
+        return f"and {_number(n, True)} more {'citation' if n == 1 else 'citations'}"
+    if n <= 2:
+        return ("", "واستشهاد واحد آخر", "واستشهادان آخران")[n]
+    if n <= 10:
+        return f"و{_AR_NUMBER[n]} استشهادات أخرى"
+    return f"و{n} {'استشهادات أخرى' if 3 <= n % 100 <= 10 else 'استشهاداً آخر'}"
+
+
 def summary_parts(total: int, counts: dict[str, int], en: bool) -> tuple[str, list[tuple[str, str]]]:
     """The summary sentence as its head and its clauses, one per state present: (state, words).
-    Joined with commas they read as the page's sentence («سبعة استشهادات: أربعة مؤيَّدة، … وواحد بلا مصدر»)."""
+    Joined with commas they read as the page's sentence («تسعة استشهادات: ثلاثة لها مرجعية، … وواحد
+    مخالف للمصدر»)."""
     present = [s for s in STATES_FOR_SUMMARY if counts.get(s, 0) > 0]
     head = _total(total, en)
     if total == 0 or not present:
         return head, []
-    if len(present) == 1:
+    if len(present) == 1:  # every citation has the same state: no list, one clause that says so
         state = present[0]
         if en:
-            one, many = _EN_FORMS[state]
-            return head + ":", [(state, one if total == 1 else f"{'both' if total == 2 else 'all'} {many}")]
-        alone, all_of = _AR_FORMS[state][3], _AR_FORMS[state][4]
+            return head + ":", [(state, _form(state, 1, True) if total == 1 else f"{'both' if total == 2 else 'all'} {_form(state, total, True)}")]
         if total == 1:
-            return head, [(state, alone)]
-        return head + "،", [(state, f"كلاهما {alone}" if total == 2 else f"كلها {all_of}")]
+            return head, [(state, _form(state, 1, False))]
+        return head + "،", [(state, f"كلاهما {_form(state, 1, False)}" if total == 2 else f"كلها {_form(state, total, False)}")]
     clauses: list[tuple[str, str]] = []
     for i, state in enumerate(present):
-        n = counts[state]
-        if en:
-            form = _EN_FORMS[state][0 if n == 1 else 1]
-        else:
-            form = _AR_FORMS[state][0 if n == 1 else 1 if n == 2 else 2]
         joiner = ("and " if en else "و") if i == len(present) - 1 else ""
-        clauses.append((state, f"{joiner}{_number(n, en)} {form}"))
+        clauses.append((state, f"{joiner}{_number(counts[state], en)} {_form(state, counts[state], en)}"))
     return head + ":", clauses
 
 
-def draw_summary_card(summary: Summary, *, size: str, theme: str, lang: str, app_url: str, human_reviewed: bool = False) -> Drawn:
+class _Row:
+    """One citation in the summary's list: its ring and short state word, the quoted words on one
+    line, and under them the reference with the grading word."""
+
+    def __init__(self, sheet: _Sheet, n: int, card: Card, column: int) -> None:
+        sh = self.sh = sheet
+        self.n, self.column = n, column
+        self.state = _drawn_state(card)
+        self.side, self.gap, self.gutter = sh.px(28), sh.px(12), sh.px(24)
+        width = sh.width - column - self.gutter
+
+        word = _words(STATE_SHORT[self.state][sh.en], sh.ink("plex600", 26, sh.states[self.state][1]))
+        self.word = _para(word, column - self.side - self.gap, sh.rtl, strut=("plex600", sh.px(26)), leading=1.5, max_lines=2)
+
+        # the quoted words: one line between «», cut at a word boundary
+        ink = sh.ink("naskh", 32)
+        text = " ".join(card.text_as_quoted.split()) or "…"
+        closing = _W("»", ink, tie=True, space=0)
+        quoted = [_W(("«" if i == 0 else "") + w, ink) for i, w in enumerate(text.split())]
+        self.quote = _para(quoted, width - _word_width(closing, True), sh.reads_rtl(text), strut=("naskh", ink.size), leading=1.75, max_lines=1)
+        self.quote.lines[0].append(closing)
+
+        self.reference = self._reference(card, width)
+        self.drop = max(0, self.quote.baseline - self.word.baseline)  # the state word sits on the quotation's baseline
+        self.height = max(self.quote.height + (self.reference.height if self.reference else 0), self.drop + self.word.height)
+
+    def _reference(self, card: Card, width: int) -> _Para | None:
+        """The reference and, for a narration, the grading word verbatim — on one line. The reference
+        gives way («…»), the grading never does: one that cannot stand whole is counted instead."""
+        sh = self.sh
+        if self.state == "not_found" or card.source is None or card.personal_case or card.content_level == ContentLevel.D:
+            return None
+        quiet = sh.ink("plex", 24, "quiet")
+        grades = [g for g in card.grades if g.text.strip()]
+        if len(grades) == 1:
+            tail = "«" + " ".join(grades[0].text.strip().splitlines()[0].split()) + "»"
+            if _width(tail, quiet.face, quiet.size, True) > width * 0.6:
+                tail = sh.say("one_grading")
+        elif grades:
+            tail = _grades_count(len(grades), sh.en)
+        else:
+            tail = sh.say("no_grading") if card.grade_unavailable else ""
+        rtl = sh.reads_rtl(f"{card.source.ref} {tail}")
+        after = [_W(w, quiet, tie=True) for w in (["—"] if card.source.ref.strip() and tail else []) + tail.split()]
+        room = width - _line_width(after, rtl) - (_lead(after[0], rtl) if after else 0)
+        lines, _cut = _clip(_wrap(_words(card.source.ref, quiet), room, rtl), 1, room, rtl)
+        words = (lines[0] if lines else []) + after
+        return _para(words, width, rtl, strut=(quiet.face, quiet.size), leading=1.45, max_lines=1) if words else None
+
+    def draw(self, y: int) -> None:
+        sh = self.sh
+        # the state at the card's starting edge, the citation beside it
+        if sh.rtl:
+            ring_x, word_left, word_right = sh.right - self.side, sh.right - self.column, sh.right - self.side - self.gap
+            left, right = sh.left, sh.right - self.column - self.gutter
+        else:
+            ring_x, word_left, word_right = sh.left, sh.left + self.side + self.gap, sh.left + self.column
+            left, right = sh.left + self.column + self.gutter, sh.right
+        sh.glyph(f"row-{self.n}-glyph", self.state, ring_x, y + self.drop + (self.word.line_height - self.side) // 2, self.side)
+        sh.para(f"row-{self.n}-state", self.word, y + self.drop, word_left, word_right)
+        sh.para(f"row-{self.n}-quote", self.quote, y, left, right)
+        if self.reference:
+            if self.reference.rtl != self.quote.rtl:  # it stands under the quotation, whichever way it reads
+                reach = math.ceil(_line_width(self.reference.lines[0], self.reference.rtl))
+                left, right = (right - reach, right) if self.quote.rtl else (left, left + reach)
+            sh.para(f"row-{self.n}-ref", self.reference, y + self.quote.height, left, right)
+
+
+def draw_summary_card(
+    summary: Summary, *, size: str, theme: str, lang: str, app_url: str,
+    cards: list[Card] | tuple[Card, ...] = (), title: str | None = None,
+) -> Drawn:  # fmt: skip
+    """The report on one card (docs/DESIGN.md §8.1): «خلاصة التحقق», what was checked, the summary
+    sentence, then the citations — what most needs attention first, as many whole rows as fit, and
+    the rest counted in one closing line."""
     sh = _Sheet(size, theme, lang)
-    top = sh.header("summary_title")
+    top = sh.header("title")
     bottom = sh.footer(app_url)
     counts = {state.value: n for state, n in summary.by_state.items()}
     head, clauses = summary_parts(summary.total, counts, sh.en)
-    # A sentence with more than three clauses is set a step smaller on the square card.
-    ink = sh.ink("plex600", 38 if size == "square" and len(clauses) > 3 else 44)
+
+    items = [sh.item("summary-title", sh.tool(sh.say("summary_title"), sh.ink("plex600", 34), max_lines=1))]
+    if title and title.strip():
+        items.append(sh.item("checked", sh.tool(" ".join(title.split()), sh.ink("plex", 26, "quiet"), max_lines=1)))
+    ink = sh.ink("plex600", 34)
     words = _words(head, ink)
     for i, (state, text) in enumerate(clauses):  # each clause in its state's ink behind its ring, and never broken
         clause_ink = replace(ink, fill=sh.states[state][1])
@@ -1117,12 +1222,38 @@ def draw_summary_card(summary: Summary, *, size: str, theme: str, lang: str, app
         words += [_W(w, clause_ink, tie=True, space=1 if j else 0.7) for j, w in enumerate(text.split())]
         if i < len(clauses) - 1:
             words.append(_W("," if sh.en else "،", ink, tie=True, space=0))
-    items = [sh.item("summary", _para(words, sh.width, sh.rtl, strut=(ink.face, ink.size), leading=1.75))]
-    if human_reviewed:  # some counted states were set by a human reviewer; no name is drawn
-        items += [_gap(sh.px(12)), sh.item("review-mark", sh.tool(sh.say("overridden"), sh.ink("plex", 26, "quiet"), max_lines=1))]
+    items += [_gap(sh.px(6)), sh.item("summary", _para(words, sh.width, sh.rtl, strut=(ink.face, ink.size), leading=1.7))]
+
+    fit = {"rows": 0, "rest": 0}
+    if cards:
+        ordered = sorted(cards, key=lambda c: (_LIST_ORDER.index(_drawn_state(c)), c.position, c.index))
+        ordered = ordered[:_LIST_MOST]  # no card holds more rows than this; the rest are only counted
+        widest = max(_width(STATE_SHORT[_drawn_state(c)][sh.en], "plex600", sh.px(26), sh.rtl) for c in ordered)
+        column = min(round(sh.width * 0.4), sh.px(28) + sh.px(12) + math.ceil(widest) + 1)  # one column for the state words shown
+        rows = [_Row(sh, n + 1, card, column) for n, card in enumerate(ordered)]
+        between, lead = sh.px(10), sh.px(14) * 2 + HAIRLINE
+        more = sh.tool(_more(1, sh.en), sh.ink("plex", 26, "quiet"), max_lines=1)  # every closing line is this high
+        room = bottom - top - sum(i.height for i in items) - lead
+        total = max(summary.total, len(cards))
+
+        def needed(k: int) -> int:
+            """Height of the first ``k`` rows, with the closing line when citations are left over."""
+            return sum(r.height for r in rows[:k]) + between * max(0, k - 1) + (between + more.height if k < total else 0)
+
+        shown = next((k for k in range(len(rows), 0, -1) if needed(k) <= room), 0)  # whole rows only
+        if shown or needed(0) <= room:
+            items += [_gap(sh.px(14)), _Item(HAIRLINE, sh.hairline), _gap(sh.px(14))]
+            for n, row in enumerate(rows[:shown]):
+                items += ([_gap(between)] if n else []) + [_Item(row.height, row.draw)]
+            if shown < total:
+                items += ([_gap(between)] if shown else []) + [sh.item("more", sh.tool(_more(total - shown, sh.en), sh.ink("plex", 26, "quiet"), max_lines=1))]
+            fit = {"rows": shown, "rest": total - shown}
     sh.place(items, top)
-    return sh.done({"body": (top, bottom)})
+    return sh.done({**fit, "body": (top, bottom)})
 
 
-def render_summary_card(summary: Summary, *, size: str, theme: str, lang: str, app_url: str, human_reviewed: bool = False) -> bytes:
-    return draw_summary_card(summary, size=size, theme=theme, lang=lang, app_url=app_url, human_reviewed=human_reviewed).png()
+def render_summary_card(
+    summary: Summary, *, size: str, theme: str, lang: str, app_url: str,
+    cards: list[Card] | tuple[Card, ...] = (), title: str | None = None,
+) -> bytes:  # fmt: skip
+    return draw_summary_card(summary, size=size, theme=theme, lang=lang, app_url=app_url, cards=cards, title=title).png()

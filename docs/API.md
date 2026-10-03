@@ -198,10 +198,10 @@ interface Summary {
 
 ## `POST /api/export/html`
 
-Body: a `Report` (`{ source, segments, cards, summary, generated_at, reviewer_overrides }`) assembled
-by the client, including reviewer overrides
-(`{ card_id, original_state, state, note, reviewer, at }`). Returns a standalone printable HTML
-document (`text/html`). Nothing is stored. JSON export is done entirely client-side.
+Body: a `Report` (`{ source, segments, cards, summary, generated_at }`) assembled by the client.
+Returns a standalone printable HTML document (`text/html`), each citation under its own state.
+Nothing is stored. JSON export is done entirely client-side. A report saved by an older client may
+carry fields this API has dropped; they are ignored, not rejected.
 
 ---
 
@@ -277,11 +277,15 @@ Used only when client-side rendering fails. Nothing is stored; no timestamp or i
   "theme": "light | dark",
   "lang": "ar | en",
   "card": Card,                          // kind = "claim"
-  "override_state": "…EvidenceState… | null",   // a reviewer's state, drawn with a "human review" mark and no name
-  "summary": Summary,                    // kind = "summary" (counts as shown, reviewer changes applied)
-  "human_reviewed": false                // kind = "summary": draw the "human review" mark, no name
+  "summary": Summary,                    // kind = "summary": the counts the sentence says
+  "cards": [Card, …],                    // kind = "summary": the citations listed on the card, at most 60 (default [])
+  "title": "…" | null                    // kind = "summary": what was checked, at most 300 characters
 }
 ```
+
+A card is drawn in its own state (`card.state`) under the levels' ceilings, whatever the request
+says: a personal case (level D) is always «يحتاج مراجعة» and shows no source, and a level C claim is
+never drawn as «له مرجعية» or «مخالف للمصدر». Fields this API has dropped are ignored, not rejected.
 
 ### What a verdict card shows (client and server render the same content)
 
@@ -291,18 +295,18 @@ blocks, top to bottom:
 | Block | What is drawn | Source |
 |---|---|---|
 | Header | logotype «تبيّن» in Naskh; the label «بطاقة تثبّت» / "Verification card" in Plex, quiet; a hairline | fixed |
-| State | the ring glyph and the state's canonical name in the state's ink — «مؤيَّد بمصدر معتمد», «مؤيَّد مع ملاحظة», «يحتاج مزيد تحقق», «لم يُعثر على مصدر موثوق», «مخالف للمصدر». Gold appears only in the verified ring. When a reviewer changed the state, «حالة معدَّلة بمراجعة بشرية» follows on the next line; no name | `override_state ?? card.state` |
-| Verdict sentence | one sentence in Plex, at most 3 lines (2 on the square card). Not drawn when a reviewer changed the state: the rule's sentence explains the engine's state, not the reviewer's | first sentence of `note_ar` / `note_en` (up to the first `.`, `؟`, `?` or `!`) |
+| State | the ring glyph and the state's short name in the state's ink (`DESIGN.md` §8.2): «له مرجعية», «له مرجعية مع ملاحظة», «يحتاج مراجعة», «بلا مرجعية», «مخالف للمصدر» — "Has a reference", "Has a reference, with a note", "Needs review", "No reference found", "Differs from the source". Gold appears only in the ring of «له مرجعية» | `card.state`; the words are `STATE_SHORT` in `report/labels.py` |
+| Verdict sentence | one sentence in Plex, at most 3 lines (2 on the square card) | first sentence of `note_ar` / `note_en` (up to the first `.`, `؟`, `?` or `!`) |
 | «النص المتداول» | the claim in Naskh, in the state's ink, underlined in the state's colour — as the passage looks on the page | `card.text_as_quoted`, cut at 240 characters at a word boundary with «…» |
 | «في المصدر» | the source's own wording between two hairlines: Amiri Quran inside ﴿ ﴾ for a verse, Amiri for anything else. Words that differ from the claim are underlined in the state's colour | `card.source.text`; the underlined words are the source side of `card.diff`'s `replace` steps |
 | Takhrij line | the reference, a dash, then: **one grading** — «its first line, verbatim» in Naskh, the muhaddith when the source names one, and the grading's source; **several gradings** — their count («3 أحكام في المصادر»), so that none is singled out; **none** — «الحكم غير متاح من المصدر» when `grade_unavailable`, otherwise the name of the source the text was retrieved from. A grading is never shortened | `card.source.ref`, `card.grades[].text` / `.scholar` / `.source_name`, `card.grade_unavailable`, `card.source.source_name` |
 | …instead, `not_found` | between two hairlines: «لا نُصدر حكماً بلا مصدر، ولا نولّد بديلاً.», the abstention verse inside ﴿ ﴾ and its reference. A source the card may carry is not drawn | `meta.abstention_verse` |
 | …instead, no source (`needs_review`, level C) or level D | nothing is quoted. Between two hairlines: the reason — «هذه حالة شخصية تستوجب فتوى من جهة مؤهلة» for a personal case, «مسألة خلافية: يعرض تبيّن ما ورد في المصادر كما هو، دون ترجيح.» for a disputed matter, left out when it is already the verdict sentence above — then the referral: «تبيّن لا يفتي ولا يرجّح؛ يُرجع في هذه المسألة إلى أهل العلم.» A personal case (level D) never shows a source | `card.personal_case`, `card.disagreement_noted` |
-| Action | the canonical action of the drawn state, as a sentence: «الإجراء المقترح: …» | `STATE_ACTION[override_state ?? card.state]` |
+| Action | the canonical action of the drawn state, as a sentence: «الإجراء المقترح: نقله كما ورد مع ذكر مرجعه.» / "Suggested action: cite it as quoted, with its reference." for «له مرجعية»; correct the wording; refer the matter to scholars; remove it or ask for its source; remove it and warn | `STATE_ACTION[state]` |
 | Footer | a hairline; «تحقّق بنفسك على تبيّن», the app address without its scheme, and its QR code; the transparency line | app URL |
 
-Never drawn: date or time, reviewer name, the source's URL, video URL or timestamp, who the content
-attributes the text to, anything about the user.
+Never drawn: date or time, any person's name, the source's URL, video URL or timestamp, who the
+content attributes the text to, anything about the user.
 
 **Fitting** (`docs/DESIGN.md` §8, as the server applies it — deterministic). Type is reduced
 before anything is cut: the claim from 44px down to 34 and the source's wording from 46 (a verse)
@@ -319,9 +323,19 @@ at 0.86 of the portrait's. If the card still does not hold everything at the sma
   stays whole as long as one line of the wording fits; on the square card a claim near 240
   characters gives up lines so that the wording keeps at least one.
 
-**The summary card** (`kind = "summary"`) has the same frame, header (label «خلاصة التحقق») and
-footer. It shows the report's summary sentence in Plex 600, the same wording as the page's summary:
-«خمسة استشهادات:» and then one clause per state present, each in its state's ink behind its ring
-glyph and never broken across lines («واحد مؤيَّد،» … «وواحد مخالف للمصدر»). `human_reviewed` adds
-«حالة معدَّلة بمراجعة بشرية». No claim text. The title of what was checked (§8) is not drawn by the
-server: the request does not carry it.
+**The summary card** (`kind = "summary"`, `DESIGN.md` §8.1) has the same frame, header and footer,
+and carries the details. Top to bottom:
+
+| Block | What is drawn | Source |
+|---|---|---|
+| Heading | «خلاصة التحقق» / "Verification summary", Plex 600 | fixed |
+| What was checked | the title on one line, quiet, cut at a word boundary with «…»; left out when there is none | `title` |
+| Summary sentence | Plex 600, the page's sentence with agreement — «تسعة استشهادات:» then one clause per state present, each in its state's ink behind its ring glyph and never broken across lines: «واحد له مرجعية» / «اثنان لهما مرجعية» / «ثلاثة لها مرجعية» (the same with «… مع ملاحظة»), «اثنان يحتاجان مراجعة», «واحد بلا مرجعية», «وواحد مخالف للمصدر» | `summary.total`, `summary.by_state` |
+| The list | after a hairline, one row per citation: the ring glyph and the short state word in the state's ink; beside them the quoted words between «» on one line, cut at a word boundary with «…»; under them the reference and, for a narration, the grading word verbatim («رواه مسلم — «صحيح»»). Several gradings are counted («3 أحكام في المصادر»); a grading too long for the line is counted, never shortened; the reference gives way first («…»). No reference line for «بلا مرجعية» or a personal case | `cards[]`: `state`, `text_as_quoted`, `source.ref`, `grades`, `grade_unavailable` |
+| Closing line | when not every citation fits: «وثلاثة استشهادات أخرى» / "and three more citations" | `max(summary.total, cards.length)` − rows shown |
+
+Order of the rows: what most needs attention first — «مخالف للمصدر», «بلا مرجعية», «يحتاج مراجعة»,
+«له مرجعية مع ملاحظة», «له مرجعية» — and the text's order (`position`) inside each group. As many
+whole rows as fit above the footer are drawn (about six on the portrait card, four or five on the
+square); a row is never cut in half. Without `cards` the card shows the heading, the title and the
+sentence alone.

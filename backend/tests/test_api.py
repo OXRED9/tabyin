@@ -61,7 +61,9 @@ def test_fabrication_example_is_refused(client):
     assert len(cards) == 1 and cards[0]["state"] == "not_found" and cards[0]["source"] is None
 
 
-def test_export_html_marks_human_overrides(client, ayah):
+def test_export_html(client, ayah):
+    from tabayyun.report.labels import STATE
+
     events = sse(client.post("/api/verify", json={"input_type": "text", "text": f"قال الله تعالى: ﴿{ayah(49, 6)[1]}﴾"}))
     cards = [d for n, d in events if n == "card"]
     report = {
@@ -70,12 +72,14 @@ def test_export_html_marks_human_overrides(client, ayah):
         "cards": cards,
         "summary": next(d for n, d in events if n == "summary"),
         "generated_at": "2026-10-03T18:00:00+03:00",
-        "reviewer_overrides": [{"card_id": cards[0]["id"], "original_state": "supported", "state": "needs_review", "note": "تحتاج مراجعة السياق", "reviewer": "سليمان", "at": "2026-10-03T18:05:00+03:00"}],
     }
     r = client.post("/api/export/html", json=report)
     assert r.status_code == 200 and r.headers["content-type"].startswith("text/html")
     html = r.text
-    assert "حالة معدَّلة بمراجعة بشرية" in html and "سليمان" in html and "يحتاج مزيد تحقق" in html
+    assert STATE[cards[0]["state"]][0] in html  # each citation under its own state
+    # a report saved by an older client may carry fields the API has dropped: accepted, and ignored
+    older = client.post("/api/export/html", json={**report, "a_field_the_api_dropped": [{"card_id": cards[0]["id"], "state": "needs_review"}]})
+    assert older.status_code == 200 and older.text == html
     assert "لا تغني عن الرجوع إلى أهل العلم" in html and cards[0]["source"]["url"] in html
     assert 'dir="rtl"' in html
     assert 'dir="ltr"' in client.post("/api/export/html?lang=en", json=report).text

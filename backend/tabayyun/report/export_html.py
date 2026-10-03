@@ -15,7 +15,6 @@ main{max-width:860px;margin:0 auto;padding:32px 24px}h1{font-size:24px;margin:0;
 .state{color:var(--c);font-weight:700}.row{margin:6px 0}.label{color:#4B5A56;font-size:12px;display:block}
 .quote{font-size:17px}.src{background:#F6F7F5;border-radius:8px;padding:8px 12px}.ins{background:#FCEFC7}.del{background:#FBD9D5;text-decoration:line-through}
 .why{border-top:1px solid #E3E7E4;padding-top:8px}.why ol{margin:4px 0;padding-inline-start:20px}
-.override{background:#FFF6DA;border:1px dashed #C9A227;border-radius:8px;padding:6px 10px;font-size:13px;margin-top:8px}
 a{color:#1B6B5E;word-break:break-all}footer{margin-top:32px;font-size:12px;color:#4B5A56}
 @media print{body{background:#fff}main{padding:0}.card{border-color:#ccc}}
 """
@@ -43,9 +42,9 @@ def _diff_html(card: Card) -> str:
     return " ".join(parts)
 
 
-def _card_html(card: Card, override: dict | None, en: bool) -> str:
+def _card_html(card: Card, en: bool) -> str:
     L = (lambda ar, e: e if en else ar)
-    state = override["state"] if override else card.state.value
+    state = card.state.value
     rows: list[str] = []
     head = f'<span class="state">{escape(_t(STATE[state], en))}</span> · {escape(_t(CLAIM_TYPE[card.claim_type.value], en))}'
     if card.timestamp:
@@ -99,28 +98,19 @@ def _card_html(card: Card, override: dict | None, en: bool) -> str:
         items.append(f'<div class="muted">{L("نسخة البيانات", "Data snapshot")}: {escape(e.data_version)}</div>')
         items.append(f'<div><strong>{L("حدود هذا الحكم", "Limits of this verdict")}:</strong> {escape(e.limits_en if en else e.limits_ar)}</div>')
         rows.append(f'<div class="row why"><span class="label">{L("لماذا هذا الحكم؟", "Why this verdict?")}</span>{"".join(items)}</div>')
-    if override:
-        rows.append(
-            f'<div class="override"><strong>{L("حالة معدَّلة بمراجعة بشرية", "State changed by human review")}</strong> — '
-            f'{L("الحالة الآلية", "automatic state")}: {escape(_t(STATE[override.get("original_state", card.state.value)], en))}'
-            f'{" · " + L("المراجِع", "Reviewer") + ": " + escape(str(override["reviewer"])) if override.get("reviewer") else ""}'
-            f'{" · " + escape(str(override["note"])) if override.get("note") else ""}</div>'
-        )
     return f'<section class="card" style="--c:{STATE_COLOR[state]}">{"".join(rows)}</section>'
 
 
 def render_report_html(report: Report, lang: str = "ar") -> str:
     en = lang == "en"
     L = (lambda ar, e: e if en else ar)
-    overrides = {o.get("card_id"): o for o in report.reviewer_overrides if o.get("state") in STATE}
     counts: dict[str, int] = {}
     for c in report.cards:
-        st = overrides[c.id]["state"] if c.id in overrides else c.state.value
-        counts[st] = counts.get(st, 0) + 1
+        counts[c.state.value] = counts.get(c.state.value, 0) + 1
     chips = "".join(f'<span class="chip" style="background:{STATE_COLOR[s]}">{n} · {escape(_t(STATE[s], en))}</span>' for s, n in counts.items())
     src = report.source
     src_line = " · ".join(escape(x) for x in (src.title, src.url) if x)
-    cards = "".join(_card_html(c, overrides.get(c.id), en) for c in sorted(report.cards, key=lambda c: c.position))
+    cards = "".join(_card_html(c, en) for c in sorted(report.cards, key=lambda c: c.position))
     reduced = f'<p class="disclaimer">{L("أُنجز هذا التقرير بالوضع اللفظي (تغطية أقل): نموذج اللغة لم يكن متاحاً.", "This report was produced in lexical mode (reduced coverage): the language model was unavailable.")}</p>' if report.summary.mode == "lexical_only" else ""
     return f"""<!doctype html>
 <html lang="{'en' if en else 'ar'}" dir="{'ltr' if en else 'rtl'}"><head><meta charset="utf-8">
