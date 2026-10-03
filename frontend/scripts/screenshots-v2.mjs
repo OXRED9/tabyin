@@ -6,6 +6,7 @@
  *
  *   BASE_URL   where the app is served (default http://localhost:5173)
  *   ONLY       comma-separated state names to capture a subset, e.g. ONLY=empty,error
+ *              (`cards` stands for the verdict-card PNGs)
  *   WIDTHS     comma-separated widths to capture a subset, e.g. WIDTHS=390
  *              (`image-reading` and `image-read` are captured at 390 and 1440 only)
  *
@@ -29,7 +30,7 @@ const browser = await chromium.launch()
 const problems = []
 const external = new Set()
 
-async function open(width, { theme = 'light', query = '' } = {}) {
+async function open(width, { theme = 'light', query = '', init = null } = {}) {
   const phone = width < 768
   // Below 1024 a note opens as a bottom sheet; from 1024 up it opens in place, in the margin.
   const sheet = width < 1024
@@ -42,6 +43,7 @@ async function open(width, { theme = 'light', query = '' } = {}) {
     locale: 'ar-SA',
   })
   const page = await context.newPage()
+  if (init) await page.addInitScript(init)
   page.on('console', (m) => {
     if (m.type() === 'error') problems.push(`console: ${m.text()}`)
   })
@@ -72,16 +74,6 @@ async function openNote({ page, phone, sheet }, id) {
   await page.locator(phone ? `li[data-note="${id}"] button` : `[data-margin] [data-note="${id}"] > button`).click()
   if (sheet) await page.locator(`[data-note-sheet="${id}"]`).waitFor()
   await page.waitForTimeout(400)
-}
-
-async function setReviewerMode({ page, phone }) {
-  if (phone) {
-    await page.getByRole('button', { name: 'المزيد' }).click()
-    await page.getByRole('menuitemcheckbox', { name: 'وضع المراجع' }).click()
-  } else {
-    await page.getByRole('switch', { name: 'وضع المراجع' }).click()
-  }
-  await page.waitForTimeout(200)
 }
 
 const STATES = {
@@ -124,30 +116,6 @@ const STATES = {
     const session = await openReport(width)
     await openNote(session, 'c2')
     await session.page.screenshot({ path: file, fullPage: !session.sheet })
-    await session.context.close()
-  },
-
-  // Reviewer mode on, a note open, and a human change saved: both states are shown.
-  reviewer: async (width, file) => {
-    const session = await openReport(width)
-    const { page, sheet } = session
-    await setReviewerMode(session)
-    await openNote(session, 'c5')
-    const note = sheet ? page.locator('[data-note-sheet="c5"]') : page.locator('[data-margin] [data-note="c5"]')
-    await note.getByLabel('اسم المراجع').fill('سليمان')
-    await note.getByLabel('ملاحظة المراجع').fill('اللفظ صحيح المعنى، ويُصحَّح الترتيب قبل النشر.')
-    await note.getByLabel('الحالة بعد المراجعة').click()
-    await page.getByRole('menuitemradio', { name: 'مؤيَّد مع ملاحظة' }).click()
-    await note.getByRole('button', { name: 'حفظ المراجعة' }).click()
-    await page.getByText('حُفظت المراجعة').waitFor()
-    // Let the toast leave: it would cover the bottom of the capture.
-    await page.locator('[data-sonner-toast]').first().waitFor({ state: 'detached', timeout: 10_000 }).catch(() => {})
-    if (sheet) {
-      // The note's sheet is the capture: scroll it to the reviewer's line.
-      await note.getByRole('button', { name: 'حفظ المراجعة' }).scrollIntoViewIfNeeded()
-    }
-    await page.waitForTimeout(300)
-    await page.screenshot({ path: file, fullPage: !sheet })
     await session.context.close()
   },
 
@@ -197,6 +165,59 @@ const STATES = {
     await context.close()
   },
 
+  // Exactly one claim: the answer is open without a tap. On a phone the note is set inline under
+  // the text; at 1440 its margin note has opened by itself.
+  'single-claim': async (width, file) => {
+    const { context, page, sheet } = await open(width, { query: '&scenario=fabrication&autorun=1&speed=10' })
+    await page.getByText('اكتمل التحقق').first().waitFor({ timeout: 30_000 })
+    await page.locator(sheet ? 'article[data-note][data-open]' : '[data-margin] [data-note][data-open]').waitFor()
+    await page.getByRole('button', { name: 'إحالة إلى أهل العلم' }).first().waitFor()
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: file, fullPage: true })
+    await context.close()
+  },
+
+  // A link shared to the installed app (`/?share=1`): it is routed and verification starts by
+  // itself. Mock mode supplies the payload; the capture is taken while the run is under way.
+  'share-link': async (width, file) => {
+    const { context, page } = await open(width, { query: '&share=1&speed=1' })
+    await page.locator('[data-note][data-state]:not([data-state="pending"])').first().waitFor({ timeout: 30_000 })
+    await page.screenshot({ path: file })
+    await context.close()
+  },
+
+  // After a first successful verification, the quiet offer to install, in the report's footer.
+  'install-hint': async (width, file) => {
+    const { context, page } = await openReport(width, { query: '&install=1' })
+    await page.getByTestId('install-line').scrollIntoViewIfNeeded()
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+    await page.waitForTimeout(300)
+    await page.screenshot({ path: file })
+    await context.close()
+  },
+
+  // The share dialog on a phone, scrolled to the ways out: the share sheet, the named apps, save
+  // and copy. Headless Chromium on Linux has no share sheet, so this capture alone gives the page
+  // one that does nothing: what a phone shows.
+  'share-dialog': async (width, file) => {
+    const session = await openReport(width, {
+      init: () => {
+        navigator.canShare = () => true
+        navigator.share = async () => {}
+      },
+    })
+    const { page } = session
+    await openNote(session, 'c8')
+    await page.locator('[data-note-sheet="c8"]').getByTestId('share-card').click()
+    await page.getByTestId('share-targets').waitFor()
+    await page.evaluate(() => document.fonts.ready)
+    await page.waitForTimeout(500)
+    await page.getByTestId('share-copy').scrollIntoViewIfNeeded()
+    await page.waitForTimeout(300)
+    await page.screenshot({ path: file })
+    await session.context.close()
+  },
+
   'dark-empty': async (width, file) => {
     const { context, page } = await open(width, { theme: 'dark' })
     await page.getByText('جرّب:').waitFor()
@@ -205,13 +226,20 @@ const STATES = {
   },
 }
 
-// Captured at the phone and the desktop width only.
-const TWO_WIDTHS = new Set(['image-reading', 'image-read'])
+// States that are not captured at every width.
+const ONLY_AT = {
+  'image-reading': [390, 1440],
+  'image-read': [390, 1440],
+  'single-claim': [390, 1440],
+  'share-link': [390],
+  'install-hint': [390],
+  'share-dialog': [390],
+}
 
 for (const [name, capture] of Object.entries(STATES)) {
   if (only && !only.has(name)) continue
   for (const width of WIDTHS) {
-    if (TWO_WIDTHS.has(name) && width !== 390 && width !== 1440) continue
+    if (ONLY_AT[name] && !ONLY_AT[name].includes(width)) continue
     const label = `${name}-${width}`
     const started = Date.now()
     try {
@@ -221,6 +249,91 @@ for (const [name, capture] of Object.entries(STATES)) {
       problems.push(`${label}: ${error.message.split('\n')[0]}`)
       console.log(`✗ ${label}: ${error.message.split('\n')[0]}`)
     }
+  }
+}
+
+// ── The verdict cards: not screenshots, but the PNG files the app itself produces ─────────────
+// Saved through the share dialog, as a user would: card-client-<state>-<size>-<theme>-<lang>.png
+
+const CARD_COPY = {
+  ar: { done: 'اكتمل التحقق', portrait: /^عمودي/, square: /^مربّع/, light: 'فاتح', dark: 'داكن' },
+  en: { done: 'Verification complete', portrait: /^Portrait/, square: /^Square/, light: 'Light', dark: 'Dark' },
+}
+
+async function cardSession(lang) {
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    reducedMotion: 'reduce',
+    acceptDownloads: true,
+    locale: 'ar-SA',
+  })
+  const page = await context.newPage()
+  page.on('console', (m) => {
+    if (m.type() === 'error') problems.push(`console: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`))
+  await page.goto(`${BASE}/?mock=1&lang=${lang}&scenario=video&autorun=1&speed=10`)
+  await page.getByText(CARD_COPY[lang].done).first().waitFor({ timeout: 30_000 })
+  await page.evaluate(() => document.fonts.ready)
+  return { context, page, copy: CARD_COPY[lang] }
+}
+
+/** Choose size and theme in the open share dialog, then save the PNG the app produces. */
+async function saveCard({ page, copy }, name, size, theme) {
+  const dialog = page.getByRole('dialog')
+  await dialog.waitFor()
+  await dialog.getByRole('button', { name: copy[size] }).click()
+  await dialog.getByRole('button', { name: copy[theme], exact: true }).click()
+  await page.waitForTimeout(500)
+  const download = page.waitForEvent('download', { timeout: 30_000 })
+  await page.getByTestId('share-download').click()
+  await (await download).saveAs(path.join(OUT, `${name}.png`))
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(300)
+  console.log(`✓ ${name}`)
+}
+
+async function shareNote(session, id) {
+  const note = session.page.locator(`[data-margin] [data-note="${id}"]`)
+  if ((await note.getAttribute('data-open')) === null) await note.locator('> button').click()
+  await note.getByTestId('share-card').click()
+}
+
+if (!only || only.has('cards')) {
+  try {
+    const ar = await cardSession('ar')
+    // A text attributed to the Quran that is in fact a narration.
+    await shareNote(ar, 'c8')
+    await saveCard(ar, 'card-client-contradicted-portrait-light-ar', 'portrait', 'light')
+    // A verse quoted word for word.
+    await shareNote(ar, 'c1')
+    await saveCard(ar, 'card-client-supported-square-light-ar', 'square', 'light')
+    // A narration quoted in part.
+    await shareNote(ar, 'c2')
+    await saveCard(ar, 'card-client-supported-with-note-portrait-light-ar', 'portrait', 'light')
+    // A narration quoted with two words in another order: the differing words are underlined.
+    await shareNote(ar, 'c5')
+    await saveCard(ar, 'card-client-needs-review-square-light-ar', 'square', 'light')
+    // Nothing found: the abstention.
+    await shareNote(ar, 'c6')
+    await saveCard(ar, 'card-client-not-found-square-dark-ar', 'square', 'dark')
+    // The whole report on one card: its sentence, then a row per citation.
+    await ar.page.getByTestId('share-summary').click()
+    await saveCard(ar, 'card-client-summary-portrait-light-ar', 'portrait', 'light')
+    await ar.page.getByTestId('share-summary').click()
+    await saveCard(ar, 'card-client-summary-square-dark-ar', 'square', 'dark')
+    await ar.context.close()
+
+    // In English: a disputed matter with no source to show, and the summary.
+    const en = await cardSession('en')
+    await shareNote(en, 'c7')
+    await saveCard(en, 'card-client-needs-review-portrait-light-en', 'portrait', 'light')
+    await en.page.getByTestId('share-summary').click()
+    await saveCard(en, 'card-client-summary-square-light-en', 'square', 'light')
+    await en.context.close()
+  } catch (error) {
+    problems.push(`cards: ${error.message.split('\n')[0]}`)
+    console.log(`✗ cards: ${error.message.split('\n')[0]}`)
   }
 }
 

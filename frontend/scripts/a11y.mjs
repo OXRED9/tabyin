@@ -19,8 +19,8 @@ import { chromium } from 'playwright'
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173'
 const axe = fs.readFileSync(path.resolve(import.meta.dirname, '../node_modules/axe-core/axe.min.js'), 'utf8')
 const COPY = {
-  ar: { done: 'اكتمل التحقق', reviewer: 'وضع المراجع', more: 'المزيد', referral: 'إحالة إلى أهل العلم', example: 'رابط مقطع يوتيوب', dark: 'داكن', image: 'صورة رسالة محوَّلة', removed: /حُذف من الصورة/ },
-  en: { done: 'Verification complete', reviewer: 'Reviewer mode', more: 'More', referral: 'Refer to scholars', example: 'YouTube link', dark: 'Dark', image: 'A forwarded-message screenshot', removed: /Removed from the picture/ },
+  ar: { unavailable: /تعذّر استلام/, done: 'اكتمل التحقق', referral: 'إحالة إلى أهل العلم', example: 'رابط مقطع يوتيوب', dark: 'داكن', image: 'صورة رسالة محوَّلة', removed: /حُذف من الصورة/ },
+  en: { unavailable: /could not be received/, done: 'Verification complete', referral: 'Refer to scholars', example: 'YouTube link', dark: 'Dark', image: 'A forwarded-message screenshot', removed: /Removed from the picture/ },
 }
 const DESKTOP = { width: 1440, height: 900 }
 const MOBILE = { width: 390, height: 844 }
@@ -114,18 +114,38 @@ function measureContrast() {
  *   image      the composer after a picture was read: its text in the field, the unread word
  *              marked and counted, the uncertainty line, the removed items listed (opened)
  *   report     every note open, every «لماذا هذا الحكم؟» open
- *   reviewer   the same in reviewer mode           dialog   the referral dialog
- *   share      the share dialog on a claim         share-summary   on the summary
- *   sheet      (below 1024px) a note open as a bottom sheet, in reviewer mode
+ *   dialog     the referral dialog
+ *   share      the share dialog on a claim (`card`: the state of the claim whose card is drawn)
+ *   share-summary   the share dialog on the summary
+ *   sheet      (below 1024px) a note open as a bottom sheet
+ *   share-phone   (390px) the share dialog opened from a note's sheet, with a share sheet present
+ *   notice     the composer after a share that could not be received (`?share=unavailable`)
+ *   single     a report with exactly one claim: its note open without a tap (inline below
+ *              1024px, in the margin above), and the offer to install in the footer
+ *   single-ios the same, with the iOS hint in place of the offer
  */
-async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, state = 'empty' }) {
+async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, state = 'empty', card = 'not_found' }) {
   const mobile = viewport === MOBILE
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce', isMobile: mobile, hasTouch: mobile })
   const page = await context.newPage()
+  // Headless Chromium on Linux has no share sheet; a phone has one. This state is audited with it.
+  if (state === 'share-phone') {
+    await page.addInitScript(() => {
+      navigator.canShare = () => true
+      navigator.share = async () => {}
+    })
+  }
   const t = COPY[lang]
-  const composer = state === 'empty' || state === 'link' || state === 'error' || state === 'image'
+  const composer = ['empty', 'link', 'error', 'image', 'notice'].includes(state)
+  const single = state === 'single' || state === 'single-ios'
   // Reports are reached through mock mode's own route: `scenario=<name>&autorun=1`.
-  const route = composer ? '' : `&scenario=video&autorun=1&speed=${state === 'running' ? 1 : 10}`
+  const route = composer
+    ? state === 'notice'
+      ? '&share=unavailable'
+      : ''
+    : single
+      ? `&scenario=fabrication&autorun=1&speed=10&install=${state === 'single-ios' ? 'ios' : '1'}`
+      : `&scenario=video&autorun=1&speed=${state === 'running' ? 1 : 10}`
   await page.goto(`${BASE}/?mock=1&theme=${theme}&lang=${lang}${route}`)
   await page.evaluate(() => document.fonts.ready)
 
@@ -142,6 +162,7 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
       await verify.click()
       await page.getByRole('alert').waitFor()
     }
+    if (state === 'notice') await page.getByText(t.unavailable).waitFor()
     if (state === 'image') {
       await page.getByRole('button', { name: t.image }).click()
       await page.getByTestId('image-unread').waitFor({ timeout: 15_000 })
@@ -153,17 +174,13 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     await page.locator('[data-note][data-state="pending"]').first().waitFor({ timeout: 30_000 })
   } else {
     await page.getByText(t.done).first().waitFor({ timeout: 30_000 })
-    if (state === 'reviewer' || state === 'dialog' || state === 'sheet') {
-      if (mobile) {
-        await page.getByRole('button', { name: t.more }).click()
-        await page.getByRole('menuitemcheckbox', { name: t.reviewer }).click()
-      } else {
-        await page.getByRole('switch', { name: t.reviewer }).click()
-      }
+    if (single) {
+      await page.locator('[data-note][data-open]').first().waitFor()
+      await page.getByTestId('install-line').waitFor()
     }
     if (viewport !== DESKTOP) {
       // Below 1024px a note does not open in place: one is opened as a bottom sheet.
-      if (state === 'sheet') {
+      if (state === 'sheet' || state === 'share-phone') {
         await page.locator(mobile ? 'li[data-note="c2"] button' : '[data-margin] [data-note="c2"] > button').click()
         await page.locator('[data-note-sheet="c2"]').waitFor()
       }
@@ -174,11 +191,15 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     // F5: open every «لماذا هذا الحكم؟» panel so its list, meter and labels are audited.
     const closedPanels = page.locator('[data-testid="explain"] > button[aria-expanded="false"]')
     for (let i = 0; i < 30 && (await closedPanels.count()) > 0; i++) await closedPanels.first().click()
+    if (state === 'share-phone') {
+      await page.locator('[data-note-sheet="c2"]').getByTestId('share-card').click()
+      await page.getByTestId('share-targets').waitFor()
+    }
     if (state === 'share' || state === 'share-summary') {
       // F3: the share dialog, with the verdict-card template inside it.
       const trigger =
         state === 'share'
-          ? page.locator('[data-note][data-state="not_found"]').first().getByTestId('share-card')
+          ? page.locator(`[data-note][data-state="${card}"]`).first().getByTestId('share-card')
           : page.getByTestId('share-summary')
       await trigger.click()
       await page.getByRole('dialog').waitFor()
@@ -224,28 +245,40 @@ await audit('picture read · light · ar', { state: 'image' })
 await audit('picture read · dark · ar', { state: 'image', theme: 'dark' })
 await audit('picture read · light · en', { state: 'image', lang: 'en' })
 await audit('picture read · light · ar · 390px', { state: 'image', viewport: MOBILE })
+await audit('share not received · light · ar · 390px', { state: 'notice', viewport: MOBILE })
+await audit('share not received · dark · en', { state: 'notice', theme: 'dark', lang: 'en' })
 await audit('error · light · ar', { state: 'error' })
 await audit('error · dark · ar', { state: 'error', theme: 'dark' })
 for (const theme of ['light', 'dark']) {
   await audit(`mid-run · ${theme} · ar`, { theme, state: 'running' })
   await audit(`report, all notes open · ${theme} · ar`, { theme, state: 'report' })
-  await audit(`reviewer mode · ${theme} · ar`, { theme, state: 'reviewer' })
   await audit(`referral dialog · ${theme} · ar`, { theme, state: 'dialog' })
 }
 for (const theme of ['light', 'dark']) {
   await audit(`share dialog, claim card · ${theme} · ar`, { theme, state: 'share' })
 }
+await audit('share dialog, verse card · light · ar', { state: 'share', card: 'supported' })
+await audit('share dialog, contradicted card · dark · en', { state: 'share', card: 'contradicted', theme: 'dark', lang: 'en' })
+await audit('share dialog, card with a note · light · ar', { state: 'share', card: 'supported_with_note' })
 await audit('share dialog, summary card · light · en', { lang: 'en', state: 'share-summary' })
+await audit('share dialog, summary card · dark · ar', { theme: 'dark', state: 'share-summary' })
 await audit('report, all notes open · light · en', { lang: 'en', state: 'report' })
-await audit('reviewer mode · dark · en', { lang: 'en', theme: 'dark', state: 'reviewer' })
+await audit('report, all notes open · dark · en', { lang: 'en', theme: 'dark', state: 'report' })
 for (const theme of ['light', 'dark']) {
   await audit(`report · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'report' })
-  await audit(`note sheet, reviewer mode · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'sheet' })
+  await audit(`note sheet · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'sheet' })
+  await audit(`share dialog with the share sheet · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'share-phone' })
 }
 await audit('mid-run · light · ar · 390px', { viewport: MOBILE, state: 'running' })
 for (const theme of ['light', 'dark']) {
+  await audit(`one claim, note inline, install offer · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'single' })
+}
+await audit('one claim, note inline, iOS hint · light · en · 390px', { lang: 'en', viewport: MOBILE, state: 'single-ios' })
+await audit('one claim, note inline · light · ar · 820px', { viewport: TABLET, state: 'single' })
+await audit('one claim, note open in the margin · dark · ar', { theme: 'dark', state: 'single' })
+for (const theme of ['light', 'dark']) {
   await audit(`report · ${theme} · ar · 820px`, { theme, viewport: TABLET, state: 'report' })
-  await audit(`note sheet, reviewer mode · ${theme} · ar · 820px`, { theme, viewport: TABLET, state: 'sheet' })
+  await audit(`note sheet · ${theme} · ar · 820px`, { theme, viewport: TABLET, state: 'sheet' })
 }
 
 await browser.close()
