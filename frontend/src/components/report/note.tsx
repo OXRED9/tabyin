@@ -1,4 +1,4 @@
-import { ChevronDown, UserRoundCheck } from 'lucide-react'
+import { ChevronDown, ChevronLeft, UserRoundCheck } from 'lucide-react'
 import { memo, useId } from 'react'
 import type { CSSProperties } from 'react'
 
@@ -12,6 +12,8 @@ import type { ClaimStub } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface MarginNoteProps extends Omit<NoteBodyProps, 'showQuoted' | 'onLocate'> {
+  /** Wide screens open a note in place; narrower ones hand it to a sheet and keep the margin still. */
+  inPlace: boolean
   open: boolean
   /** Its passage is hovered or focused, or the note itself is. */
   active: boolean
@@ -27,10 +29,13 @@ interface MarginNoteProps extends Omit<NoteBodyProps, 'showQuoted' | 'onLocate'>
 
 /**
  * A margin note: a remark beside a line, not a card. It has no box, only a 2px tick of its
- * state's colour on the edge that faces the text. Collapsed it is two lines: the state's ring and
- * word with the kind of claim, then one line of reference. Open, it unfolds in place.
+ * state's colour on the edge that faces the text. Collapsed it is one line, no taller than a
+ * line of the page, so each note can sit level with its own passage: the state's ring and word,
+ * the kind of claim, then the reference, cut short. Open, it unfolds in place and the reference
+ * is given in full.
  */
 export const MarginNote = memo(function MarginNote({
+  inPlace,
   open,
   active,
   top,
@@ -45,6 +50,7 @@ export const MarginNote = memo(function MarginNote({
   const { card, override } = body
   const state = override?.state ?? card.state
   const style = STATE_STYLE[state]
+  const reference = referenceLine(card, override, t, pick(card.note_ar, card.note_en))
 
   return (
     <div
@@ -70,8 +76,10 @@ export const MarginNote = memo(function MarginNote({
       >
         <button
           type="button"
-          aria-expanded={open}
-          aria-controls={open ? bodyId : undefined}
+          aria-expanded={inPlace ? open : undefined}
+          aria-controls={inPlace && open ? bodyId : undefined}
+          aria-haspopup={inPlace ? undefined : 'dialog'}
+          title={open ? undefined : reference}
           onClick={() => onToggle(card.id)}
           onFocus={() => onHover(card.id)}
           onBlur={() => onHover(null)}
@@ -80,21 +88,25 @@ export const MarginNote = memo(function MarginNote({
             (active || open) && style.soft,
           )}
         >
-          <span className="flex h-6 items-center gap-2">
+          <span className="flex h-7 items-center gap-2 text-sm">
             <StateGlyph state={state} />
-            <span className={cn('truncate text-sm font-medium', style.ink)}>{t.stateWords[state]}</span>
-            <span className="truncate text-sm text-quiet max-lg:hidden">— {t.claimTypes[card.claim_type]}</span>
+            <span className={cn('shrink-0 font-medium', style.ink)}>{t.stateWords[state]}</span>
+            <span className="shrink-0 text-ink max-lg:hidden">— {t.claimTypes[card.claim_type]}</span>
             {override ? (
               <UserRoundCheck aria-label={t.reviewer.title} role="img" className="size-4 shrink-0 text-quiet" />
             ) : null}
-            <ChevronDown
-              aria-hidden="true"
-              className={cn('ms-auto size-4 shrink-0 text-quiet transition-transform duration-150', open && 'rotate-180')}
-            />
+            <span className="min-w-0 flex-1 truncate text-quiet">{open ? null : reference}</span>
+            {inPlace ? (
+              <ChevronDown
+                aria-hidden="true"
+                className={cn('size-4 shrink-0 text-quiet transition-transform duration-150', open && 'rotate-180')}
+              />
+            ) : (
+              <ChevronLeft aria-hidden="true" className="size-4 shrink-0 text-quiet ltr:-scale-x-100" />
+            )}
           </span>
-          <span className="block h-[22px] truncate text-sm leading-[22px] text-quiet">
-            {referenceLine(card, override, t, pick(card.note_ar, card.note_en))}
-          </span>
+          {/* Open, the reference is no longer cut short. */}
+          {open ? <span className="block pb-1 text-sm text-quiet">{reference}</span> : null}
         </button>
         {open ? (
           <div id={bodyId} className="pt-3 pb-1">
@@ -108,7 +120,7 @@ export const MarginNote = memo(function MarginNote({
 
 /**
  * A claim that was announced but not yet checked. It holds exactly the height of a collapsed
- * note (two still ruled lines, no shimmer), so nothing moves when its verdict arrives.
+ * note (one still ruled line, no shimmer), so nothing moves when its verdict arrives.
  */
 export function PendingNote({ claim, top }: { claim: ClaimStub; top: number | undefined }) {
   const { t } = useI18n()
@@ -125,13 +137,11 @@ export function PendingNote({ claim, top }: { claim: ClaimStub; top: number | un
         className="border-s-2 border-rule ps-3"
       >
         <span className="sr-only">{t.card.pending}</span>
-        <span className="flex h-6 items-center gap-2">
+        <span className="flex h-7 items-center gap-2 text-sm text-quiet">
           <StateGlyph state="pending" />
-          <span className="truncate text-sm text-quiet">{t.notes.pendingWord}</span>
-          <span className="truncate text-sm text-quiet max-lg:hidden">— {t.claimTypes[claim.claim_type]}</span>
-        </span>
-        <span aria-hidden="true" className="block h-[22px] pt-[10px]">
-          <span className="block h-px w-3/5 bg-rule" />
+          <span className="shrink-0">{t.notes.pendingWord}</span>
+          <span className="shrink-0 max-lg:hidden">— {t.claimTypes[claim.claim_type]}</span>
+          <span aria-hidden="true" className="h-px min-w-0 flex-1 bg-rule" />
         </span>
       </div>
     </div>

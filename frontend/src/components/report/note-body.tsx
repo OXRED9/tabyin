@@ -1,4 +1,4 @@
-import { ChevronDown, GraduationCap, LocateFixed, Share2, Sparkles, UserRoundCheck } from 'lucide-react'
+import { ChevronDown, GraduationCap, LocateFixed, Share2, UserRoundCheck } from 'lucide-react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 
@@ -10,7 +10,7 @@ import { SourceLink } from '@/components/report/source-link'
 import { StateGlyph } from '@/components/state-glyph'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { diffCoversSource, hasDifferences } from '@/lib/diff'
+import { diffCoversSource, hasDifferences, hasUnquoted } from '@/lib/diff'
 import { formatClock, formatDateTime, formatPercent, safeHref } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import type {
@@ -278,6 +278,9 @@ export function NoteBody({
       {card.source ? (
         <>
           <SourceWords source={card.source} marked={markedSource} />
+          {markedSource && hasUnquoted(markedSource) ? (
+            <p className="text-sm text-quiet">{t.diff.partial}</p>
+          ) : null}
           <Takhrij source={card.source} />
         </>
       ) : null}
@@ -340,10 +343,8 @@ export function NoteBody({
 
       {card.ai_explanation ? (
         <section className="border-t border-dashed border-rule-strong pt-3 text-sm">
-          <h4 className="flex items-center gap-2 font-medium text-ink">
-            <Sparkles aria-hidden="true" className="size-4 shrink-0 text-quiet" />
-            {t.card.aiExplanation}
-          </h4>
+          {/* Words only: the label says what this is, and no stock "AI" mark stands in for it. */}
+          <h4 className="font-medium text-ink">{t.card.aiExplanation}</h4>
           <p className="text-quiet">{t.card.aiExplanationHint}</p>
           <p dir="auto" className="mt-1 text-base text-ink">
             {card.ai_explanation}

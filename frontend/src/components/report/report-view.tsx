@@ -44,6 +44,8 @@ const INKING_MS = 700
 /** Notes below an opening note glide for 180ms. */
 const GLIDE_MS = 220
 
+const NONE: ReadonlySet<string> = new Set()
+
 /** A calm remark at the top of the margin: reduced coverage, or a source that is unreachable. */
 function Notice({ title, icon, children }: { title?: string; icon?: ReactNode; children: ReactNode }) {
   return (
@@ -76,6 +78,9 @@ export function ReportView({
 }: ReportViewProps) {
   const { t, pick } = useI18n()
   const hasMargin = useMediaQuery('(min-width: 768px)')
+  // A note opens in place only where the margin is wide enough to read in. Below that the margin
+  // keeps its notes collapsed and level, and a note opens as a sheet, as on a phone.
+  const inPlace = useMediaQuery('(min-width: 1024px)')
   const gridRef = useRef<HTMLDivElement | null>(null)
   const glideTimer = useRef<number | null>(null)
   const flashTimer = useRef<number | null>(null)
@@ -142,10 +147,12 @@ export function ReportView({
   )
 
   const ids = useMemo(() => visible.map((c) => c.id), [visible])
+  // Notes opened in place stay open only while the screen is wide enough for that.
+  const openInPlace = inPlace ? openIds : NONE
   const signature = [
     hasMargin,
     ids.join(','),
-    [...openIds].join(','),
+    [...openInPlace].join(','),
     readyCards.length,
     overrides.map((o) => `${o.card_id}:${o.state}:${o.at}`).join(','),
     reviewerMode,
@@ -155,24 +162,31 @@ export function ReportView({
   ].join('|')
   const layout = useMarginLayout(gridRef, ids, signature)
 
-  const toggleNote = useCallback((cardId: string) => {
-    setOpenIds((current) => {
-      const next = new Set(current)
-      if (next.has(cardId)) next.delete(cardId)
-      else next.add(cardId)
-      return next
-    })
-    // The notes below make room: for this one change their move is a glide, not a jump.
-    setGlide(true)
-    if (glideTimer.current) window.clearTimeout(glideTimer.current)
-    glideTimer.current = window.setTimeout(() => setGlide(false), GLIDE_MS)
-  }, [])
+  const toggleNote = useCallback(
+    (cardId: string) => {
+      if (!inPlace) {
+        setSheetId(cardId)
+        return
+      }
+      setOpenIds((current) => {
+        const next = new Set(current)
+        if (next.has(cardId)) next.delete(cardId)
+        else next.add(cardId)
+        return next
+      })
+      // The notes below make room: for this one change their move is a glide, not a jump.
+      setGlide(true)
+      if (glideTimer.current) window.clearTimeout(glideTimer.current)
+      glideTimer.current = window.setTimeout(() => setGlide(false), GLIDE_MS)
+    },
+    [inPlace],
+  )
 
   /** A passage in the text was chosen: open its note (in the margin, or as a sheet on a phone). */
   const selectPassage = useCallback(
     (claimId: string) => {
       if (!cards[claimId]) return
-      if (!hasMargin) {
+      if (!inPlace) {
         setSheetId(claimId)
         return
       }
@@ -184,7 +198,7 @@ export function ReportView({
         note?.querySelector('button')?.focus({ preventScroll: true })
       })
     },
-    [cards, hasMargin, hidden, toggleNote],
+    [cards, hidden, inPlace, toggleNote],
   )
 
   /** A phone's note → its words in the text, tinted for a moment so the eye finds them. */
@@ -318,23 +332,24 @@ export function ReportView({
       >
         {hasMargin ? (
           <svg aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 size-full overflow-visible">
+            {/* At rest a note is tied to its line by a stub in the gutter, and a note that was
+                pushed away from its line by none. The note in hand (hovered, focused, open) gets
+                the full tie, from its words, in its state's colour. While a note is open, it is
+                the only one tied. */}
             {ids.map((id) => {
-              const d = layout.paths[id]
-              if (!d) return null
               const noteState = states.get(id)
-              const lit = activeId === id || openIds.has(id)
+              const lit = !!noteState && (activeId === id || openInPlace.has(id))
+              const d = lit ? layout.ties[id] : openInPlace.size > 0 ? undefined : layout.stubs[id]
+              if (!d) return null
               return (
                 <path
                   key={id}
                   d={d}
                   className="connector"
                   data-connector={id}
-                  data-active={lit && noteState ? '' : undefined}
+                  data-active={lit ? '' : undefined}
                   style={
-                    {
-                      '--connector-active': noteState ? STATE_STYLE[noteState].variable : undefined,
-                      transitionDuration: glide ? undefined : '150ms, 0s',
-                    } as CSSProperties
+                    { '--connector-active': noteState ? STATE_STYLE[noteState].variable : undefined } as CSSProperties
                   }
                 />
               )
@@ -351,7 +366,7 @@ export function ReportView({
             settled={settled}
             hidden={hidden}
             activeId={activeId}
-            openIds={openIds}
+            openIds={openInPlace}
             onSelect={selectPassage}
             onHover={setActiveId}
           />
@@ -387,7 +402,8 @@ export function ReportView({
                   {...bodyProps}
                   card={card}
                   override={overrideByCard.get(card.id)}
-                  open={openIds.has(card.id)}
+                  inPlace={inPlace}
+                  open={openInPlace.has(card.id)}
                   active={activeId === card.id}
                   top={top}
                   glide={glide}

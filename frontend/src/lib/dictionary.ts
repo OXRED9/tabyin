@@ -112,11 +112,17 @@ export const ar = {
     attachImage: 'صورة',
     attachFile: 'ملف',
     attachAudio: 'صوت',
+    // The tag under the field: what was recognised, then what will be done with it. After a
+    // failed attempt on that link only the first half is shown: the tag must not go on promising.
     link: {
-      youtube: 'مقطع يوتيوب — سيُفرَّغ ويُتحقق منه',
-      tiktok: 'مقطع تيك توك — سيُفرَّغ ويُتحقق منه',
-      video: 'رابط مقطع — سيُفرَّغ ويُتحقق منه',
-      article: 'رابط مقال — سيُقرأ نصه ويُتحقق منه',
+      youtube: 'مقطع يوتيوب',
+      tiktok: 'مقطع تيك توك',
+      video: 'رابط مقطع',
+      article: 'رابط مقال',
+    },
+    linkPromise: {
+      video: 'سيُفرَّغ ويُتحقق منه',
+      article: 'سيُقرأ نصه ويُتحقق منه',
     },
     linkRemove: 'إزالة الرابط',
     asVideo: 'هذا رابط مقطع',
@@ -466,6 +472,7 @@ export const ar = {
     changed: 'لفظ مختلف',
     extra: 'زيادة ليست في المصدر',
     missing: 'في المصدر ولم يُذكر',
+    partial: 'بالحبر الداكن ما ورد في النص، وبالباهت بقية نص المصدر.',
   },
 
   referral: {
@@ -616,10 +623,14 @@ export const en: Dictionary = {
     attachFile: 'File',
     attachAudio: 'Audio',
     link: {
-      youtube: 'YouTube clip — it will be transcribed, then verified',
-      tiktok: 'TikTok clip — it will be transcribed, then verified',
-      video: 'Clip link — it will be transcribed, then verified',
-      article: 'Article link — its text will be read, then verified',
+      youtube: 'YouTube clip',
+      tiktok: 'TikTok clip',
+      video: 'Clip link',
+      article: 'Article link',
+    },
+    linkPromise: {
+      video: 'it will be transcribed, then verified',
+      article: 'its text will be read, then verified',
     },
     linkRemove: 'Remove the link',
     asVideo: 'This is a clip',
@@ -938,6 +949,7 @@ export const en: Dictionary = {
     changed: 'different wording',
     extra: 'not in the source',
     missing: 'in the source, not quoted',
+    partial: 'Dark ink: the words quoted in the text. Faint: the rest of the source’s words.',
   },
 
   referral: {

@@ -24,6 +24,7 @@ const COPY = {
 }
 const DESKTOP = { width: 1440, height: 900 }
 const MOBILE = { width: 390, height: 844 }
+const TABLET = { width: 820, height: 1180 }
 
 const browser = await chromium.launch()
 let failures = 0
@@ -113,7 +114,7 @@ function measureContrast() {
  *   report     every note open, every «لماذا هذا الحكم؟» open
  *   reviewer   the same in reviewer mode           dialog   the referral dialog
  *   share      the share dialog on a claim         share-summary   on the summary
- *   sheet      (phone) a note open as a bottom sheet, in reviewer mode
+ *   sheet      (below 1024px) a note open as a bottom sheet, in reviewer mode
  */
 async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, state = 'empty' }) {
   const mobile = viewport === MOBILE
@@ -153,10 +154,10 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
         await page.getByRole('switch', { name: t.reviewer }).click()
       }
     }
-    if (mobile) {
-      // A phone has no margin: one note is opened as a bottom sheet.
+    if (viewport !== DESKTOP) {
+      // Below 1024px a note does not open in place: one is opened as a bottom sheet.
       if (state === 'sheet') {
-        await page.locator('li[data-note="c2"] button').click()
+        await page.locator(mobile ? 'li[data-note="c2"] button' : '[data-margin] [data-note="c2"] > button').click()
         await page.locator('[data-note-sheet="c2"]').waitFor()
       }
     } else {
@@ -231,6 +232,10 @@ for (const theme of ['light', 'dark']) {
   await audit(`note sheet, reviewer mode · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'sheet' })
 }
 await audit('mid-run · light · ar · 390px', { viewport: MOBILE, state: 'running' })
+for (const theme of ['light', 'dark']) {
+  await audit(`report · ${theme} · ar · 820px`, { theme, viewport: TABLET, state: 'report' })
+  await audit(`note sheet, reviewer mode · ${theme} · ar · 820px`, { theme, viewport: TABLET, state: 'sheet' })
+}
 
 await browser.close()
 if (failures > 0) {

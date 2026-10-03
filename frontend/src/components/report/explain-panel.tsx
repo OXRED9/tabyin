@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Ruler, Sparkles } from 'lucide-react'
+import { Check, ChevronDown } from 'lucide-react'
 import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
 
@@ -184,14 +184,7 @@ export function ExplainPanel({
             {' — '}
             {pick(explain.level_reason_ar, explain.level_reason_en)}
           </p>
-          <p className="flex items-center gap-2 text-sm text-quiet">
-            {byModel ? (
-              <Sparkles aria-hidden="true" className="size-4 shrink-0" />
-            ) : (
-              <Ruler aria-hidden="true" className="size-4 shrink-0" />
-            )}
-            {byModel ? t.explain.levelByModel : t.explain.levelByRule}
-          </p>
+          <p className="text-sm text-quiet">{byModel ? t.explain.levelByModel : t.explain.levelByRule}</p>
         </section>
 
         <section className="space-y-1">

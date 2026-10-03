@@ -110,13 +110,19 @@ export function Composer({
   }
 
   const isImage = !!file && /^image\//.test(file.type)
-  const linkLabel = link
+  const linkName = link
     ? linkKind === 'article_url'
       ? t.input.link.article
       : link.platform === 'youtube' || link.platform === 'tiktok'
         ? t.input.link[link.platform]
         : t.input.link.video
     : null
+  // After a failed attempt on this link the tag says only what was recognised: it must not go
+  // on promising. Any change to the field clears the error, and the promise comes back.
+  const linkLabel =
+    linkName && !hasError
+      ? `${linkName} — ${linkKind === 'article_url' ? t.input.linkPromise.article : t.input.linkPromise.video}`
+      : linkName
   const LinkIcon = linkKind === 'article_url' ? Newspaper : Play
 
   const attachments: { kind: 'link' | AttachKind; label: string; icon: typeof Link2 }[] = [
@@ -192,7 +198,10 @@ export function Composer({
             aria-describedby={hasError ? errorId : undefined}
             rows={4}
             className={cn(
-              'ruled page-text block max-h-[50vh] min-h-[calc(var(--line)*4+0.75rem)] w-full resize-none rounded-sheet border border-rule-strong bg-paper px-4 pt-1 pb-2 text-ink transition-colors duration-150 field-sizing-content placeholder:font-sans placeholder:text-base placeholder:leading-(--line) placeholder:text-quiet focus-visible:border-green aria-invalid:border-contra',
+              'ruled block max-h-[50vh] min-h-[calc(var(--line)*4+0.75rem)] w-full resize-none rounded-sheet border border-rule-strong bg-paper px-4 pt-1 pb-2 text-ink transition-colors duration-150 field-sizing-content placeholder:font-sans placeholder:text-base placeholder:leading-(--line) placeholder:text-quiet focus-visible:border-green aria-invalid:border-contra',
+              // Amiri is for a text under examination. An address is not that: it is set in the
+              // tool's own face, on the same lines.
+              link ? 'font-sans text-base leading-(--line)' : 'page-text',
               draft.text && 'pe-12',
               dragging && 'border-green',
             )}

@@ -463,9 +463,7 @@ html[lang="en"] {
   stroke: var(--rule);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
-  transition:
-    stroke 150ms ease-out,
-    d 180ms ease-out;
+  transition: stroke 150ms ease-out;
 }
 .connector[data-active] {
   stroke: var(--connector-active, var(--rule-strong));

@@ -1,16 +1,17 @@
+import { hasUnquoted } from '@/lib/diff'
 import { useI18n } from '@/lib/i18n'
 import type { DiffOp } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 /*
  * The collation, as a copyist marks it: no boxes and no tints, only what the pen does to the
- * word. Each kind of difference has its own shape as well as its colour, so it reads without
- * colour vision: a changed word is underlined, a word that is not in the source is struck
- * through, and a source word that was left out carries a dotted underline.
+ * word. A word that differs is underlined; a word that is not in the source is struck through.
+ * Source words that were simply not quoted carry no mark at all: they are set fainter, so the
+ * quoted part of a long narration stands out in ink and the rest steps back.
  */
 const CHANGED = 'bg-transparent text-review-ink underline decoration-review decoration-2 underline-offset-[0.35em]'
 const EXTRA = 'text-missing-ink line-through decoration-missing decoration-2'
-const MISSING = 'text-ink underline decoration-rule-strong decoration-dotted decoration-1 underline-offset-[0.35em]'
+const UNQUOTED = 'text-quiet no-underline'
 
 /** The source side of a comparison, word for word, with the differing words marked. */
 export function MarkedSource({ diff }: { diff: DiffOp[] }) {
@@ -24,7 +25,7 @@ export function MarkedSource({ diff }: { diff: DiffOp[] }) {
             ) : op.op === 'replace' ? (
               <mark className={CHANGED}>{op.source}</mark>
             ) : (
-              <ins className={MISSING}>{op.source}</ins>
+              <ins className={UNQUOTED}>{op.source}</ins>
             )}{' '}
           </span>
         ) : null,
@@ -54,10 +55,10 @@ function MarkedQuote({ diff }: { diff: DiffOp[] }) {
 }
 
 /** What each mark means, listed only for the marks that occur. */
-export function DiffLegend({ diff }: { diff: DiffOp[] }) {
+function DiffLegend({ diff }: { diff: DiffOp[] }) {
   const { t } = useI18n()
   const kinds = new Set(diff.map((op) => op.op))
-  if (!kinds.has('replace') && !kinds.has('delete') && !kinds.has('insert')) return null
+  if (!kinds.has('replace') && !kinds.has('delete')) return null
   return (
     <ul aria-label={t.diff.legend} className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-quiet">
       {kinds.has('replace') ? (
@@ -74,14 +75,6 @@ export function DiffLegend({ diff }: { diff: DiffOp[] }) {
             لفظ
           </span>
           {t.diff.extra}
-        </li>
-      ) : null}
-      {kinds.has('insert') ? (
-        <li className="flex items-baseline gap-2">
-          <span aria-hidden="true" className={cn(MISSING, 'font-naskh')}>
-            لفظ
-          </span>
-          {t.diff.missing}
         </li>
       ) : null}
     </ul>
@@ -120,6 +113,7 @@ export function DiffView({
           </div>
         )}
       </dl>
+      {!sourceShownAbove && hasUnquoted(diff) ? <p className="text-sm text-quiet">{t.diff.partial}</p> : null}
       <DiffLegend diff={diff} />
     </div>
   )

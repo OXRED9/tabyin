@@ -5,27 +5,33 @@ import type { RefObject } from 'react'
 export interface MarginLayout {
   /** Top of each note, in px from the top of the margin column. */
   tops: Record<string, number>
-  /** One SVG path per note that has a passage in the text, in the grid's own coordinates. */
-  paths: Record<string, string>
+  /**
+   * The resting tie: a short hairline across the gutter, from the edge of the text block to the
+   * note, at the passage's first line. Only a note that sits by its passage has one.
+   */
+  stubs: Record<string, string>
+  /** The full tie, from the passage itself to the note: drawn while a note is hovered, focused or open. */
+  ties: Record<string, string>
   /** The height the notes need: the margin column reserves it. */
   height: number
 }
 
-/** Space between two notes that had to be stacked. */
-const GAP = 12
 /**
- * Where the hairline meets the note, measured from the note's top: the seam between its two
- * lines. A note that was not pushed down sits with its first line level with its passage and
- * the hairline runs straight.
+ * Space between two stacked notes. A collapsed note is one 28px line, so note and gap together
+ * are shorter than one line of the page (40px): passages on consecutive lines get notes that
+ * each sit level with their own line.
  */
-const ANCHOR = 24
+const GAP = 8
+/**
+ * Where the hairline meets the note, measured from the note's top: just above its foot. A note
+ * that was not pushed down has its one line level with its passage's line, and the hairline
+ * continues the passage's underline straight across the gutter.
+ */
+const ANCHOR = 26
 /** The underline's centre sits this far above the bottom of the passage's inline box (see `.claim-ink`). */
 const UNDERLINE_RISE = 6
-/** Stacked notes get their own lane in the gutter, so hairlines do not share a vertical while there is room. */
-const LANE_START = 6
-const LANE_STEP = 4
 
-const EMPTY: MarginLayout = { tops: {}, paths: {}, height: 0 }
+const EMPTY: MarginLayout = { tops: {}, stubs: {}, ties: {}, height: 0 }
 const crisp = (value: number) => Math.round(value) + 0.5
 
 function sameLayout(a: MarginLayout, b: MarginLayout, ids: string[]): boolean {
@@ -33,15 +39,18 @@ function sameLayout(a: MarginLayout, b: MarginLayout, ids: string[]): boolean {
   if (Object.keys(a.tops).length !== Object.keys(b.tops).length) return false
   for (const id of ids) {
     if (a.tops[id] === undefined || Math.abs(a.tops[id] - b.tops[id]) > 0.5) return false
-    if (a.paths[id] !== b.paths[id]) return false
+    if (a.stubs[id] !== b.stubs[id] || a.ties[id] !== b.ties[id]) return false
   }
   return true
 }
 
 /**
  * The margin's layout engine. Each note is placed level with the first line of its passage; a
- * note that would collide with the one above is pushed down, and its hairline becomes an elbow
- * through the gutter. Notes with no passage go at the end.
+ * note that would collide with the one above is pushed down. Notes with no passage go at the end.
+ *
+ * At rest the tie is only a stub in the gutter, and a note pushed more than half a line away
+ * from its passage has none: a hairline that has to travel is noise. The full tie, passage to
+ * note, is computed too and drawn only for the note in hand.
  *
  * Everything is read in one pass (the passages' first line boxes, the notes' heights) and
  * written in one state update, so there is no layout thrash. It runs again on resize, when the
@@ -71,11 +80,11 @@ export function useMarginLayout(
     const head = margin.querySelector<HTMLElement>('[data-margin-head]')
     const marginOnLeft = marginBox.left < pageBox.left
     const marginTop = marginBox.top - gridBox.top
-    // The note's text-side edge, and the direction from it towards the text.
+    // The note's text-side edge, the text block's margin-side edge, and the gutter between them.
     const noteX = (marginOnLeft ? marginBox.right : marginBox.left) - gridBox.left
-    const towardsText = marginOnLeft ? 1 : -1
-    const gutter = Math.abs((marginOnLeft ? pageBox.left : pageBox.right) - gridBox.left - noteX)
-    const lanes = Math.max(1, Math.floor((gutter - 2 * LANE_START) / LANE_STEP) + 1)
+    const textX = (marginOnLeft ? pageBox.left : pageBox.right) - gridBox.left
+    const laneX = (noteX + textX) / 2
+    const pitch = parseFloat(getComputedStyle(page.querySelector('.page-text') ?? page).lineHeight) || 40
 
     const measured = idsRef.current.map((id) => {
       const key = CSS.escape(id)
@@ -93,23 +102,21 @@ export function useMarginLayout(
     const headHeight = head?.offsetHeight ?? 0
 
     // ── Compute ──
-    const next: MarginLayout = { tops: {}, paths: {}, height: 0 }
+    const next: MarginLayout = { tops: {}, stubs: {}, ties: {}, height: 0 }
     let cursor = headHeight > 0 ? headHeight + GAP : 0
-    let lane = 0
     for (const item of measured) {
       const wanted = item.lineY === null ? cursor : item.lineY - ANCHOR - marginTop
       const top = Math.max(wanted, cursor)
-      const pushed = item.lineY !== null && top - wanted > 0.5
-      lane = pushed ? Math.min(lane + 1, lanes) : 0
+      const drift = top - wanted
       next.tops[item.id] = top
       cursor = top + item.height + GAP
 
       if (item.lineY !== null && item.lineX !== null) {
         const y1 = crisp(marginTop + top + ANCHOR)
-        const y2 = pushed ? crisp(item.lineY) : y1
-        const laneX = crisp(noteX + towardsText * (LANE_START + (pushed ? lane - 1 : 0) * LANE_STEP))
-        // Always the same four commands, so the path can glide when a note above opens.
-        next.paths[item.id] = `M${crisp(noteX)} ${y1}H${laneX}V${y2}H${crisp(item.lineX)}`
+        const y2 = drift > 0.5 ? crisp(item.lineY) : y1
+        const across = `M${crisp(noteX)} ${y1}H${crisp(laneX)}V${y2}`
+        next.ties[item.id] = `${across}H${crisp(item.lineX)}`
+        if (drift <= pitch / 2) next.stubs[item.id] = `${across}H${crisp(textX)}`
       }
     }
     next.height = Math.max(0, cursor - GAP)

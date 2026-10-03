@@ -30,6 +30,8 @@ const external = new Set()
 
 async function open(width, { theme = 'light', query = '' } = {}) {
   const phone = width < 768
+  // Below 1024 a note opens as a bottom sheet; from 1024 up it opens in place, in the margin.
+  const sheet = width < 1024
   const context = await browser.newContext({
     viewport: { width, height: HEIGHTS[width] ?? 900 },
     deviceScaleFactor: phone ? 2 : 1,
@@ -52,7 +54,7 @@ async function open(width, { theme = 'light', query = '' } = {}) {
   await page.addStyleTag({ content: 'header.sticky{position:static!important}' })
   // Web fonts must be in before a screenshot, or Arabic renders in a fallback face.
   await page.evaluate(() => document.fonts.ready)
-  return { context, page, phone }
+  return { context, page, phone, sheet }
 }
 
 /** A finished report of the full scenario (all five states, levels C and D, timestamps). */
@@ -64,14 +66,10 @@ async function openReport(width, options = {}) {
   return session
 }
 
-/** Open one claim's note: in the margin on wide screens, as a bottom sheet on a phone. */
-async function openNote({ page, phone }, id) {
-  if (phone) {
-    await page.locator(`li[data-note="${id}"] button`).click()
-    await page.locator(`[data-note-sheet="${id}"]`).waitFor()
-  } else {
-    await page.locator(`[data-margin] [data-note="${id}"] > button`).click()
-  }
+/** Open one claim's note: in place in the margin from 1024 up, as a bottom sheet below that. */
+async function openNote({ page, phone, sheet }, id) {
+  await page.locator(phone ? `li[data-note="${id}"] button` : `[data-margin] [data-note="${id}"] > button`).click()
+  if (sheet) await page.locator(`[data-note-sheet="${id}"]`).waitFor()
   await page.waitForTimeout(400)
 }
 
@@ -98,6 +96,9 @@ const STATES = {
     const { context, page } = await open(width)
     await page.getByRole('button', { name: 'رابط مقطع يوتيوب' }).click()
     await page.getByTestId('link-tag').waitFor()
+    // The tag pushed the «تحقّق» button under the pointer: move it away, or the button is captured hovered.
+    await page.mouse.move(0, 0)
+    await page.waitForTimeout(200)
     await page.screenshot({ path: file, fullPage: true })
     await context.close()
   },
@@ -121,17 +122,17 @@ const STATES = {
   'note-open': async (width, file) => {
     const session = await openReport(width)
     await openNote(session, 'c2')
-    await session.page.screenshot({ path: file, fullPage: !session.phone })
+    await session.page.screenshot({ path: file, fullPage: !session.sheet })
     await session.context.close()
   },
 
   // Reviewer mode on, a note open, and a human change saved: both states are shown.
   reviewer: async (width, file) => {
     const session = await openReport(width)
-    const { page, phone } = session
+    const { page, sheet } = session
     await setReviewerMode(session)
     await openNote(session, 'c5')
-    const note = phone ? page.locator('[data-note-sheet="c5"]') : page.locator('[data-margin] [data-note="c5"]')
+    const note = sheet ? page.locator('[data-note-sheet="c5"]') : page.locator('[data-margin] [data-note="c5"]')
     await note.getByLabel('اسم المراجع').fill('سليمان')
     await note.getByLabel('ملاحظة المراجع').fill('اللفظ صحيح المعنى، ويُصحَّح الترتيب قبل النشر.')
     await note.getByLabel('الحالة بعد المراجعة').click()
@@ -140,19 +141,19 @@ const STATES = {
     await page.getByText('حُفظت المراجعة').waitFor()
     // Let the toast leave: it would cover the bottom of the capture.
     await page.locator('[data-sonner-toast]').first().waitFor({ state: 'detached', timeout: 10_000 }).catch(() => {})
-    if (phone) {
-      // On a phone the note's sheet is the capture: scroll it to the reviewer's line.
+    if (sheet) {
+      // The note's sheet is the capture: scroll it to the reviewer's line.
       await note.getByRole('button', { name: 'حفظ المراجعة' }).scrollIntoViewIfNeeded()
     }
     await page.waitForTimeout(300)
-    await page.screenshot({ path: file, fullPage: !phone })
+    await page.screenshot({ path: file, fullPage: !sheet })
     await session.context.close()
   },
 
   'not-found': async (width, file) => {
     const session = await openReport(width)
     await openNote(session, 'c6')
-    await session.page.screenshot({ path: file, fullPage: !session.phone })
+    await session.page.screenshot({ path: file, fullPage: !session.sheet })
     await session.context.close()
   },
 

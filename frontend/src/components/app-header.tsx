@@ -84,7 +84,7 @@ export function AppHeader({
 
   return (
     <header className="sticky top-0 z-40 border-b bg-paper print:hidden">
-      <div className="mx-auto flex h-12 max-w-[69rem] items-center gap-1 px-4 sm:gap-3 sm:px-6">
+      <div className="flex h-12 items-center gap-1 px-4 sm:gap-3 sm:px-6">
         <button type="button" onClick={onHome} aria-label={t.header.home} className="rounded-control">
           <Logotype />
         </button>
