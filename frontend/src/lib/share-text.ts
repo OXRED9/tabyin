@@ -5,6 +5,7 @@
  * and for a summary the sentence and one line per citation. Nothing here is written by a model.
  */
 import type { Dictionary } from './dictionary'
+import { distinctGradings, gradedBesideState } from './grades'
 import { truncateClaim } from './share-card'
 import { byAttention } from './states'
 import { summarySentence } from './summary'
@@ -21,6 +22,8 @@ export type ShareSubject =
  */
 export function referenceWithGrade(card: Card, t: Dictionary): string {
   if (!card.source || card.personal_case) return ''
+  // A narration that is not «له مرجعية»: every distinct grading, in the sources' words.
+  if (gradedBesideState(card)) return `${card.source.ref} — ${t.card.gradedAs(distinctGradings(card.grades))}`
   const grade = card.grades.length === 1 ? card.grades[0].text.split('\n')[0].trim() : ''
   const said =
     grade && Array.from(grade).length <= 60

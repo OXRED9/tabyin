@@ -6,6 +6,7 @@ import NoteBody from '@/components/report/lazy-note-body'
 import type { NoteBodyProps } from '@/components/report/note-body'
 import { StateGlyph } from '@/components/state-glyph'
 import { useI18n } from '@/lib/i18n'
+import { gradedBesideState } from '@/lib/grades'
 import { referenceLine, referenceWhenOpen } from '@/lib/reference-line'
 import { STATE_STYLE } from '@/lib/states'
 import type { ClaimStub } from '@/lib/types'
@@ -54,6 +55,7 @@ export const MarginNote = memo(function MarginNote({
   const style = STATE_STYLE[state]
   const reference = referenceLine(card, t, pick(card.note_ar, card.note_en))
   const openReference = referenceWhenOpen(card, t)
+  const graded = gradedBesideState(card)
 
   return (
     <div
@@ -98,7 +100,10 @@ export const MarginNote = memo(function MarginNote({
             <span className={cn('shrink-0 font-semibold', style.ink)}>{t.stateWords[state]}</span>
             {/* Where the margin is narrow the claim type gives way to the reference, unless there is none. */}
             <span className={cn('shrink-0 text-ink', reference && 'max-lg:hidden')}>— {t.claimTypes[card.claim_type]}</span>
-            <span className="min-w-0 flex-1 truncate text-quiet">{open ? null : reference}</span>
+            <span className="min-w-0 flex-1 truncate text-quiet">
+              {open ? null : graded ? <span className="max-lg:hidden">· </span> : null}
+              {open ? null : reference}
+            </span>
             {inPlace ? (
               <ChevronDown
                 aria-hidden="true"

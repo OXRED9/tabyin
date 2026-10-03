@@ -2,6 +2,7 @@ import { ChevronLeft } from 'lucide-react'
 
 import { StateGlyph } from '@/components/state-glyph'
 import { useI18n } from '@/lib/i18n'
+import { gradedBesideState } from '@/lib/grades'
 import { referenceLine } from '@/lib/reference-line'
 import { STATE_STYLE } from '@/lib/states'
 import type { Card, ClaimStub } from '@/lib/types'
@@ -65,7 +66,9 @@ export function NoteRow({
         <span className={cn(state && 'font-semibold', state && STATE_STYLE[state].ink)}>
           {state ? t.stateWords[state] : t.notes.pendingWord}
         </span>
-        {card ? ` — ${referenceLine(card, t, pick(card.note_ar, card.note_en)) || t.claimTypes[card.claim_type]}` : null}
+        {card
+          ? ` — ${[gradedBesideState(card) ? t.claimTypes[card.claim_type] : '', referenceLine(card, t, pick(card.note_ar, card.note_en))].filter(Boolean).join(' · ') || t.claimTypes[card.claim_type]}`
+          : null}
       </span>
     </>
   )
