@@ -14,6 +14,8 @@ and unresolved as of 3 October 2026.
 - **No row of the test set has been reviewed by the Sharia reviewer.** Expected states come from how
   each row was constructed.
 - **Cloud speech-to-text has not been run**; only YouTube captions and local faster-whisper were.
+- **Performance targets with the LLM are unmeasured.** In lexical-only mode a pasted text completes
+  in under a second and a 3-minute captioned clip in 3–8 seconds.
 - **The app is not deployed.** The backend image builds and runs locally (health check, a verification and Dorar access were tested inside the container); the full image including the frontend stage and a public deployment are still to do.
 
 ## Coverage
@@ -59,6 +61,21 @@ and unresolved as of 3 October 2026.
 - **Repeated verses**: the first location in Mushaf order is shown; the others are listed in the note.
 - **Level classification** is the model's proposal. It is instructed to err toward the more
   sensitive level, which is safe but means some settled matters are shown as needing review.
+
+## User interface
+
+- **No usability session has been run yet.** `docs/USABILITY_TEST.md` holds the five tasks and the
+  notes table; the results column is empty.
+- **No screen-reader pass.** Automated checks (axe-core, plus a contrast pass over Arabic text nodes)
+  report no WCAG A/AA violations; that is not the same as testing with a screen reader.
+- **Mock-mode screenshots.** Screenshots `01`–`15` show demo data replayed by the UI's mock mode, so
+  that all five states, reviewer mode and error states can be shown; only `real-*.png` come from the
+  backend.
+- **PDF export** is the browser's print-to-PDF of the exported HTML page; no PDF file is generated.
+- **Switching to English after an Arabic run** changes the interface and the notes, but source
+  translations and English references are only fetched when the run itself was started in English.
+- **Reviewer overrides are local**: they live in the browser and in the exported file, not on a
+  server, so two reviewers cannot see each other's decisions.
 
 ## Operations
 
