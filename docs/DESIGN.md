@@ -184,3 +184,101 @@ frontend adds no waiting: it renders each SSE event as it arrives and never buff
   but translations of source texts only exist if the verification itself ran with `ui_lang: "en"`.
 - Timestamp links were only exercised against the mock video.
 - shadcn's generated primitives keep some internal spacing values outside the 4/8/12… scale.
+
+## 7. Phase 2 — F3 verdict card, F4 copy, F5 explainability
+
+Brief: `docs/PHASE2_BRIEF.md`, sections F3–F5. Contract: "Phase 2 additions" in `docs/API.md`.
+Each feature is hidden when its flag in `GET /api/meta` (`features.share_card`, `features.copy`,
+`features.explain`) is `false`; a missing flag counts as on, like the `.env` default. Captures:
+`docs/screenshots/phase2-*.png`, regenerated with `npm run screenshots:phase2` (add `REAL=1` for the
+ones that need the backend).
+
+### The three flows
+
+**F4 — copy the correct text.** Card (collapsed or expanded) → "نسخ الآية" / "نسخ نص الحديث" /
+"نسخ نص المصدر" → the clipboard holds `card.copy_text` exactly as the API built it → toast
+«تم النسخ ✓» and a check mark on the button for two seconds. Report level: "تصدير التقرير" →
+"نسخ التقرير كنص" → the whole report as Markdown on the clipboard → toast.
+
+**F5 — «لماذا هذا الحكم؟».** Expand a card → the block already shows the rule in words → open it →
+similarity against its threshold, the retrieved candidates, the content level and why, timing, data
+version → the last line is always «حدود هذا الحكم».
+
+**F3 — «مشاركة بطاقة التثبّت».** Button on a card, or on the closing summary → dialog with a live
+preview → choose size (1080×1350, 1080×1080) and theme (light, dark) → on a device with a share
+sheet: "مشاركة"; elsewhere: "تنزيل الصورة" and "نسخ الصورة" → toast. The language of the card is the
+language of the interface.
+
+### Brief bullet → implementation
+
+| Brief (F4) | Implementation | Status |
+|---|---|---|
+| Ayah cards copy the Uthmani text in ﴿ ﴾ with [surah: ayah]; hadith cards copy source wording + reference + grading verbatim; `supported_with_note` copies the corrected wording, not the user's | The button copies `card.copy_text` unchanged; the frontend never builds this text itself. Checked: the clipboard equals the API's `copy_text` byte for byte, on mock fixtures and on the real backend, and differs from the quoted wording. The button is absent when `copy_text` is null. | Done |
+| Toast "تم النسخ ✓" | Exactly that text (Arabic) / "Copied ✓" (English). | Done |
+| Keyboard accessible | A real button; tested with focus + Enter. Where `navigator.clipboard` is missing or denied it falls back to a hidden textarea and `execCommand('copy')`, then restores focus and selection (tested by removing `writeText`). | Done |
+| "Copy full report as text" in the export menu (Markdown) | `src/lib/markdown.ts`: summary line, then per card state, type, quoted text, source text, reference, gradings verbatim with scholar / book / narrator and link, level, certainty, action, note, timestamp, reviewer override when present, the F5 block; sources used and the transparency line at the end. The report date and video timestamps are kept (owner's decision). | Done |
+
+| Brief (F5) | Implementation | Status |
+|---|---|---|
+| Collapsible section inside each expanded card | `ExplainPanel`, its own collapsible block. Collapsed, it shows the title and the rule sentence, so the reason is readable without another click. It replaces "تفاصيل تقنية" when the flag is on and `explain` is present; that item remains as the fallback. | Done |
+| The human-readable rule that fired | `rule_ar` / `rule_en`, as the first thing in the block. The rule id and match type are listed further down. | Done |
+| The similarity score | Both numbers printed ("التشابه 0.82", "العتبة 0.85"), a meter with a tick at the threshold, and the outcome as a word with an icon ("يبلغ العتبة" / "دون العتبة"). `role="meter"` with the same sentence as its value text. When no similarity was computed, it says so. | Done |
+| Top 5 retrieved candidates with scores and sources | A table: rank, reference (a link), source name, excerpt, similarity (or "بالموضوع" when retrieved by topic), grading, and a "✓ المعتمد" mark on the chosen row. A stacked list on phones. "لم يُسترجَع أي مرشح" when empty. | Done |
+| Content level and the classifier's one-line reason | Level, its name, the reason, and where the reason came from: "حُدِّد بقاعدة" or, for `level_reason_origin: "model"`, "تعليل المصنِّف الآلي، وليس حكماً شرعياً". | Done |
+| Timing per stage | `match_ms` for the claim and `summary.stage_seconds` (ingest, extract, match, total). Under one second they are shown in milliseconds. | Done |
+| Data snapshot/version | `explain.data_version`, verbatim. | Done |
+| Always ends with a plain "حدود هذا الحكم" line generated from the rule | The last line of the block, plainly styled, from `limits_ar` / `limits_en`. | Done |
+| Included in JSON/HTML export | JSON: `explain` travels inside each card. The client-side printable fallback and the Markdown report render the full block. The server's `/api/export/html` is the backend's. | Done (client side) |
+| Legible, not a debug dump | Reviewed in `phase2-f5-*.png`: light, dark, English, phone, and on real backend data. | Done |
+
+| Brief (F3) | Implementation | Status |
+|---|---|---|
+| Button on each claim card and on the report summary | "مشاركة بطاقة التثبّت" in each card's action row and in the closing summary card. | Done |
+| PNG at 1080×1350 and 1080×1080 from an HTML template in the brand identity | `src/components/share/verdict-card.tsx`: a fixed 1080px template with its own palette and pixel sizes, so the output does not depend on the page theme or viewport. The dialog previews the same node scaled down; `html-to-image` draws it at full size. | Done |
+| Contents: state badge (colour + icon + word), claim (truncated), verdict line, reference + grading verbatim, source domain, footer + app URL + QR | Follows the table "What a verdict card shows" in `docs/API.md`: claim cut to 240 characters with «…», verdict = first sentence of the note, `grades[0].text` with its source name and «+N», "الحكم غير متاح من المصدر" when unavailable, hostname of the source URL, QR of `meta.app_url ?? window.location.origin` drawn as inline SVG. The layout mirrors the server-side renderer. | Done |
+| `not_found`: the abstention line with the Nahl 43 verse | The verdict line, then the verse and its reference from `meta.abstention_verse`, in Amiri Quran. Never typed in the code. | Done |
+| No personal data, no timestamps, nothing identifying | No date or time, no reviewer name (a reviewed state shows only "حالة معدَّلة بمراجعة بشرية"), no video link or timestamp. Checked on a card whose report had all of these. The file name carries no date either. | Done |
+| Client-side with a server-side fallback | If drawing throws, the same content is requested from `POST /api/share-card` and that PNG is used. Tested against the real backend by disabling the canvas: one call, and the card was delivered. | Done |
+| Mobile: Web Share API with files; desktop: download + copy to clipboard; toast | `navigator.canShare({ files })` decides. Share sheet: the PNG file plus a one-line caption with the app address. Otherwise two buttons, download and copy image (`ClipboardItem`). A toast confirms each. The share-sheet path was exercised with `canShare`/`share` stubbed in headless Chromium; **it has not been run on a real phone.** | Done (no real-device run) |
+| Light and dark; Arabic and English | Both themes and both sizes are choices in the dialog; the language follows the interface. | Done |
+| Arabic renders correctly in the PNG | The generated files were opened and checked: shaping, right-to-left order, the Uthmani verse, no clipped text, long claims truncated, for all five states and the summary, both sizes, both themes, both languages (80 files). 20 are kept as `phase2-f3-card-*.png`: 19 drawn in the browser, plus the one the server fallback returned. Chromium only; Safari and Firefox output was not checked. | Done (Chromium only) |
+
+**Accessibility.** `npm run a11y` now opens every «لماذا هذا الحكم؟» panel and the share dialog (claim
+and summary cards, light and dark) before auditing: axe-core reports no WCAG A/AA violation and the
+contrast pass finds no text below AA, including the text on the card preview.
+
+### Decisions
+
+- **Text that does not fit shrinks, it is never cut.** The card measures its body after layout and
+  steps the type scale down until everything fits (tested with fields stretched far beyond anything
+  realistic). Font sizes are whole pixels, because html-to-image redraws text at `floor(size) − 0.1px`
+  and a fractional size re-wraps differently from the preview.
+- **The summary card counts the states as shown**, reviewer changes included, and then carries the
+  "حالة معدَّلة بمراجعة بشرية" mark. The same counts are sent to the server fallback.
+- **The first grading on the card.** The contract puts `grades[0]` on the verdict card with «+N».
+  In the report itself the collapsed card still shows only a count when there are several.
+- **The copy button's label names what is copied** (verse, hadith text, source text), and its
+  tooltip says it is the source's wording, not the wording as quoted.
+
+### Violations found in review, and fixed
+
+- The verse on a `not_found` card fell back to the UI font: the embedded-font CSS was cached from a
+  card that had no verse.
+- The verse's reference was drawn over the verse when it wrapped.
+- A blank line appeared under the verdict in the PNG: fractional font sizes wrapped differently
+  from the preview.
+- The fit loop read stale sizes under `prefers-reduced-motion`: the global rule gave every element
+  a 0.01ms transition, so layout measured right after a change returned the old value. The rule now
+  sets `transition-duration: 0s`.
+- On phones the preview overflowed the dialog: its frame was measured before the dialog's content
+  had mounted.
+- The source domain and the app address were left-aligned on Arabic cards.
+- The size toggle's labels were cut at half width.
+- `0 ث` four times in the timing row on fast runs: durations under a second are now milliseconds.
+
+### Known gaps
+
+- The share sheet was not run on a real phone, and the PNG was only inspected from Chromium.
+- Copying an image needs `ClipboardItem` in a secure context; where it is missing the toast says to
+  download instead.
+- With no `PUBLIC_URL` the card prints and encodes the current origin (`localhost:…` in the captures).

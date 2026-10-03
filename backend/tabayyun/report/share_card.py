@@ -230,25 +230,31 @@ def _footer(img: Image.Image, canvas: _Canvas, theme: dict, bottom: int, app_url
     return top - 40
 
 
-# (quote lines, verdict lines, type scale) — tried in order until the body fits above the footer.
+# (quote lines, verdict lines, type scale), tried in order. Smaller type is preferred over cutting the
+# claim: the first layout that fits AND shows the whole (240-character) claim wins; failing that, the
+# first that fits; failing that, the tightest.
 _FIT = {
-    "portrait": [(5, 3, 1.0), (4, 2, 0.94), (3, 2, 0.88), (2, 2, 0.8), (2, 1, 0.72)],
-    "square": [(3, 2, 0.9), (2, 2, 0.84), (2, 1, 0.78), (1, 1, 0.72), (1, 1, 0.64)],
+    "portrait": [(5, 3, 1.0), (6, 3, 0.92), (7, 3, 0.84), (8, 2, 0.76), (9, 2, 0.68)],
+    "square": [(3, 2, 0.9), (4, 2, 0.8), (5, 2, 0.72), (6, 1, 0.64), (7, 1, 0.58)],
 }
 
 
 def render_claim_card(card: Card, *, size: str, theme: str, lang: str, app_url: str, abstention_verse: dict | None, override_state: EvidenceState | None = None) -> bytes:
+    fitting = None
     img = None
     for quote_lines, verdict_lines, k in _FIT[size]:
-        img, fits = _draw_claim(card, size, theme, lang, app_url, abstention_verse, override_state, quote_lines, verdict_lines, k)
-        if fits:
+        img, fits, truncated = _draw_claim(card, size, theme, lang, app_url, abstention_verse, override_state, quote_lines, verdict_lines, k)
+        if fits and not truncated:
+            fitting = img
             break
+        if fits and fitting is None:
+            fitting = img
     out = io.BytesIO()
-    img.save(out, format="PNG", optimize=True)
+    (fitting or img).save(out, format="PNG", optimize=True)
     return out.getvalue()
 
 
-def _draw_claim(card, size, theme, lang, app_url, abstention_verse, override_state, quote_lines: int, verdict_lines: int, k: float) -> tuple[Image.Image, bool]:
+def _draw_claim(card, size, theme, lang, app_url, abstention_verse, override_state, quote_lines: int, verdict_lines: int, k: float) -> tuple[Image.Image, bool, bool]:
     en = lang == "en"
     state = (override_state or card.state).value
     img, cv, th, bottom = _frame(size, theme, lang, "title")
@@ -286,7 +292,9 @@ def _draw_claim(card, size, theme, lang, app_url, abstention_verse, override_sta
         quoted = quoted[:240].rsplit(" ", 1)[0] + "…"
     top = cv.y
     cv.y += px(18)
-    cv.paragraph(quoted, _f("semibold", px(44)), th["ink"], max_lines=quote_lines, line_gap=px(14), inset=28)
+    quote_font = _f("semibold", px(44))
+    truncated = len(cv.wrap(quoted, quote_font, cv.right - cv.left - 28, 99)) > quote_lines
+    cv.paragraph(quoted, quote_font, th["ink"], max_lines=quote_lines, line_gap=px(14), inset=28)
     bar_x = cv.right if cv.rtl else cv.left
     draw.rounded_rectangle([bar_x - 8, top + 8, bar_x, cv.y + 2] if cv.rtl else [bar_x, top + 8, bar_x + 8, cv.y + 2], radius=4, fill=STATE_COLOR[state])
     cv.y += px(28)
@@ -313,7 +321,9 @@ def _draw_claim(card, size, theme, lang, app_url, abstention_verse, override_sta
         if card.grades:
             g = card.grades[0]
             more = f"  (+{len(card.grades) - 1})" if len(card.grades) > 1 else ""
-            field(TEXT["grading"][en], g.text.splitlines()[0] + (f" — {g.scholar}" if g.scholar else "") + more, 1)
+            cv.line(TEXT["grading"][en], label_font, th["muted"], gap=2)
+            cv.paragraph(g.text.splitlines()[0] + (f" — {g.scholar}" if g.scholar else "") + more, _f("semibold", px(34)), th["ink"], max_lines=1, line_gap=px(2))
+            cv.paragraph(g.source_name, _f("regular", px(24)), th["muted"], max_lines=1, line_gap=0, after=px(16))
         elif card.grade_unavailable:
             field(TEXT["grading"][en], TEXT["no_grading"][en], 1)
         domain = (urlparse(src.url).hostname or "").removeprefix("www.")
@@ -323,10 +333,10 @@ def _draw_claim(card, size, theme, lang, app_url, abstention_verse, override_sta
             dom_font = _f("semibold", px(32))
             draw.text((x, cv.y), domain, font=dom_font, fill=th["ink"], anchor="ra" if cv.rtl else "la", direction="ltr", language="en")
             cv.y += sum(dom_font.getmetrics())
-    return img, cv.y <= body_end
+    return img, cv.y <= body_end, truncated
 
 
-def render_summary_card(summary: Summary, *, size: str, theme: str, lang: str, app_url: str) -> bytes:
+def render_summary_card(summary: Summary, *, size: str, theme: str, lang: str, app_url: str, human_reviewed: bool = False) -> bytes:
     en = lang == "en"
     img, cv, th, bottom = _frame(size, theme, lang, "summary_title")
     draw = cv.draw
@@ -336,7 +346,9 @@ def render_summary_card(summary: Summary, *, size: str, theme: str, lang: str, a
     draw.text((cx, cv.y + 80), str(summary.total), font=big, fill=th["ink"], anchor="mm")
     kw = {"direction": "rtl", "language": "ar"} if not en else {}
     draw.text((cx, cv.y + 190), TEXT["citations"][en], font=_f("semibold", 38), fill=th["muted"], anchor="mm", **kw)
-    cv.y += 270 if size == "portrait" else 240
+    if human_reviewed:  # some counted states were set by a human reviewer; no name is drawn
+        draw.text((cx, cv.y + 236), TEXT["overridden"][en], font=_f("semibold", 24), fill=th["muted"], anchor="mm", **kw)
+    cv.y += (270 if size == "portrait" else 240) + (26 if human_reviewed else 0)
     row_h = 92 if size == "portrait" else 72
     for state in ("contradicted", "not_found", "needs_review", "supported_with_note", "supported"):
         count = summary.by_state.get(EvidenceState(state), 0)

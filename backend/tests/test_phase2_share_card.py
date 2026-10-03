@@ -128,3 +128,26 @@ def test_endpoint_ignores_an_override_the_rules_do_not_allow(client, report):
 def test_endpoint_is_off_with_the_flag(client, report, monkeypatch):
     monkeypatch.setattr(settings, "features_share_card", False)
     assert client.post("/api/share-card", json={"kind": "claim", "card": report["cards"][0]}).status_code == 404
+
+
+def test_a_240_character_claim_is_shown_whole_by_reducing_type_before_cutting(report):
+    from tabayyun.report import share_card
+
+    card = Card.model_validate(next(c for c in report["cards"] if c["claim_type"] == "hadith"))
+    words = card.source.text.split()
+    text = " ".join(words)
+    while len(text) < 230:
+        text += " " + " ".join(words)
+    card.text_as_quoted = text[:236].rsplit(" ", 1)[0]
+    kw = dict(theme="light", lang="ar", app_url=URL, abstention_verse=None, override_state=None)
+    for size in ("portrait", "square"):
+        results = [share_card._draw_claim(card, size, kw["theme"], kw["lang"], URL, None, None, q, v, k)[1:] for q, v, k in share_card._FIT[size]]
+        assert any(fits and not truncated for fits, truncated in results), f"{size}: no layout shows the whole claim"
+        assert png(render_claim_card(card, size=size, **kw)).size == SIZES[size]
+
+
+def test_summary_card_marks_human_review_only_when_told(report):
+    summary = Summary.model_validate(report["summary"])
+    plain = render_summary_card(summary, size="portrait", theme="light", lang="ar", app_url=URL)
+    marked = render_summary_card(summary, size="portrait", theme="light", lang="ar", app_url=URL, human_reviewed=True)
+    assert plain != marked

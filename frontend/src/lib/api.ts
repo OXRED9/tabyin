@@ -3,7 +3,7 @@
  * serves the built app, and the dev server proxies `/api` to it. Nothing else is ever requested.
  */
 import { readSseStream } from './sse'
-import type { ApiError, Meta, Report, StreamEvent, UiLang, VerifyInput } from './types'
+import type { ApiError, Card, EvidenceState, Meta, Report, StreamEvent, Summary, UiLang, VerifyInput } from './types'
 
 /** Mock mode replays a fixture stream so every state can be shown without the backend. */
 export const MOCK_MODE: boolean =
@@ -150,4 +150,34 @@ export async function requestExportHtml(report: Report, signal?: AbortSignal): P
   }
   if (!response.ok) throw new ApiFailure(await errorFromResponse(response))
   return response.text()
+}
+
+/** The body of `POST /api/share-card`, as docs/API.md defines it. */
+export type ShareCardRequest = {
+  size: 'portrait' | 'square'
+  theme: 'light' | 'dark'
+  lang: UiLang
+} & (
+  | { kind: 'claim'; card: Card; override_state: EvidenceState | null }
+  | { kind: 'summary'; summary: Summary; human_reviewed: boolean }
+)
+
+/** F3 fallback: let the backend draw the verdict card when client-side rendering fails. */
+export async function requestShareCard(payload: ShareCardRequest, signal?: AbortSignal): Promise<Blob> {
+  if (MOCK_MODE) throw new ApiFailure(clientError('network'))
+  let response: Response
+  try {
+    response = await fetch('/api/share-card', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      signal,
+      headers: { 'Content-Type': 'application/json', Accept: 'image/png' },
+    })
+  } catch {
+    throw new ApiFailure(clientError('network'))
+  }
+  if (!response.ok) throw new ApiFailure(await errorFromResponse(response))
+  const blob = await response.blob()
+  if (!blob.type.startsWith('image/')) throw new ApiFailure(clientError('internal', response.status))
+  return blob
 }

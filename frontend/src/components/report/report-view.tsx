@@ -1,10 +1,12 @@
-import { Download, Info, ListOrdered, Layers, RotateCcw, ScanText, ShieldCheck, TextSearch } from 'lucide-react'
+import { Download, Info, ListOrdered, Layers, RotateCcw, ScanText, Share2, ShieldCheck, TextSearch } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { ExportMenu } from '@/components/export-menu'
 import { BlankCard, ClaimCard, PendingCard } from '@/components/report/claim-card'
 import { ReferralDialog } from '@/components/report/referral-dialog'
 import { TranscriptPane } from '@/components/report/transcript-pane'
+import { ShareCardDialog } from '@/components/share/share-card-dialog'
+import type { ShareTarget } from '@/components/share/share-card-dialog'
 import { Button } from '@/components/ui/button'
 import { Card as Surface } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -197,6 +199,19 @@ export function ReportView({
   )
 
   const openReferral = useCallback(() => setReferralOpen(true), [])
+
+  // F3: which verdict card the share dialog is showing, if any.
+  const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null)
+  const shareClaim = useCallback(
+    (cardId: string) => {
+      const card = cards[cardId]
+      if (!card) return
+      const override = overrides.find((o) => o.card_id === cardId)
+      const changed = override && override.state !== override.original_state ? override.state : null
+      setShareTarget({ kind: 'claim', card, overrideState: changed })
+    },
+    [cards, overrides],
+  )
   const features = useMemo(() => featuresOf(meta), [meta])
 
   const setCardOpen = useCallback((cardId: string, open: boolean) => {
@@ -253,6 +268,7 @@ export function ReportView({
         onLocate={goToSpan}
         onHover={setActiveId}
         onReferral={openReferral}
+        onShare={shareClaim}
         onSaveOverride={saveOverride}
         onRemoveOverride={removeOverride}
       />
@@ -438,6 +454,27 @@ export function ReportView({
                   {t.header.export}
                 </Button>
               </ExportMenu>
+              {features.share_card ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xl"
+                  data-testid="share-summary"
+                  className="font-medium sm:px-6"
+                  onClick={() =>
+                    setShareTarget({
+                      kind: 'summary',
+                      summary,
+                      counts,
+                      total: ordered.length,
+                      reviewed: overrides.some((o) => o.state !== o.original_state),
+                    })
+                  }
+                >
+                  <Share2 aria-hidden="true" />
+                  {t.share.button}
+                </Button>
+              ) : null}
               <Button type="button" variant="outline" size="xl" onClick={onVerifyAnother} className="font-medium sm:px-6">
                 <RotateCcw aria-hidden="true" />
                 {t.report.another}
@@ -466,6 +503,7 @@ export function ReportView({
       ) : null}
 
       <ReferralDialog open={referralOpen} onOpenChange={setReferralOpen} meta={meta} />
+      <ShareCardDialog target={shareTarget} meta={meta} onClose={() => setShareTarget(null)} />
     </section>
   )
 }

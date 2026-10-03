@@ -244,6 +244,7 @@ class ShareCardRequest(BaseModel):
     card: Card | None = None
     override_state: EvidenceState | None = None
     summary: Summary | None = None
+    human_reviewed: bool = False  # summary: some counted states were set by a human reviewer
 
     @model_validator(mode="after")
     def _has_payload(self) -> "ShareCardRequest":

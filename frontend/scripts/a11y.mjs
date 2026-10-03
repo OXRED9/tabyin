@@ -134,6 +134,13 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     // F5: open every «لماذا هذا الحكم؟» panel so its table, meter and labels are audited.
     const closedPanels = page.locator('[data-testid="explain"] > button[aria-expanded="false"]')
     for (let i = 0; i < 20 && (await closedPanels.count()) > 0; i++) await closedPanels.first().click()
+    if (state === 'share' || state === 'share-summary') {
+      // F3: the share dialog, with the verdict-card template inside it.
+      const trigger = state === 'share' ? page.locator('[role="article"][data-state="not_found"]').first().getByTestId('share-card') : page.getByTestId('share-summary')
+      await trigger.click()
+      await page.getByRole('dialog').waitFor()
+      if (theme === 'dark') await page.getByRole('dialog').getByRole('button', { name: lang === 'ar' ? 'داكن' : 'Dark', exact: true }).click()
+    }
     if (state === 'dialog') {
       await page.locator('[role="article"][data-state="not_found"]').first().getByRole('button', { name: t.referral }).click()
       await page.getByRole('dialog').waitFor()
@@ -174,6 +181,10 @@ for (const theme of ['light', 'dark']) {
   await audit(`reviewer mode · ${theme} · ar`, { theme, state: 'reviewer' })
   await audit(`referral dialog · ${theme} · ar`, { theme, state: 'dialog' })
 }
+for (const theme of ['light', 'dark']) {
+  await audit(`share dialog, claim card · ${theme} · ar`, { theme, state: 'share' })
+}
+await audit('share dialog, summary card · light · en', { lang: 'en', state: 'share-summary' })
 await audit('report, all cards expanded · light · en', { lang: 'en', state: 'report' })
 await audit('reviewer mode · dark · en', { lang: 'en', theme: 'dark', state: 'reviewer' })
 await audit('report · light · ar · 390px', { viewport: MOBILE, state: 'report' })

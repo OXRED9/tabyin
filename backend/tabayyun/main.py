@@ -215,7 +215,7 @@ async def share_card(req: ShareCardRequest, request: Request) -> Response:
         raise HTTPException(status_code=503, detail="Arabic text shaping is not available on this server")
     app_url = (settings.public_url or str(request.base_url)).rstrip("/")
     if req.kind == "summary":
-        png = await asyncio.to_thread(render_summary_card, req.summary, size=req.size, theme=req.theme, lang=req.lang, app_url=app_url)
+        png = await asyncio.to_thread(render_summary_card, req.summary, size=req.size, theme=req.theme, lang=req.lang, app_url=app_url, human_reviewed=req.human_reviewed)
     else:
         allowed = _reviewer_states(req.card)
         override = req.override_state if req.override_state in allowed else None

@@ -6,6 +6,7 @@ import {
   Info,
   LocateFixed,
   Scale,
+  Share2,
   Sparkles,
   TriangleAlert,
   UserRound,
@@ -322,6 +323,7 @@ export interface ClaimCardProps {
   onLocate: (cardId: string) => void
   onHover: (cardId: string | null) => void
   onReferral: () => void
+  onShare: (cardId: string) => void
   onSaveOverride: (override: ReviewerOverride) => void
   onRemoveOverride: (cardId: string) => void
 }
@@ -341,6 +343,7 @@ export const ClaimCard = memo(function ClaimCard({
   onLocate,
   onHover,
   onReferral,
+  onShare,
   onSaveOverride,
   onRemoveOverride,
 }: ClaimCardProps) {
@@ -544,9 +547,22 @@ export const ClaimCard = memo(function ClaimCard({
                   />
                 </Button>
               </CollapsibleTrigger>
-              {copyable ? (
+              {copyable || features.share_card ? (
                 <span className="ms-auto flex flex-wrap items-center gap-2">
-                  <CopySourceButton text={copyable} kind={card.source?.kind ?? null} />
+                  {copyable ? <CopySourceButton text={copyable} kind={card.source?.kind ?? null} /> : null}
+                  {features.share_card ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="touch"
+                      data-testid="share-card"
+                      onClick={() => onShare(card.id)}
+                      className="bg-background"
+                    >
+                      <Share2 aria-hidden="true" />
+                      {t.share.button}
+                    </Button>
+                  ) : null}
                 </span>
               ) : null}
             </div>

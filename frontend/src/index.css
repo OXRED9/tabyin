@@ -300,9 +300,18 @@ html[lang="en"] {
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    /* 0s, not a tiny duration: any non-zero duration turns every style change into a transition,
+       and code that measures layout right after a change would read the old size. */
+    transition-duration: 0s !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* The verdict-card template is measured and rasterised: nothing in it may animate. */
+[data-card-size],
+[data-card-size] * {
+  transition: none !important;
+  animation: none !important;
 }
 
 @media print {

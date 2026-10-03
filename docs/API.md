@@ -239,7 +239,8 @@ Used only when client-side rendering fails. Nothing is stored; no timestamp or i
   "lang": "ar | en",
   "card": Card,                          // kind = "claim"
   "override_state": "…EvidenceState… | null",   // a reviewer's state, drawn with a "human review" mark and no name
-  "summary": Summary                     // kind = "summary"
+  "summary": Summary,                    // kind = "summary" (counts as shown, reviewer changes applied)
+  "human_reviewed": false                // kind = "summary": draw the "human review" mark, no name
 }
 ```
 
@@ -249,7 +250,7 @@ Used only when client-side rendering fails. Nothing is stored; no timestamp or i
 |---|---|
 | Brand header | logo mark, «تبيّن», «بطاقة تثبّت» / "Verification card" |
 | State badge | colour + icon + word (`override_state ?? card.state`); «حالة معدَّلة بمراجعة بشرية» when overridden |
-| Claim | `card.text_as_quoted`, truncated to 240 characters with «…» |
+| Claim | `card.text_as_quoted`, truncated to 240 characters with «…»; type is reduced before lines are cut |
 | Verdict line | first sentence of `note_ar` / `note_en` |
 | Reference | `card.source.ref` |
 | Grading | `card.grades[0].text` verbatim + its `source_name`; «+N» when there are more; «الحكم غير متاح من المصدر» when `grade_unavailable` |
