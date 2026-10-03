@@ -73,7 +73,7 @@ function linkManifest(): void {
     document.head.appendChild(element)
   }
   link('manifest', '/manifest.webmanifest')
-  link('apple-touch-icon', '/icons/icon-192.png')
+  link('apple-touch-icon', '/icons/icon-maskable-512.png')
 }
 
 /**
