@@ -19,8 +19,8 @@ import { chromium } from 'playwright'
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173'
 const axe = fs.readFileSync(path.resolve(import.meta.dirname, '../node_modules/axe-core/axe.min.js'), 'utf8')
 const COPY = {
-  ar: { unavailable: /تعذّر استلام/, done: 'اكتمل التحقق', referral: 'إحالة إلى أهل العلم', example: 'رابط مقطع يوتيوب', dark: 'داكن', image: 'صورة رسالة محوَّلة', removed: /حُذف من الصورة/ },
-  en: { unavailable: /could not be received/, done: 'Verification complete', referral: 'Refer to scholars', example: 'YouTube link', dark: 'Dark', image: 'A forwarded-message screenshot', removed: /Removed from the picture/ },
+  ar: { asText: 'نص', unavailable: /تعذّر استلام/, done: 'اكتمل التحقق', referral: 'إحالة إلى أهل العلم', example: 'رابط مقطع يوتيوب', dark: 'داكن', image: 'صورة رسالة محوَّلة', removed: /حُذف من الصورة/ },
+  en: { asText: 'Text', unavailable: /could not be received/, done: 'Verification complete', referral: 'Refer to scholars', example: 'YouTube link', dark: 'Dark', image: 'A forwarded-message screenshot', removed: /Removed from the picture/ },
 }
 const DESKTOP = { width: 1440, height: 900 }
 const MOBILE = { width: 390, height: 844 }
@@ -119,12 +119,14 @@ function measureContrast() {
  *   share-summary   the share dialog on the summary
  *   sheet      (below 1024px) a note open as a bottom sheet
  *   share-phone   (390px) the share dialog opened from a note's sheet, with a share sheet present
+ *   `shareAs: 'text'` puts a share dialog in its text mode: the text that will be sent, the apps'
+ *   links, «نسخ النص»
  *   notice     the composer after a share that could not be received (`?share=unavailable`)
  *   single     a report with exactly one claim: its note open without a tap (inline below
  *              1024px, in the margin above), and the offer to install in the footer
  *   single-ios the same, with the iOS hint in place of the offer
  */
-async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, state = 'empty', card = 'not_found' }) {
+async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, state = 'empty', card = 'not_found', shareAs = 'image' }) {
   const mobile = viewport === MOBILE
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce', isMobile: mobile, hasTouch: mobile })
   const page = await context.newPage()
@@ -205,6 +207,10 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
       await page.getByRole('dialog').waitFor()
       if (theme === 'dark') await page.getByRole('dialog').getByRole('button', { name: t.dark, exact: true }).click()
     }
+    if (shareAs === 'text') {
+      await page.getByTestId('share-as').getByRole('button', { name: t.asText, exact: true }).click()
+      await page.getByTestId('share-text').waitFor()
+    }
     if (state === 'dialog') {
       await page.locator('[data-note][data-state="not_found"]').first().getByRole('button', { name: t.referral }).click()
       await page.getByRole('dialog').waitFor()
@@ -262,12 +268,15 @@ await audit('share dialog, contradicted card · dark · en', { state: 'share', c
 await audit('share dialog, card with a note · light · ar', { state: 'share', card: 'supported_with_note' })
 await audit('share dialog, summary card · light · en', { lang: 'en', state: 'share-summary' })
 await audit('share dialog, summary card · dark · ar', { theme: 'dark', state: 'share-summary' })
+await audit('share dialog as text, claim · light · ar', { state: 'share', card: 'contradicted', shareAs: 'text' })
+await audit('share dialog as text, summary · dark · en', { lang: 'en', theme: 'dark', state: 'share-summary', shareAs: 'text' })
 await audit('report, all notes open · light · en', { lang: 'en', state: 'report' })
 await audit('report, all notes open · dark · en', { lang: 'en', theme: 'dark', state: 'report' })
 for (const theme of ['light', 'dark']) {
   await audit(`report · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'report' })
   await audit(`note sheet · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'sheet' })
   await audit(`share dialog with the share sheet · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'share-phone' })
+  await audit(`share dialog as text · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'share-phone', shareAs: 'text' })
 }
 await audit('mid-run · light · ar · 390px', { viewport: MOBILE, state: 'running' })
 for (const theme of ['light', 'dark']) {

@@ -76,6 +76,26 @@ async function openNote({ page, phone, sheet }, id) {
   await page.waitForTimeout(400)
 }
 
+/** The share dialog on the contradicted claim, opened from its note, in the given mode. */
+async function openShareDialog(width, shareAs = null) {
+  const session = await openReport(width, {
+    init: () => {
+      navigator.canShare = () => true
+      navigator.share = async () => {}
+    },
+  })
+  const { page } = session
+  await openNote(session, 'c9')
+  await page.locator('[data-note-sheet="c9"]').getByTestId('share-card').click()
+  await page.getByTestId('share-targets').waitFor()
+  if (shareAs) await page.getByTestId('share-as').getByRole('button', { name: shareAs, exact: true }).click()
+  await page.evaluate(() => document.fonts.ready)
+  await page.waitForTimeout(500)
+  await page.getByTestId('share-targets').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(300)
+  return session
+}
+
 const STATES = {
   empty: async (width, file) => {
     const { context, page } = await open(width)
@@ -196,25 +216,29 @@ const STATES = {
     await context.close()
   },
 
-  // The share dialog on a phone, scrolled to the ways out: the share sheet, the named apps, save
-  // and copy. Headless Chromium on Linux has no share sheet, so this capture alone gives the page
-  // one that does nothing: what a phone shows.
-  'share-dialog': async (width, file) => {
-    const session = await openReport(width, {
-      init: () => {
-        navigator.canShare = () => true
-        navigator.share = async () => {}
-      },
-    })
-    const { page } = session
+  // The evidence a ruling points at: shown under its own title, with its reference and grading,
+  // and no collation. The state stays «يحتاج مراجعة».
+  referenced: async (width, file) => {
+    const session = await openReport(width)
     await openNote(session, 'c8')
-    await page.locator('[data-note-sheet="c8"]').getByTestId('share-card').click()
-    await page.getByTestId('share-targets').waitFor()
-    await page.evaluate(() => document.fonts.ready)
-    await page.waitForTimeout(500)
-    await page.getByTestId('share-copy').scrollIntoViewIfNeeded()
-    await page.waitForTimeout(300)
-    await page.screenshot({ path: file })
+    await session.page.screenshot({ path: file, fullPage: !session.sheet })
+    await session.context.close()
+  },
+
+  // The share dialog on a phone, sharing as an image: the card, then the share sheet, the named
+  // apps, save and copy. Headless Chromium on Linux has no share sheet, so these two captures
+  // give the page one that does nothing: what a phone shows.
+  'share-dialog': async (width, file) => {
+    const session = await openShareDialog(width)
+    await session.page.screenshot({ path: file })
+    await session.context.close()
+  },
+
+  // The same, sharing as text: the preview is the exact text that will be sent.
+  'share-dialog-text': async (width, file) => {
+    const session = await openShareDialog(width, 'نص')
+    await session.page.getByTestId('share-text').waitFor()
+    await session.page.screenshot({ path: file })
     await session.context.close()
   },
 
@@ -234,6 +258,8 @@ const ONLY_AT = {
   'share-link': [390],
   'install-hint': [390],
   'share-dialog': [390],
+  'share-dialog-text': [390],
+  referenced: [390, 1440],
 }
 
 for (const [name, capture] of Object.entries(STATES)) {
@@ -303,8 +329,11 @@ if (!only || only.has('cards')) {
   try {
     const ar = await cardSession('ar')
     // A text attributed to the Quran that is in fact a narration.
-    await shareNote(ar, 'c8')
+    await shareNote(ar, 'c9')
     await saveCard(ar, 'card-client-contradicted-portrait-light-ar', 'portrait', 'light')
+    // A disputed ruling with the evidence it points at.
+    await shareNote(ar, 'c8')
+    await saveCard(ar, 'card-client-needs-review-referenced-portrait-light-ar', 'portrait', 'light')
     // A verse quoted word for word.
     await shareNote(ar, 'c1')
     await saveCard(ar, 'card-client-supported-square-light-ar', 'square', 'light')
