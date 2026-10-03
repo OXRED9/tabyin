@@ -94,15 +94,21 @@ export function AppHeader({ hasReport, onExportJson, onExportHtml, onCopyReport,
   return (
     <header className="sticky top-0 z-40 border-b bg-paper print:hidden">
       <div className="flex h-12 items-center gap-1 px-4 sm:gap-3 sm:px-6">
-        <button
-          type="button"
-          onClick={onHome}
+        {/* Home: a new verification on the first screen. A link, so it can also be opened afresh;
+            a plain click stays in the page, and the report just made stays in the local history. */}
+        <a
+          href="/"
           aria-label={t.header.home}
+          onClick={(event) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+            event.preventDefault()
+            onHome()
+          }}
           className="flex items-center gap-2 rounded-control"
         >
           <LogoMark />
           <Logotype />
-        </button>
+        </a>
 
         <div className="ms-auto flex items-center gap-1 sm:gap-3">
           {hasReport ? (
