@@ -196,6 +196,9 @@ plainly below, with the command that finishes the job in `OPERATIONS.md`.
 51. **The development server listens on the local network** (`--host 0.0.0.0`) so the UI can be opened
     from a phone on the same Wi-Fi; it is started with the OpenRouter key blanked, so that session
     cannot spend credit.
+    A second listener serves the same app over HTTPS with a self-signed certificate (port 8766), because
+    the system share sheet and the clipboard exist only in a secure context; the phone shows a certificate
+    warning once. Neither listener is part of the deployment.
 52. **The sheet widens when a verification starts, not when it ends.** `DESIGN.md` §3 says the sheet
     widens once the report is complete, and §3.2 says notes take their place in the margin while the
     request runs. Both cannot hold without the text re-wrapping at the end, so the sheet takes its
