@@ -295,4 +295,72 @@ Two more defaults were caught that the list does not name:
 
 ## 7. Pass 3 — critiques
 
-*(written after each round of screenshots in `screenshots/v2/`)*
+Each round: look at the screenshots, write what is memorable, what is noise and what is
+inconsistent, fix, capture again. The captures in `screenshots/v2/` are always the latest round.
+
+### Round 1 — the first build
+
+Looked at 14 of the 30 captures in this round (every state at 1440 except the dark empty state;
+report, open note and empty at 390; report and open note at 820). The rest were looked at in round 2.
+
+**Empty and examples (1440, 390).**
+- Memorable: the Naskh headline over an almost bare sheet; the field ruled like writing paper.
+- Memorable: the recognised-link tag says what will happen («مقطع يوتيوب — سيُفرَّغ ويُتحقق منه»).
+- Noise: nothing to remove yet; the three chips and the footer line are the whole of the rest.
+- Inconsistent: a pasted link is set in Amiri — a URL is the tool's business, not text under examination.
+- Inconsistent: the header's content sits in a wide centred box that lines up with nothing on a 720px sheet; the reviewer switch looks on when it is off.
+
+**Processing (1440).**
+- Memorable: the text is already a page while the verdicts are still coming; decided notes are in place beside undecided ones.
+- Works: the five stages are the only numbered thing on the screen, and they read as a sequence.
+- Noise: the connectors of the pending notes already form a fan (see the report).
+- Inconsistent: pending notes carry a hairline under each, decided notes a coloured tick — two languages for one object, acceptable only because one is a placeholder.
+- No shift when a verdict lands: the placeholder and the note have the same height.
+
+**Report (1440, 820, 390).**
+- Memorable: at 820 this is the product — every note level with its passage, a short tie, coloured ink in the text, times in the outer gutter like line numbers.
+- Noise at 1440: a collapsed note (two lines, 58px) is taller than a line of text (40px), so notes drift down and their ties pile into a fan of nested elbows in the gutter.
+- Noise: the tie starts at the end of the passage and runs under the following words before it reaches the gutter; it reads as a stray underline.
+- Works at 390: the list of notes begins each item with the words it is about; no numbering was needed.
+- Inconsistent: none in colour or type — the summary sentence, the underlines and the notes use the same five inks.
+
+**Open note (1440, 820, 390).**
+- Memorable: the source's words between two hairlines in Naskh, then the takhrij line and the grading in the source's own word — it reads like a page excerpt, not a card.
+- Noise: in a partial quotation nearly every word of the source carries a dotted underline to say "not quoted"; the eye sees dots, not the hadith.
+- Noise: with a note open the others are pushed below the text and their ties become a bundle of long verticals.
+- Noise: a sparkle icon marks the AI explanation — the stock sign for "AI"; the label already says it in words.
+- Inconsistent at 820: a 16rem margin makes an open note a long, narrow column while the same content on a phone gets a full-width sheet.
+
+**Reviewer mode (1440).**
+- Works: the reviewer's line sits at the foot of the open note and the summary says one citation was reviewed by a person.
+- Works: a changed note shows both states, the tool's and the reviewer's.
+- Noise: the same bundle of ties as in every open note.
+- Inconsistent: three buttons in two rows where the narrow margin breaks them unevenly.
+- The collation («في النص / في المصدر») with the differing words underlined is the clearest thing on the screen.
+
+**Not found (1440).**
+- Memorable: the abstention is typographic — the sentence «لا نُصدر حكماً بلا مصدر، ولا نولّد بديلاً», then the verse from the source data in Amiri Quran, then the referral. Nothing is offered in place of a source.
+- Works: muted red is clearly a sibling of the deeper red of «مخالف للمصدر», and both differ from amber at a glance.
+- Noise: the ties again.
+- Inconsistent: none.
+- The referral is the only filled button in the note, which is right: it is the one thing to do.
+
+**Error (1440).**
+- Works: what happened, then what to do, with the two remedies as buttons, inside the sheet where the result would have been.
+- Works: the field keeps the link, so nothing has to be typed again.
+- Noise: red edge on the field, red tick on the message, and the link tag still promising «سيُفرَّغ» — after a failure the tag should not promise.
+- Inconsistent: the link in Amiri, as above.
+- The message is dismissible and the composer stays usable.
+
+**Dark (report, 1440).**
+- Works: green-black, not grey; the sheet is one step lighter than the desk and still reads as paper.
+- Works: the state inks keep their order of alarm; amber is the brightest and it is the one that asks for a human.
+- Noise: none beyond the ties.
+- Inconsistent: none found.
+- The gold ring is more visible here than in light mode, where it is deliberately faint.
+
+**Fixes sent for round 2**: one-line collapsed notes no taller than a text line; resting ties only
+as a short stub in the gutter, none for a displaced note, the full tie in state colour on
+hover/focus/open; notes open in the bottom sheet below 1024; quoted words in ink and the rest of
+the source in `quiet`, no dots; no sparkle; a readable off state for the reviewer switch; links in
+Plex; the header spans the viewport.

@@ -18,6 +18,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -54,6 +55,9 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Tabayyun", version=__version__, lifespan=lifespan, docs_url="/api/docs", openapi_url="/api/openapi.json")
+# Scripts, styles and JSON are compressed; the middleware leaves text/event-stream alone, so the
+# verification stream is never buffered.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 if settings.cors_origins:
     app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in settings.cors_origins.split(",")], allow_methods=["*"], allow_headers=["*"])
 
@@ -252,7 +256,17 @@ def _reviewer_states(card) -> set:
 _dist = settings.frontend_dist
 if _dist.exists():
     if (_dist / "assets").exists():
-        app.mount("/assets", StaticFiles(directory=_dist / "assets"), name="assets")
+
+        class _HashedAssets(StaticFiles):
+            """Vite names every asset after its content hash, so a file never changes under its URL."""
+
+            async def get_response(self, path, scope):
+                response = await super().get_response(path, scope)
+                if response.status_code == 200:
+                    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+                return response
+
+        app.mount("/assets", _HashedAssets(directory=_dist / "assets"), name="assets")
 
     @app.get("/{path:path}", include_in_schema=False)
     async def spa(path: str):
@@ -261,4 +275,4 @@ if _dist.exists():
         candidate = (_dist / path).resolve()
         if path and candidate.is_file() and _dist.resolve() in candidate.parents:
             return FileResponse(candidate)
-        return FileResponse(_dist / "index.html")
+        return FileResponse(_dist / "index.html", headers={"Cache-Control": "no-cache"})

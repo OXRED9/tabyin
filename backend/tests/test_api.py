@@ -44,6 +44,7 @@ def test_built_in_text_example_verifies_cleanly(client):
     example = next(e for e in client.get("/api/meta").json()["examples"] if e["id"] == "text")
     r = client.post("/api/verify", json={"input_type": "text", "text": example["text"]})
     assert r.status_code == 200 and r.headers["content-type"].startswith("text/event-stream")
+    assert "content-encoding" not in r.headers  # the stream is never compressed (it would be buffered)
     events = sse(r)
     names = [n for n, _ in events]
     assert names[0] == "stage" and names[-1] == "done" and "summary" in names
@@ -107,3 +108,11 @@ def test_user_text_never_reaches_the_logs(client, caplog, ayah, matn):
     assert any(n == "card" for n, _ in sse(r))
     logged = "\n".join(rec.getMessage() for rec in caplog.records if rec.name.startswith("tabayyun"))
     assert secret not in logged and matn("4560")[:20] not in logged
+
+
+def test_json_is_compressed_but_the_event_stream_is_not(client):
+    big = client.get("/api/meta", headers={"Accept-Encoding": "gzip"})
+    assert big.status_code == 200 and big.headers.get("content-encoding") == "gzip"
+    stream = client.post("/api/verify", json={"input_type": "text", "text": "نص قصير بلا استشهاد."}, headers={"Accept-Encoding": "gzip"})
+    assert stream.headers["content-type"].startswith("text/event-stream") and "content-encoding" not in stream.headers
+

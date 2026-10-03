@@ -23,14 +23,14 @@ ERRORS: dict[str, dict[str, str]] = {
     "article_fetch_failed": {
         "message_ar": "تعذّر استخراج نص المقال من هذا الرابط.",
         "message_en": "The article text could not be extracted from this link.",
-        "hint_ar": "انسخ نص المقال والصقه في تبويب «نص».",
-        "hint_en": "Copy the article text and paste it in the Text tab.",
+        "hint_ar": "انسخ نص المقال والصقه في خانة التحقق.",
+        "hint_en": "Copy the article text and paste it into the field.",
     },
     "video_download_failed": {
         "message_ar": "تعذّر تحميل هذا المقطع من المنصة.",
         "message_en": "This clip could not be downloaded from the platform.",
-        "hint_ar": "ارفع الملف من تبويب «رفع ملف» أو الصق التفريغ في تبويب «نص».",
-        "hint_en": "Upload the file in the Upload tab, or paste the transcript in the Text tab.",
+        "hint_ar": "أرفق الملف نفسه، أو الصق التفريغ في خانة التحقق.",
+        "hint_en": "Attach the file itself, or paste the transcript into the field.",
     },
     "video_too_long": {
         "message_ar": "المقطع أطول من الحد المسموح.",
@@ -47,8 +47,8 @@ ERRORS: dict[str, dict[str, str]] = {
     "transcription_unavailable": {
         "message_ar": "خدمة التفريغ الصوتي غير متاحة حالياً، وهذا المقطع بلا ترجمة نصية جاهزة.",
         "message_en": "Speech-to-text is unavailable right now and this clip has no ready captions.",
-        "hint_ar": "الصق التفريغ في تبويب «نص»، أو جرّب مقطعاً عليه ترجمة نصية.",
-        "hint_en": "Paste the transcript in the Text tab, or try a clip that has captions.",
+        "hint_ar": "الصق التفريغ في خانة التحقق، أو جرّب مقطعاً عليه ترجمة نصية.",
+        "hint_en": "Paste the transcript into the field, or try a clip that has captions.",
     },
     "unsupported_file": {
         "message_ar": "نوع الملف غير مدعوم.",
