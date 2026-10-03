@@ -25,7 +25,10 @@ from fastapi.staticfiles import StaticFiles
 from . import __version__, pipeline
 from .config import settings
 from .ingest.document import Document, IngestError
+from .ingest.image import ImageProblem, prepare_image, read_image
+from .ingest.noise import strip_noise
 from .ingest.text import ingest_text
+from .llm.base import LLMError
 from .llm.router import get_llm
 from .meta import build_meta
 from .report.export_html import render_report_html
@@ -209,6 +212,52 @@ async def verify_file(request: Request, file: UploadFile = File(...), ui_lang: s
                 Path(tmp_path).unlink(missing_ok=True)
 
     return StreamingResponse(_stream(events()), media_type="text/event-stream", headers=SSE_HEADERS)
+
+
+def _problem(status: int, code: str) -> HTTPException:
+    """A JSON error with the same fields as the stream's error events: what happened + what to do."""
+    return HTTPException(status_code=status, detail=error_event(code, "ingest"))
+
+
+@app.post("/api/ocr")
+async def ocr(request: Request, file: UploadFile = File(...)) -> dict:
+    """F1: the text of a screenshot or photo, exactly as written, for the user to check and then
+    verify as text. Stateless: the image is held in memory, re-encoded without its metadata, sent to
+    the vision model and dropped; nothing is written to disk and no content is logged."""
+    if not settings.features_image:
+        raise HTTPException(status_code=404)
+    if _rate_limited(request):
+        raise _problem(429, "rate_limited")
+    llm = get_llm()
+    if not llm.can("vision"):
+        raise _problem(503, "ocr_unavailable")
+    limit = settings.max_image_mb * 1024 * 1024
+    data = await file.read(limit + 1)
+    if len(data) > limit:
+        raise _problem(413, "image_too_large")
+    try:
+        prepared, mime = await asyncio.to_thread(prepare_image, data)
+    except ImageProblem as e:
+        raise _problem(415, e.code) from None
+    session = llm.session()
+    try:
+        result = await read_image(prepared, mime, session)
+    except LLMError as e:
+        log.warning("image reading failed: %s", e)  # model ids and error types only
+        raise _problem(502, "ocr_failed") from None
+    text, removed = strip_noise(result.text)
+    if not text.strip():
+        raise _problem(422, "no_text_in_image")
+    confidence = min(1.0, max(0.0, result.confidence))
+    unreadable = text.count("[?]")
+    return {
+        "text": text,
+        "confidence": round(confidence, 2),
+        "low_confidence": confidence < 0.8 or unreadable > 0,
+        "unreadable": unreadable,  # words the model could not read are written as [?]
+        "notes": result.notes.strip() or None,
+        "removed": removed,
+    }
 
 
 @app.post("/api/export/html", response_class=HTMLResponse)

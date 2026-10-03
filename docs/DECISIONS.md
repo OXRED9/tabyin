@@ -230,3 +230,22 @@ plainly below, with the command that finishes the job in `OPERATIONS.md`.
     `scripts/screenshots-phase2.mjs` drive the first UI (tabs, cards) and no longer match the page;
     `scripts/screenshots-v2.mjs` and `scripts/a11y.mjs` are the ones that run.
 
+## Phase 2 features opened by the team on 3 October 2026
+
+60. **F1 (image input) and F6 (installable app, share target) were opened before the public URL
+    exists**, by the team's decision ("do all of them"), as F3–F5 were earlier. The Phase 2 gate in
+    `CLAUDE.md` still holds for F2 and F7–F10.
+61. **Image input reads, then asks.** `/api/ocr` returns the text of the image and stops; the user
+    sees it in the field («هذا ما قرأناه من الصورة — عدّله إن لزم ثم تحقّق»), can correct it, and only
+    then runs the verification as text. A misread letter is therefore the user's to catch before any
+    verdict is given, which answers the open question of item 37.
+62. **Unreadable words are written `[?]`, and that is the only "low-confidence region".** A chat model
+    gives one confidence for the whole image, not per word; highlighting regions would be invented
+    precision. The UI marks `[?]` and warns when the overall confidence is under 0.8.
+63. **Noise is removed line by line and shown.** Emoji, rows of punctuation, clock times and short
+    "share this" footers (the brief's «انشرها تؤجر», «لا تنسوا الصلاة على النبي») are taken out of the
+    text and returned in `removed`; a phrase inside a longer sentence is never touched, and the
+    wording of a citation is never altered by this step.
+64. **A photo's metadata never leaves the server**: the image is re-encoded before it is sent to the
+    vision model, which drops EXIF (including location).
+

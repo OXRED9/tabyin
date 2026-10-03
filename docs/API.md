@@ -20,6 +20,32 @@ streamed. Types below mirror `backend/tabayyun/schemas.py` (source of truth) and
 }
 ```
 
+## `POST /api/ocr` (image input, F1)
+
+`multipart/form-data` with one field, `file`: PNG, JPG, WebP or HEIC, at most `limits.max_image_mb`.
+Returns the text of the image **exactly as written** — the vision model is instructed never to
+correct a verse or a narration — for the user to check, edit and then send to `/api/verify` as text.
+404 when `features.image` is off.
+
+```json
+{
+  "text": "…the text, without decorative noise…",
+  "confidence": 0.95,
+  "low_confidence": false,        // confidence < 0.8, or any unreadable word
+  "unreadable": 0,                // words the model could not read; each is written "[?]" in text
+  "notes": null,                  // the model's remark about legibility, if any
+  "removed": ["🌹", "انشرها تؤجر"] // emoji, "share this" footers, app labels — shown in a collapsible list
+}
+```
+
+Errors are JSON, `{"detail": {code, message_ar, message_en, hint_ar, hint_en}}`: `unsupported_image`
+(415), `image_too_large` (413), `no_text_in_image` (422), `ocr_failed` (502), `ocr_unavailable`
+(503), `rate_limited` (429).
+
+The image is held in memory, re-encoded without its metadata (a photo's EXIF location never leaves
+the process), reduced to 2000 px on its longest side, sent to the vision model and dropped. Nothing
+is written to disk and no content is logged.
+
 ## `GET /admin/usage` (development only)
 
 404 unless `DEV_MODE=true`. Totals of model calls and cost per day, task and model, from the local

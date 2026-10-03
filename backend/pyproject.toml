@@ -22,6 +22,7 @@ dependencies = [
   "pillow>=11.0",
   "segno>=1.6",
   "openai>=1.50",  # OpenAI-compatible client, pointed at OpenRouter (the only model provider)
+  "pillow-heif>=0.18",  # HEIC photos from iPhones (image input)
 ]
 
 [project.optional-dependencies]

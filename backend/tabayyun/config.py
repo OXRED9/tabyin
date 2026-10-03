@@ -64,6 +64,8 @@ class Settings(BaseSettings):
     features_share_card: bool = True  # F3: shareable verdict card
     features_copy: bool = True  # F4: one-click copy of the correct text
     features_explain: bool = True  # F5: "why this verdict?" panel
+    features_image: bool = True  # F1: read the text of a screenshot (needs MODEL_VISION and a key)
+    max_image_mb: int = 10
     # Public base URL of this deployment, printed (and QR-encoded) on verdict cards.
     public_url: str | None = None
 

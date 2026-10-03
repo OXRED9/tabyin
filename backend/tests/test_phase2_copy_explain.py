@@ -176,7 +176,8 @@ def test_meta_announces_flags_and_data_version():
 
     build_meta.cache_clear()
     meta = build_meta()
-    assert meta["features"] == {"share_card": True, "copy": True, "explain": True}
+    assert {k: meta["features"][k] for k in ("share_card", "copy", "explain")} == {"share_card": True, "copy": True, "explain": True}
+    assert isinstance(meta["features"]["image"], bool)  # on only when a vision model can be called
     assert meta["data_version"] == get_data_version() and "quran 6236" in meta["data_version"]
 
 

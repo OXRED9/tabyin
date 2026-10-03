@@ -89,5 +89,41 @@ ERRORS: dict[str, dict[str, str]] = {
 }
 
 
+ERRORS.update(
+    {
+        "unsupported_image": {
+            "message_ar": "تعذّرت قراءة هذا الملف كصورة.",
+            "message_en": "This file could not be read as an image.",
+            "hint_ar": "أرفق لقطة شاشة أو صورة بصيغة PNG أو JPG أو WebP أو HEIC.",
+            "hint_en": "Attach a screenshot or a photo in PNG, JPG, WebP or HEIC format.",
+        },
+        "image_too_large": {
+            "message_ar": "الصورة أكبر من الحد المسموح.",
+            "message_en": "The image is larger than the limit.",
+            "hint_ar": "قصّ الجزء الذي فيه النص ثم أرفقه، أو أرفق لقطة شاشة بدل الصورة الأصلية.",
+            "hint_en": "Crop it to the part with the text, or attach a screenshot instead of the original photo.",
+        },
+        "ocr_unavailable": {
+            "message_ar": "قراءة الصور غير متاحة الآن.",
+            "message_en": "Reading images is not available right now.",
+            "hint_ar": "اكتب النص الذي في الصورة أو الصقه في خانة التحقق.",
+            "hint_en": "Type or paste the text of the image into the field.",
+        },
+        "ocr_failed": {
+            "message_ar": "لم نتمكن من قراءة النص في هذه الصورة.",
+            "message_en": "We could not read the text in this image.",
+            "hint_ar": "جرّب صورة أوضح، أو اكتب النص في خانة التحقق.",
+            "hint_en": "Try a clearer image, or type the text into the field.",
+        },
+        "no_text_in_image": {
+            "message_ar": "لم نجد نصاً مقروءاً في هذه الصورة.",
+            "message_en": "We found no readable text in this image.",
+            "hint_ar": "تأكد أن الصورة فيها نص واضح، أو اكتبه في خانة التحقق.",
+            "hint_en": "Make sure the image shows clear text, or type it into the field.",
+        },
+    }
+)
+
+
 def error_event(code: str, stage: str, fatal: bool = True) -> dict:
     return {"code": code, "stage": stage, "fatal": fatal, **ERRORS.get(code, ERRORS["internal"])}

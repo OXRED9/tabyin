@@ -61,10 +61,21 @@ def load_terms() -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))["terms"] if path.exists() else []
 
 
+def _vision_available() -> bool:
+    from .llm.openrouter import get_llm
+
+    return get_llm().can("vision")
+
+
 @lru_cache(maxsize=1)
 def build_meta() -> dict:
     return {
-        "features": {"share_card": settings.features_share_card, "copy": settings.features_copy, "explain": settings.features_explain},
+        "features": {
+            "share_card": settings.features_share_card,
+            "copy": settings.features_copy,
+            "explain": settings.features_explain,
+            "image": settings.features_image and _vision_available(),
+        },
         "app_url": settings.public_url.rstrip("/") if settings.public_url else None,
         "data_version": get_data_version(),
         "terms": load_terms(),
@@ -83,5 +94,10 @@ def build_meta() -> dict:
                 "url": None,
             },
         ],
-        "limits": {"max_text_chars": settings.max_text_chars, "max_upload_mb": settings.max_upload_mb, "max_media_minutes": settings.max_media_minutes},
+        "limits": {
+            "max_text_chars": settings.max_text_chars,
+            "max_upload_mb": settings.max_upload_mb,
+            "max_media_minutes": settings.max_media_minutes,
+            "max_image_mb": settings.max_image_mb,
+        },
     }
