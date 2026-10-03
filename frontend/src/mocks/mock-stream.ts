@@ -10,8 +10,11 @@
  *   a link containing "tiktok"  → a download error; one containing "fail" → a fetch error
  * `?scenario=video|text|fabrication|lexical|no_claims|error|tiktok` forces one, `?speed=4`
  * replays faster, and `?off=copy,explain,share_card` turns Phase 2 feature flags off (the cards
- * then come without that feature's data, as from the real API). `?image=1` turns the image-input
- * flag on, as a backend that offers it would.
+ * then come without that feature's data, as from the real API; `off=image` hides image input).
+ *
+ * Image input (F1) is on. `/api/ocr` is simulated: after a short delay it returns the text of the
+ * text example with one word replaced by `[?]` and a short list of removed noise. The image
+ * example's picture is drawn here on a canvas. Nothing is requested from the network.
  *
  * `?mock=1&scenario=<name>&autorun=1` submits that scenario's input on load, with no click, so
  * the page reaches its report by itself (for audits of the report page; `&speed=` still applies).
@@ -26,6 +29,7 @@ import type {
   ClaimStub,
   EvidenceState,
   Meta,
+  OcrResult,
   Segment,
   SourceInfo,
   StageEvent,
@@ -136,15 +140,94 @@ const flagsOff = () => new Set((params().get('off') ?? '').split(',').filter(Boo
 export async function mockMeta(): Promise<Meta> {
   await new Promise((resolve) => setTimeout(resolve, 120))
   const off = flagsOff()
+  const meta = fixtures.meta as Meta
+  const image = !off.has('image')
   return {
-    ...(fixtures.meta as Meta),
+    ...meta,
+    limits: { ...meta.limits, max_image_mb: 10 },
+    examples: image ? [...meta.examples, IMAGE_EXAMPLE] : meta.examples,
     features: {
       share_card: !off.has('share_card'),
       copy: !off.has('copy'),
       explain: !off.has('explain'),
-      image: params().has('image'),
+      image,
     },
   }
+}
+
+// The real API serves a generated PNG at this address; mock mode never requests it.
+const IMAGE_EXAMPLE: Meta['examples'][number] = {
+  id: 'image',
+  input_type: 'image',
+  label_ar: 'صورة رسالة محوَّلة',
+  label_en: 'A forwarded-message screenshot',
+  text: null,
+  url: '/api/examples/screenshot.png',
+}
+
+/** The text example from the fixtures: what the simulated picture "contains". */
+const exampleText = () => (fixtures.meta as Meta).examples.find((example) => example.id === 'text')?.text ?? ''
+
+/**
+ * A simulated `POST /api/ocr`. The text is the fixtures' text example, untouched except that its
+ * second word (part of the framing sentence, not of a verse or a narration) is replaced by the
+ * unreadable-word marker; the removed items are the kind of noise a forwarded message carries.
+ */
+export async function mockOcr(signal?: AbortSignal): Promise<OcrResult> {
+  const speed = Math.max(0.1, Number(params().get('speed')) || 1)
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(resolve, 1200 / speed)
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timer)
+      reject(new DOMException('Aborted', 'AbortError'))
+    })
+  })
+  const words = exampleText().split(' ')
+  if (words.length > 1) words[1] = '[?]'
+  return {
+    text: words.join(' '),
+    confidence: 0.9,
+    low_confidence: true,
+    unreadable: 1,
+    notes: null,
+    removed: ['🌹', 'انشرها تؤجر'],
+  }
+}
+
+/** The image example's picture: the text example drawn as a message bubble, entirely in the browser. */
+export async function mockExampleImage(): Promise<File> {
+  const canvas = document.createElement('canvas')
+  canvas.width = 540
+  canvas.height = 360
+  const context = canvas.getContext('2d')
+  if (context) {
+    context.fillStyle = '#e4f0ec'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    context.fillStyle = '#ffffff'
+    context.fillRect(24, 24, canvas.width - 48, canvas.height - 48)
+    context.fillStyle = '#11221e'
+    context.font = '22px Amiri, serif'
+    context.direction = 'rtl'
+    context.textAlign = 'right'
+    let y = 70
+    for (const paragraph of exampleText().split('\n')) {
+      let line = ''
+      for (const word of paragraph.split(' ')) {
+        const next = line ? `${line} ${word}` : word
+        if (context.measureText(next).width > canvas.width - 96 && line) {
+          context.fillText(line, canvas.width - 48, y)
+          y += 40
+          line = word
+        } else line = next
+      }
+      if (line) {
+        context.fillText(line, canvas.width - 48, y)
+        y += 40
+      }
+    }
+  }
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+  return new File([blob ?? new Blob()], 'screenshot.png', { type: 'image/png' })
 }
 
 /** A greeting with no citation in it: what the `no_claims` scenario is run on. */

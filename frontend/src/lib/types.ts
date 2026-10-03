@@ -243,7 +243,8 @@ export interface ReferralLink {
 
 export interface MetaExample {
   id: string
-  input_type: InputType
+  /** `image`: a screenshot to read first (`url` is the picture); present only when image input is on. */
+  input_type: InputType | 'image'
   label_ar: string
   label_en: string
   text?: string | null
@@ -255,7 +256,7 @@ export interface Meta {
   motto_verse: VerseRef | null
   referral_links: ReferralLink[]
   examples: MetaExample[]
-  limits: { max_text_chars: number; max_upload_mb: number; max_media_minutes: number }
+  limits: { max_text_chars: number; max_upload_mb: number; max_media_minutes: number; max_image_mb?: number }
   /** Phase 2 feature flags. A missing key means the backend predates the flag: treated as on. */
   features?: Partial<Features>
   /** PUBLIC_URL; null → the UI uses window.location.origin */
@@ -267,8 +268,23 @@ export interface Features {
   share_card: boolean
   copy: boolean
   explain: boolean
-  /** F1 (image input). The backend does not offer it yet: off unless it says `true`. */
+  /** F1 (image input, `POST /api/ocr`): off unless the backend says `true`. */
   image: boolean
+}
+
+/**
+ * `POST /api/ocr`: the text of a picture exactly as written, for the user to check and edit
+ * before it is verified as text. A word the model could not read is written `[?]` inside `text`.
+ */
+export interface OcrResult {
+  text: string
+  confidence: number
+  /** confidence below the threshold, or any unreadable word */
+  low_confidence: boolean
+  unreadable: number
+  notes: string | null
+  /** decorative noise taken out of the text (emoji, "share this" footers, app labels), verbatim */
+  removed: string[]
 }
 
 export interface ReviewerOverride {

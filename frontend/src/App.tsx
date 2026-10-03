@@ -8,15 +8,17 @@ import { InlineError } from '@/components/inline-error'
 import { ReportView } from '@/components/report/report-view'
 import { Button } from '@/components/ui/button'
 import { DirectionProvider } from '@/components/ui/direction'
+import { useImageReader } from '@/hooks/use-image-reader'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { ThemeProvider } from '@/hooks/use-theme'
 import { useVerify } from '@/hooks/use-verify'
-import { MOCK_MODE, fetchMeta, loadMock } from '@/lib/api'
+import { ApiFailure, MOCK_MODE, fetchExampleImage, fetchMeta, loadMock } from '@/lib/api'
 import { copyText } from '@/lib/clipboard'
 import { emptyDraft } from '@/lib/draft'
 import type { InputDraft } from '@/lib/draft'
 import { errorCopy, errorRemedies, localError } from '@/lib/errors'
 import { featuresOf } from '@/lib/features'
+import { isMediaFile } from '@/lib/files'
 import { safeHref, truncate } from '@/lib/format'
 import { clearHistory, loadHistory, saveHistoryEntry, subscribeHistory } from '@/lib/history'
 import type { HistoryEntry, SubmittedInput } from '@/lib/history'
@@ -26,13 +28,16 @@ import { notify, subscribeToaster, toasterWanted } from '@/lib/notify'
 import { assembleReport } from '@/lib/report'
 import { chronological } from '@/lib/states'
 import { readStored, writeStored } from '@/lib/storage'
-import type { Card, Meta, MetaExample, Report, ReviewerOverride, VerifyInput } from '@/lib/types'
+import type { Card, Meta, MetaExample, OcrResult, Report, ReviewerOverride, VerifyInput } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-const DEFAULT_LIMITS: Meta['limits'] = { max_text_chars: 60000, max_upload_mb: 50, max_media_minutes: 30 }
+const DEFAULT_LIMITS: Meta['limits'] = {
+  max_text_chars: 60000,
+  max_upload_mb: 50,
+  max_media_minutes: 30,
+  max_image_mb: 10,
+}
 const REVIEWER_MODE_KEY = 'tabayyun.reviewerMode'
-const MEDIA_EXTENSIONS = /\.(mp3|m4a|wav|ogg|oga|opus|aac|flac|wma|mp4|m4v|mov|mkv|webm|avi|3gp)$/i
-const IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|heic|heif)$/i
 
 // Not needed to paint the page: each is fetched when first wanted.
 const HistoryPanel = lazy(() => import('@/components/history-panel'))
@@ -143,18 +148,40 @@ function Shell() {
     window.requestAnimationFrame(() => fieldRef.current?.focus())
   }, [])
 
+  // F1: a picture is read, never verified directly. Its text lands in the field, editable, and
+  // the cursor with it; what «تحقّق» then sends is that text, as an ordinary text request.
+  const onImageRead = useCallback(
+    (result: OcrResult) => {
+      setDraft({ text: result.text, file: null, linkAs: null })
+      clearError()
+      focusField()
+    },
+    [clearError, focusField],
+  )
+  const { image, read: readImage, remove: removeImage } = useImageReader({
+    maxMb: limits.max_image_mb ?? 10,
+    onRead: onImageRead,
+    onError: showError,
+  })
+  const readImageFile = useCallback(
+    (file: File) => {
+      clearError()
+      setDraft((current) => ({ ...current, file: null }))
+      void readImage(file)
+    },
+    [clearError, readImage],
+  )
+
   /** One field, four kinds of request: what is in the composer decides which one is sent. */
   const submit = useCallback(
     (override?: InputDraft) => {
-      if (running) return
+      if (running || image?.status === 'reading') return
       const current = override ?? draft
       let input: VerifyInput
       if (current.file) {
         const file = current.file
         if (file.size > limits.max_upload_mb * 1024 * 1024) return showError(localError('file_too_large'))
-        const isMedia = /^(audio|video)\//.test(file.type) || MEDIA_EXTENSIONS.test(file.name)
-        const isImage = features.image && (/^image\//.test(file.type) || IMAGE_EXTENSIONS.test(file.name))
-        if (!isMedia && !isImage) return showError(localError('unsupported_file'))
+        if (!isMediaFile(file)) return showError(localError('unsupported_file'))
         input = { input_type: 'file', file }
       } else {
         const text = current.text.trim()
@@ -172,11 +199,21 @@ function Shell() {
       window.scrollTo({ top: 0 })
       void start(input)
     },
-    [draft, features.image, limits, running, showError, start],
+    [draft, image?.status, limits, running, showError, start],
   )
 
   const applyExample = useCallback(
     (example: MetaExample) => {
+      if (example.input_type === 'image') {
+        // The image example is a picture like any other: fetched, then read.
+        if (!example.url) return
+        clearError()
+        fetchExampleImage(example.url).then(readImageFile, (cause: unknown) =>
+          showError(cause instanceof ApiFailure ? cause.error : localError('network')),
+        )
+        return
+      }
+      removeImage()
       patchDraft({
         file: null,
         linkAs: null,
@@ -184,30 +221,33 @@ function Shell() {
       })
       focusField()
     },
-    [focusField, patchDraft],
+    [clearError, focusField, patchDraft, readImageFile, removeImage, showError],
   )
 
   const verifyAnother = useCallback(() => {
     reset()
+    removeImage()
     setDraft(emptyDraft)
     window.scrollTo({ top: 0 })
     focusField()
-  }, [focusField, reset])
+  }, [focusField, removeImage, reset])
 
   const goHome = useCallback(() => {
     reset()
+    removeImage()
     setDraft(emptyDraft)
     window.scrollTo({ top: 0 })
-  }, [reset])
+  }, [removeImage, reset])
 
   const openHistoryEntry = useCallback(
     (entry: HistoryEntry) => {
       setHistoryOpen(false)
       restore(entry)
+      removeImage()
       setDraft(draftFromInput(entry.input))
       window.scrollTo({ top: 0 })
     },
-    [restore],
+    [removeImage, restore],
   )
 
   const showHistory = useCallback(() => {
@@ -359,8 +399,14 @@ function Shell() {
                       )
                     }
                     if (remedy === 'retry') {
+                      // A picture that could not be read is read again; anything else is re-sent.
                       return (
-                        <Button key={remedy} type="button" size="touch" onClick={() => submit()}>
+                        <Button
+                          key={remedy}
+                          type="button"
+                          size="touch"
+                          onClick={() => (image?.status === 'failed' ? readImageFile(image.file) : submit())}
+                        >
                           {t.errors.retry}
                         </Button>
                       )
@@ -374,6 +420,7 @@ function Shell() {
                         onClick={() => {
                           // The link gives way to the text the user is about to paste.
                           if (hasResults) reset()
+                          removeImage()
                           setDraft(emptyDraft)
                           clearError()
                           focusField()
@@ -392,7 +439,11 @@ function Shell() {
     : null
 
   const examples = (meta?.examples ?? []).filter((example) =>
-    example.input_type === 'text' ? !!example.text : !!safeHref(example.url),
+    example.input_type === 'text'
+      ? !!example.text
+      : example.input_type === 'image'
+        ? features.image && !!example.url
+        : !!safeHref(example.url),
   )
 
   return (
@@ -449,6 +500,13 @@ function Shell() {
                   onSubmit={() => submit()}
                   limits={limits}
                   imageInput={features.image}
+                  image={image}
+                  onImage={readImageFile}
+                  onImageRemove={() => {
+                    // The error about a picture leaves with the picture.
+                    if (image?.status === 'failed') clearError()
+                    removeImage()
+                  }}
                   examples={examples}
                   onExample={applyExample}
                   historyCount={history.length}

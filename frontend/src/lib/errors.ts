@@ -32,6 +32,8 @@ export function errorCopy(
       return t.errors.tooLong(limits.max_text_chars)
     case 'file_too_large':
       return t.errors.fileTooLarge(limits.max_upload_mb)
+    case 'image_too_large':
+      return t.errors.imageTooLarge(limits.max_image_mb ?? 10)
     case 'unsupported_file':
       return t.errors.unsupportedFile
     case 'network':
@@ -65,6 +67,10 @@ export function errorRemedies(code: string): ErrorRemedy[] {
     case 'network':
     case 'stream_interrupted':
     case 'internal':
+    // Reading a picture (`POST /api/ocr`) failed on the server's side: the same picture can be tried again.
+    case 'ocr_failed':
+    case 'ocr_unavailable':
+    case 'rate_limited':
       return ['retry']
     default:
       return []

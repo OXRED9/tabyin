@@ -215,8 +215,9 @@ default `true`). The UI hides a feature whose flag is off; the API then omits it
 ```json
 {
   "features": { "share_card": true, "copy": true, "explain": true },
-                                      // `image` is not sent yet (F1). The UI reads `features.image`
-                                      // and shows the composer's «صورة» action only when it is `true`;
+                                      // plus `image` (F1): true when `POST /api/ocr` is available. The
+                                      // UI shows the composer's «صورة» action, takes pictures through
+                                      // «ملف», drop and paste, and shows the image example only then;
                                       // a missing key means false.
   "app_url": "https://…",            // PUBLIC_URL; null → the UI uses window.location.origin
   "data_version": "2026.10.03 · quran 6236 · hadeethenc 3574 · books 58802"

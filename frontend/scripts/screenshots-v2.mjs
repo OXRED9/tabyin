@@ -7,6 +7,7 @@
  *   BASE_URL   where the app is served (default http://localhost:5173)
  *   ONLY       comma-separated state names to capture a subset, e.g. ONLY=empty,error
  *   WIDTHS     comma-separated widths to capture a subset, e.g. WIDTHS=390
+ *              (`image-reading` and `image-read` are captured at 390 and 1440 only)
  *
  * Reports are reached through mock mode's own route, `?mock=1&scenario=<name>&autorun=1`, so no
  * state depends on a click sequence that a redesign could break. Reduced motion is on: the
@@ -172,6 +173,30 @@ const STATES = {
     await context.close()
   },
 
+  // F1: a picture is read first. While it is read, its row says so and «تحقّق» waits.
+  'image-reading': async (width, file) => {
+    const { context, page } = await open(width, { query: '&speed=0.25' })
+    await page.getByRole('button', { name: 'صورة رسالة محوَّلة' }).click()
+    await page.getByTestId('image-row').getByText('جارٍ قراءة الصورة…').waitFor()
+    await page.mouse.move(0, 0)
+    await page.waitForTimeout(200)
+    await page.screenshot({ path: file, fullPage: true })
+    await context.close()
+  },
+
+  // Then its text is in the field, editable: the unread word ringed and counted, the reading's
+  // uncertainty said, and what was left out listed behind a disclosure.
+  'image-read': async (width, file) => {
+    const { context, page } = await open(width, { query: '&speed=4' })
+    await page.getByRole('button', { name: 'صورة رسالة محوَّلة' }).click()
+    await page.getByText('هذا ما قرأناه من الصورة').last().waitFor()
+    await page.getByTestId('image-unread').waitFor()
+    await page.mouse.move(0, 0)
+    await page.waitForTimeout(300)
+    await page.screenshot({ path: file, fullPage: true })
+    await context.close()
+  },
+
   'dark-empty': async (width, file) => {
     const { context, page } = await open(width, { theme: 'dark' })
     await page.getByText('جرّب:').waitFor()
@@ -180,9 +205,13 @@ const STATES = {
   },
 }
 
+// Captured at the phone and the desktop width only.
+const TWO_WIDTHS = new Set(['image-reading', 'image-read'])
+
 for (const [name, capture] of Object.entries(STATES)) {
   if (only && !only.has(name)) continue
   for (const width of WIDTHS) {
+    if (TWO_WIDTHS.has(name) && width !== 390 && width !== 1440) continue
     const label = `${name}-${width}`
     const started = Date.now()
     try {

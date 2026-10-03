@@ -3,7 +3,18 @@
  * serves the built app, and the dev server proxies `/api` to it. Nothing else is ever requested.
  */
 import { readSseStream } from './sse'
-import type { ApiError, Card, EvidenceState, Meta, Report, StreamEvent, Summary, UiLang, VerifyInput } from './types'
+import type {
+  ApiError,
+  Card,
+  EvidenceState,
+  Meta,
+  OcrResult,
+  Report,
+  StreamEvent,
+  Summary,
+  UiLang,
+  VerifyInput,
+} from './types'
 
 /** Mock mode replays a fixture stream so every state can be shown without the backend. */
 export const MOCK_MODE: boolean =
@@ -81,6 +92,46 @@ export async function fetchMeta(signal?: AbortSignal): Promise<Meta> {
   const response = await fetch('/api/meta', { signal, headers: { Accept: 'application/json' } })
   if (!response.ok) throw new ApiFailure(await errorFromResponse(response))
   return (await response.json()) as Meta
+}
+
+/**
+ * F1: read the text of a picture. Nothing is verified here: the text comes back for the user to
+ * check and edit, and is then sent to `/api/verify` as an ordinary text.
+ */
+export async function requestOcr(file: File, signal?: AbortSignal): Promise<OcrResult> {
+  if (MOCK_MODE) {
+    const { mockOcr } = await loadMock()
+    return mockOcr(signal)
+  }
+  let response: Response
+  try {
+    const form = new FormData()
+    form.append('file', file)
+    response = await fetch('/api/ocr', { method: 'POST', body: form, signal, headers: { Accept: 'application/json' } })
+  } catch (cause) {
+    if (signal?.aborted) throw cause
+    throw new ApiFailure(clientError('network'))
+  }
+  if (!response.ok) throw new ApiFailure(await errorFromResponse(response))
+  return (await response.json()) as OcrResult
+}
+
+/** The picture behind the image example chip, as a file to run through the same flow. */
+export async function fetchExampleImage(url: string, signal?: AbortSignal): Promise<File> {
+  if (MOCK_MODE) {
+    const { mockExampleImage } = await loadMock()
+    return mockExampleImage()
+  }
+  let response: Response
+  try {
+    response = await fetch(url, { signal })
+  } catch (cause) {
+    if (signal?.aborted) throw cause
+    throw new ApiFailure(clientError('network'))
+  }
+  if (!response.ok) throw new ApiFailure(await errorFromResponse(response))
+  const blob = await response.blob()
+  return new File([blob], url.split('/').pop() || 'example.png', { type: blob.type || 'image/png' })
 }
 
 const KNOWN_EVENTS = new Set(['stage', 'source', 'segments', 'claims', 'card', 'summary', 'error', 'done'])

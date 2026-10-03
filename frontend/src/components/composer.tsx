@@ -1,9 +1,22 @@
-import { AudioLines, FileAudio, Image as ImageIcon, Link2, Newspaper, Paperclip, Play, X } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import {
+  AudioLines,
+  ChevronDown,
+  FileAudio,
+  Image as ImageIcon,
+  Link2,
+  Newspaper,
+  Paperclip,
+  Play,
+  X,
+} from 'lucide-react'
+import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import type { DragEvent, ReactNode, RefObject } from 'react'
 
+import { StateGlyph } from '@/components/state-glyph'
 import { Button } from '@/components/ui/button'
+import type { ImageReading } from '@/hooks/use-image-reader'
 import type { InputDraft } from '@/lib/draft'
+import { UNREAD_MARK, countUnread, isImageFile } from '@/lib/files'
 import { formatFileSize } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import { detectLink } from '@/lib/link'
@@ -14,15 +27,23 @@ export type AttachKind = 'file' | 'audio' | 'image'
 
 /** The direction of the first strong character; none yet → the interface's own direction. */
 function textDirection(text: string): 'rtl' | 'ltr' | undefined {
-  const strong = text.match(/[A-Za-z\u00C0-\u024F\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFC]/)
+  const strong = text.match(/[A-Za-zÀ-ɏ֐-ࣿיִ-﷿ﹰ-ﻼ]/)
   if (!strong) return undefined
-  return /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFC]/.test(strong[0]) ? 'rtl' : 'ltr'
+  return /[֐-ࣿיִ-﷿ﹰ-ﻼ]/.test(strong[0]) ? 'rtl' : 'ltr'
 }
 
-const ACCEPT: Record<AttachKind, string> = {
-  file: 'audio/*,video/*,.mp3,.m4a,.wav,.ogg,.opus,.aac,.flac,.mp4,.mov,.mkv,.webm',
-  audio: 'audio/*,.mp3,.m4a,.wav,.ogg,.opus,.aac,.flac',
-  image: 'image/png,image/jpeg,image/webp,image/heic,.png,.jpg,.jpeg,.webp,.heic',
+/**
+ * What each attach action lets the picker offer. «صورة» asks for `image/*` and nothing else, with
+ * no `capture`: that is what makes a phone offer its gallery and its camera. (A list of MIME
+ * types and extensions makes Android open the Files app instead of the photo picker.) When image
+ * input is on, «ملف» takes pictures too, and the chosen file is routed by its type.
+ */
+function acceptFor(kind: AttachKind, imageInput: boolean): string {
+  if (kind === 'image') return 'image/*'
+  if (kind === 'audio') return 'audio/*,.mp3,.m4a,.wav,.ogg,.opus,.aac,.flac'
+  return imageInput
+    ? 'image/*,audio/*,video/*'
+    : 'audio/*,video/*,.mp3,.m4a,.wav,.ogg,.opus,.aac,.flac,.mp4,.mov,.mkv,.webm'
 }
 
 interface ComposerProps {
@@ -30,8 +51,12 @@ interface ComposerProps {
   onChange: (patch: Partial<InputDraft>) => void
   onSubmit: () => void
   limits: Meta['limits']
-  /** `meta.features.image`: the «صورة» action exists only when the backend offers image input. */
+  /** `meta.features.image`: pictures can be read (`POST /api/ocr`). Off → no «صورة» action. */
   imageInput: boolean
+  /** The picture being read, or read, if there is one. */
+  image: ImageReading | null
+  onImage: (file: File) => void
+  onImageRemove: () => void
   examples: MetaExample[]
   onExample: (example: MetaExample) => void
   historyCount: number
@@ -46,7 +71,10 @@ interface ComposerProps {
 
 /**
  * The blank page. One field takes whatever the user has: a text, a link (recognised as it is
- * typed and confirmed by a tag), or a file attached with one of the labelled actions under it.
+ * typed and confirmed by a tag), a clip attached with one of the labelled actions under it, or a
+ * picture. A picture is never verified directly: it is read first, its text is put in the field
+ * for the user to check and correct, and what is verified is that text.
+ *
  * It is a form with a label and a button that says what it does, not a chat box.
  */
 export function Composer({
@@ -55,6 +83,9 @@ export function Composer({
   onSubmit,
   limits,
   imageInput,
+  image,
+  onImage,
+  onImageRemove,
   examples,
   onExample,
   historyCount,
@@ -68,6 +99,9 @@ export function Composer({
   const { t, lang, dir } = useI18n()
   const id = useId()
   const [dragging, setDragging] = useState(false)
+  const [noPreview, setNoPreview] = useState<string | null>(null)
+  const [scrollTop, setScrollTop] = useState(0)
+  const [scrollbar, setScrollbar] = useState(0)
   const fileInput = useRef<HTMLInputElement | null>(null)
 
   const file = draft.file
@@ -75,11 +109,28 @@ export function Composer({
   const linkKind = link ? (draft.linkAs ?? link.kind) : null
   const overLimit = !link && draft.text.length > limits.max_text_chars
   const nearLimit = !link && draft.text.length > limits.max_text_chars * 0.8
+  const reading = image?.status === 'reading'
+  const read = image?.status === 'read' ? image.result : null
+  const unread = read ? countUnread(draft.text) : 0
+  const fieldDir = textDirection(draft.text) ?? dir
+  // Amiri is for a text under examination. An address is not that: it is set in the tool's own
+  // face, on the same lines.
+  const fieldFace = link ? 'font-sans text-base leading-(--line)' : 'page-text'
+
+  /** A picture goes to the reader; anything else is a clip to transcribe. */
+  const take = (chosen: File) => {
+    if (imageInput && isImageFile(chosen)) {
+      onImage(chosen)
+      return
+    }
+    if (image) onImageRemove()
+    onChange({ file: chosen })
+  }
 
   const openPicker = (kind: AttachKind) => {
     const input = fileInput.current
     if (!input) return
-    input.accept = ACCEPT[kind]
+    input.accept = acceptFor(kind, imageInput)
     input.click()
   }
   useEffect(() => {
@@ -88,6 +139,27 @@ export function Composer({
       pickerRef.current = null
     }
   })
+
+  // A picture pasted anywhere on the first screen (Ctrl/⌘+V, or a phone's paste) is read too.
+  useEffect(() => {
+    if (!imageInput) return
+    const onPaste = (event: ClipboardEvent) => {
+      const pasted = Array.from(event.clipboardData?.files ?? []).find(isImageFile)
+      if (!pasted) return
+      event.preventDefault()
+      onImage(pasted)
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [imageInput, onImage])
+
+  // The marks on unread words are drawn over the field, so they must wrap and scroll as it does.
+  useLayoutEffect(() => {
+    const field = fieldRef.current
+    if (!field || unread === 0) return
+    setScrollbar(Math.max(0, field.offsetWidth - field.clientWidth - 2))
+    setScrollTop(field.scrollTop)
+  }, [draft.text, fieldRef, unread])
 
   /** A link needs no upload: put the cursor in the field, and paste the clipboard's link if allowed. */
   const attachLink = async () => {
@@ -106,10 +178,9 @@ export function Composer({
     event.preventDefault()
     setDragging(false)
     const dropped = event.dataTransfer.files?.[0]
-    if (dropped) onChange({ file: dropped })
+    if (dropped) take(dropped)
   }
 
-  const isImage = !!file && /^image\//.test(file.type)
   const linkName = link
     ? linkKind === 'article_url'
       ? t.input.link.article
@@ -152,21 +223,59 @@ export function Composer({
         {t.input.label}
       </label>
 
-      {file ? (
-        <div className="mt-3 flex items-center gap-3 rounded-control border border-rule-strong p-3">
-          {isImage ? (
-            <ImageIcon aria-hidden="true" className="size-5 shrink-0 text-quiet" />
+      {/* What the reader is doing, said once for a screen reader as it changes. */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {reading ? t.input.imageReading : read ? t.input.imageRead : ''}
+      </p>
+
+      {image ? (
+        <div data-testid="image-row" className="mt-3 flex items-center gap-3 rounded-control border border-rule-strong p-2">
+          {noPreview === image.preview ? (
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-sheet border">
+              <ImageIcon aria-hidden="true" className="size-5 text-quiet" />
+            </span>
           ) : (
-            <FileAudio aria-hidden="true" className="size-5 shrink-0 text-quiet" />
+            <img
+              src={image.preview}
+              alt=""
+              onError={() => setNoPreview(image.preview)}
+              className="size-10 shrink-0 rounded-sheet border object-cover"
+            />
           )}
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-base font-semibold" dir="auto">
+            <span className="block truncate text-base font-semibold text-with-page" dir="auto">
+              {image.file.name}
+            </span>
+            <span className="tabular block text-sm text-quiet">
+              {reading
+                ? t.input.imageReading
+                : image.status === 'failed'
+                  ? t.input.imageFailed
+                  : (() => {
+                      const { size, unit } = formatFileSize(image.file.size)
+                      return t.input.fileSize(size, unit)
+                    })()}
+            </span>
+          </span>
+          <Button type="button" variant="ghost" size="icon-touch" aria-label={t.input.imageRemove} onClick={onImageRemove}>
+            <X aria-hidden="true" />
+          </Button>
+        </div>
+      ) : null}
+
+      {read ? <p className="mt-3 text-sm font-semibold text-ink">{t.input.imageRead}</p> : null}
+
+      {file ? (
+        <div className="mt-3 flex items-center gap-3 rounded-control border border-rule-strong p-3">
+          <FileAudio aria-hidden="true" className="size-5 shrink-0 text-quiet" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-base font-semibold text-with-page" dir="auto">
               {file.name}
             </span>
             <span className="tabular block text-sm text-quiet">
               {(() => {
                 const { size, unit } = formatFileSize(file.size)
-                return `${t.input.fileSize(size, unit)} — ${isImage ? t.input.fileImage : t.input.fileMedia}`
+                return `${t.input.fileSize(size, unit)} — ${t.input.fileMedia}`
               })()}
             </span>
           </span>
@@ -186,27 +295,54 @@ export function Composer({
       ) : (
         // The field's direction follows what is typed (a link reads left to right); the wrapper
         // takes the same direction, so the clear button always sits at the end of the text's line.
-        <div className="relative mt-3" dir={textDirection(draft.text) ?? dir}>
+        <div className="relative mt-3" dir={fieldDir}>
           <textarea
             id={`${id}-field`}
             ref={fieldRef}
-            dir={textDirection(draft.text) ?? dir}
+            dir={fieldDir}
             value={draft.text}
             onChange={(event) => onChange({ text: event.target.value, linkAs: null })}
+            onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
             placeholder={imageInput ? t.input.placeholderImage : t.input.placeholder}
             aria-invalid={hasError || overLimit || undefined}
             aria-describedby={hasError ? errorId : undefined}
+            aria-busy={reading || undefined}
+            disabled={reading}
             rows={4}
             className={cn(
-              'ruled block max-h-[50vh] min-h-[calc(var(--line)*4+0.75rem)] w-full resize-none rounded-sheet border border-rule-strong bg-paper px-4 pt-1 pb-2 text-ink transition-colors duration-150 field-sizing-content placeholder:font-sans placeholder:text-base placeholder:leading-(--line) placeholder:text-quiet focus-visible:border-green aria-invalid:border-contra',
-              // Amiri is for a text under examination. An address is not that: it is set in the
-              // tool's own face, on the same lines.
-              link ? 'font-sans text-base leading-(--line)' : 'page-text',
+              'ruled block max-h-[50vh] min-h-[calc(var(--line)*4+0.75rem)] w-full resize-none rounded-sheet border border-rule-strong bg-paper px-4 pt-1 pb-2 text-ink transition-colors duration-150 field-sizing-content placeholder:font-sans placeholder:text-base placeholder:leading-(--line) placeholder:text-quiet focus-visible:border-green disabled:opacity-60 aria-invalid:border-contra',
+              fieldFace,
               draft.text && 'pe-12',
               dragging && 'border-green',
             )}
           />
-          {draft.text ? (
+          {/* A word the reader could not read is written «[?]». Each one is ringed, in place:
+              this layer repeats the field's text invisibly and draws only the rings. */}
+          {unread > 0 ? (
+            <div
+              aria-hidden="true"
+              dir={fieldDir}
+              className={cn(
+                'pointer-events-none absolute inset-0 overflow-hidden border border-transparent px-4 pt-1 pb-2 pe-12 break-words whitespace-pre-wrap text-transparent',
+                fieldFace,
+              )}
+              style={scrollbar ? { paddingInlineEnd: `calc(3rem + ${scrollbar}px)` } : undefined}
+            >
+              <div style={{ transform: `translateY(${-scrollTop}px)` }}>
+                {draft.text.split(UNREAD_MARK).map((part, i, all) => (
+                  <Fragment key={i}>
+                    {part}
+                    {i < all.length - 1 ? (
+                      <mark className="rounded-sheet bg-transparent text-transparent outline-[1.5px] outline-offset-2 outline-review">
+                        {UNREAD_MARK}
+                      </mark>
+                    ) : null}
+                  </Fragment>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {draft.text && !reading ? (
             <Button
               type="button"
               variant="ghost"
@@ -214,6 +350,7 @@ export function Composer({
               aria-label={t.input.clear}
               onClick={() => {
                 onChange({ text: '', linkAs: null })
+                if (image) onImageRemove()
                 fieldRef.current?.focus()
               }}
               className="absolute end-2 top-2 text-quiet"
@@ -228,6 +365,40 @@ export function Composer({
           ) : null}
         </div>
       )}
+
+      {/* What the reader says about its own reading: unread words, an uncertain reading, and the
+          noise it left out, word for word. */}
+      {read && !file ? (
+        <div className="mt-3 space-y-2 text-sm">
+          {unread > 0 ? (
+            <p data-testid="image-unread" className="flex items-start gap-2 font-semibold text-review-ink">
+              <StateGlyph state="needs_review" className="mt-0.5 size-[18px]" />
+              {t.input.imageUnread(unread)}
+            </p>
+          ) : null}
+          {read.low_confidence ? (
+            <p className="flex items-start gap-2 text-ink">
+              <StateGlyph state="needs_review" className="mt-0.5 size-[18px]" />
+              {t.input.imageUncertain}
+            </p>
+          ) : null}
+          {read.removed.length > 0 ? (
+            <details className="group">
+              <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 text-green [&::-webkit-details-marker]:hidden">
+                {t.input.imageRemoved(read.removed.length)}
+                <ChevronDown aria-hidden="true" className="size-4 text-quiet transition-transform duration-150 group-open:rotate-180" />
+              </summary>
+              <ul className="list-inside list-disc space-y-1 pb-1 text-ink">
+                {read.removed.map((item, i) => (
+                  <li key={i} dir="auto">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+        </div>
+      ) : null}
 
       {link && linkLabel ? (
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -270,6 +441,7 @@ export function Composer({
 
       {error ? <div className="mt-4">{error}</div> : null}
 
+      {/* No `capture`: with it a phone would open the camera only, never the gallery. */}
       <input
         ref={fileInput}
         type="file"
@@ -278,7 +450,7 @@ export function Composer({
         className="sr-only"
         onChange={(event) => {
           const chosen = event.target.files?.[0]
-          if (chosen) onChange({ file: chosen })
+          if (chosen) take(chosen)
           event.target.value = ''
         }}
       />
@@ -289,7 +461,13 @@ export function Composer({
             type="button"
             variant="ghost"
             size="touch"
-            title={kind === 'link' ? undefined : t.input.fileLimit(limits.max_upload_mb)}
+            title={
+              kind === 'link'
+                ? undefined
+                : kind === 'image'
+                  ? t.input.fileLimit(limits.max_image_mb ?? 10)
+                  : t.input.fileLimit(limits.max_upload_mb)
+            }
             onClick={() => (kind === 'link' ? void attachLink() : openPicker(kind))}
             className="px-3"
           >
@@ -299,7 +477,7 @@ export function Composer({
         ))}
       </div>
 
-      <Button type="submit" size="xl" data-testid="verify" className="mt-4 w-full">
+      <Button type="submit" size="xl" data-testid="verify" disabled={reading} className="mt-4 w-full">
         {t.input.verify}
       </Button>
 

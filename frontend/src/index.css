@@ -378,6 +378,15 @@ html[data-view="report"] [data-shell="sheet"] {
   font-weight: 400;
 }
 
+/*
+ * A name that is written left to right (a file name) inside a right-to-left page: its own
+ * direction stays, so it is cut at its end, but it lines up with the page's start side.
+ */
+@utility text-with-page {
+  text-align: -webkit-match-parent;
+  text-align: match-parent;
+}
+
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }

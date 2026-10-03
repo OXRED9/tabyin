@@ -33,6 +33,8 @@ function arCount(
  */
 const AR_NUMBER = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة']
 const arWord = (n: number) => (n >= 1 && n <= 10 ? AR_NUMBER[n] : n.toLocaleString('en-US'))
+// «كلمة» is feminine, so three to ten take the masculine numeral: «ثلاث كلمات».
+const AR_NUMBER_FEMININE_NOUN = ['', '', '', 'ثلاث', 'أربع', 'خمس', 'ست', 'سبع', 'ثماني', 'تسع', 'عشر']
 const AR_STATE_FORMS: Record<EvidenceState, { one: string; two: string; many: string; alone: string; allOf: string }> = {
   supported: { one: 'مؤيَّد', two: 'مؤيَّدان', many: 'مؤيَّدة', alone: 'مؤيَّد', allOf: 'مؤيَّدة' },
   supported_with_note: {
@@ -115,7 +117,21 @@ export const ar = {
     asVideo: 'هذا رابط مقطع',
     asArticle: 'هذا رابط مقال',
     fileMedia: 'سيُفرَّغ ويُتحقق منه',
-    fileImage: 'سيُقرأ نصها ويُتحقق منه',
+    // F1: a picture is read first; its text is then checked by the user and verified as text.
+    imageReading: 'جارٍ قراءة الصورة…',
+    imageRead: 'هذا ما قرأناه من الصورة — عدّله إن لزم ثم تحقّق',
+    imageUnread: (n: number): string =>
+      n === 1
+        ? 'كلمة واحدة لم تُقرأ — صحّحها قبل التحقق'
+        : n === 2
+          ? 'كلمتان لم تُقرآ — صحّحهما قبل التحقق'
+          : n <= 10
+            ? `${AR_NUMBER_FEMININE_NOUN[n]} كلمات لم تُقرأ — صحّحها قبل التحقق`
+            : `${n.toLocaleString('en-US')} كلمة لم تُقرأ — صحّحها قبل التحقق`,
+    imageUncertain: 'القراءة غير مؤكَّدة: قارن النص بالصورة قبل التحقق.',
+    imageRemoved: (n: number) => `حُذف من الصورة (${n})`,
+    imageRemove: 'إزالة الصورة',
+    imageFailed: 'لم تُقرأ الصورة',
     fileLimit: (mb: number) => `حتى ${mb} م.ب، ولا يُحفظ الملف على الخادم`,
     fileRemove: 'إزالة الملف',
     dropHere: 'أفلت الملف هنا',
@@ -545,6 +561,10 @@ export const ar = {
     tooLong: (max: number) => ({
       message: `النص أطول من الحد المسموح (${max.toLocaleString('en-US')} حرف)`,
       hint: 'قسّم النص إلى أجزاء وتحقق من كل جزء على حدة.',
+    }),
+    imageTooLarge: (mb: number) => ({
+      message: `الصورة أكبر من ${mb} م.ب`,
+      hint: 'اقتطع الجزء الذي فيه النص، أو صغّر الصورة، ثم أرفقها من جديد.',
     }),
     fileTooLarge: (mb: number) => ({
       message: `الملف أكبر من ${mb} م.ب`,

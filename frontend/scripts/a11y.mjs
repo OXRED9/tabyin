@@ -19,8 +19,8 @@ import { chromium } from 'playwright'
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173'
 const axe = fs.readFileSync(path.resolve(import.meta.dirname, '../node_modules/axe-core/axe.min.js'), 'utf8')
 const COPY = {
-  ar: { done: 'اكتمل التحقق', reviewer: 'وضع المراجع', more: 'المزيد', referral: 'إحالة إلى أهل العلم', example: 'رابط مقطع يوتيوب', dark: 'داكن' },
-  en: { done: 'Verification complete', reviewer: 'Reviewer mode', more: 'More', referral: 'Refer to scholars', example: 'YouTube link', dark: 'Dark' },
+  ar: { done: 'اكتمل التحقق', reviewer: 'وضع المراجع', more: 'المزيد', referral: 'إحالة إلى أهل العلم', example: 'رابط مقطع يوتيوب', dark: 'داكن', image: 'صورة رسالة محوَّلة', removed: /حُذف من الصورة/ },
+  en: { done: 'Verification complete', reviewer: 'Reviewer mode', more: 'More', referral: 'Refer to scholars', example: 'YouTube link', dark: 'Dark', image: 'A forwarded-message screenshot', removed: /Removed from the picture/ },
 }
 const DESKTOP = { width: 1440, height: 900 }
 const MOBILE = { width: 390, height: 844 }
@@ -111,6 +111,8 @@ function measureContrast() {
  * States:
  *   empty      the composer            link       the composer with a recognised link and its tag
  *   error      a validation error      running    mid-run: text on the page, notes arriving
+ *   image      the composer after a picture was read: its text in the field, the unread word
+ *              marked and counted, the uncertainty line, the removed items listed (opened)
  *   report     every note open, every «لماذا هذا الحكم؟» open
  *   reviewer   the same in reviewer mode           dialog   the referral dialog
  *   share      the share dialog on a claim         share-summary   on the summary
@@ -121,7 +123,7 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce', isMobile: mobile, hasTouch: mobile })
   const page = await context.newPage()
   const t = COPY[lang]
-  const composer = state === 'empty' || state === 'link' || state === 'error'
+  const composer = state === 'empty' || state === 'link' || state === 'error' || state === 'image'
   // Reports are reached through mock mode's own route: `scenario=<name>&autorun=1`.
   const route = composer ? '' : `&scenario=video&autorun=1&speed=${state === 'running' ? 1 : 10}`
   await page.goto(`${BASE}/?mock=1&theme=${theme}&lang=${lang}${route}`)
@@ -139,6 +141,11 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     if (state === 'error') {
       await verify.click()
       await page.getByRole('alert').waitFor()
+    }
+    if (state === 'image') {
+      await page.getByRole('button', { name: t.image }).click()
+      await page.getByTestId('image-unread').waitFor({ timeout: 15_000 })
+      await page.getByText(t.removed).click()
     }
     await page.waitForTimeout(300)
   } else if (state === 'running') {
@@ -213,6 +220,10 @@ await audit('empty · light · ar', {})
 await audit('empty · dark · ar', { theme: 'dark' })
 await audit('composer with a link · light · ar', { state: 'link' })
 await audit('composer with a link · dark · en', { state: 'link', theme: 'dark', lang: 'en' })
+await audit('picture read · light · ar', { state: 'image' })
+await audit('picture read · dark · ar', { state: 'image', theme: 'dark' })
+await audit('picture read · light · en', { state: 'image', lang: 'en' })
+await audit('picture read · light · ar · 390px', { state: 'image', viewport: MOBILE })
 await audit('error · light · ar', { state: 'error' })
 await audit('error · dark · ar', { state: 'error', theme: 'dark' })
 for (const theme of ['light', 'dark']) {

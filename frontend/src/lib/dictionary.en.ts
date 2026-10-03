@@ -73,7 +73,16 @@ export const en: Dictionary = {
     asVideo: 'This is a clip',
     asArticle: 'This is an article',
     fileMedia: 'it will be transcribed, then verified',
-    fileImage: 'its text will be read, then verified',
+    imageReading: 'Reading the picture…',
+    imageRead: 'This is what we read from the picture — edit it if needed, then verify',
+    imageUnread: (n: number) =>
+      n === 1
+        ? 'One word could not be read — correct it before verifying'
+        : `${capital(enWord(n))} words could not be read — correct them before verifying`,
+    imageUncertain: 'The reading is uncertain: compare the text with the picture before verifying.',
+    imageRemoved: (n: number) => `Removed from the picture (${n})`,
+    imageRemove: 'Remove the picture',
+    imageFailed: 'The picture was not read',
     fileLimit: (mb: number) => `Up to ${mb} MB. The file is not stored on the server`,
     fileRemove: 'Remove file',
     dropHere: 'Drop the file here',
@@ -472,6 +481,10 @@ export const en: Dictionary = {
     tooLong: (max: number) => ({
       message: `The text is longer than the limit (${max.toLocaleString('en-US')} characters)`,
       hint: 'Split the text and verify each part separately.',
+    }),
+    imageTooLarge: (mb: number) => ({
+      message: `The picture is larger than ${mb} MB`,
+      hint: 'Crop it to the part that has the text, or make it smaller, then attach it again.',
     }),
     fileTooLarge: (mb: number) => ({
       message: `The file is larger than ${mb} MB`,
