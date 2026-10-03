@@ -74,7 +74,7 @@
 
 | نافذة المشاركة | نسخ النص الصحيح |
 |---|---|
-| ![نافذة مشاركة البطاقة](docs/screenshots/phase2-f3-dialog.png) | ![زر النسخ](docs/screenshots/phase2-f4-real-copy.png) |
+| ![نافذة مشاركة البطاقة](docs/screenshots/phase2-f3-dialog.png) | ![زر النسخ](docs/screenshots/phase2-f4-copy-button.png) |
 
 بقية لقطات المرحلة الثانية في [`docs/screenshots/`](docs/screenshots/) باسم `phase2-f3-*`، `phase2-f4-*`،
 `phase2-f5-*` (ما لم يحمل اسمه `real` فهو من وضع العرض التجريبي).
