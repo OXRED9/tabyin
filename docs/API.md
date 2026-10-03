@@ -291,13 +291,13 @@ blocks, top to bottom:
 | Block | What is drawn | Source |
 |---|---|---|
 | Header | logotype «تبيّن» in Naskh; the label «بطاقة تثبّت» / "Verification card" in Plex, quiet; a hairline | fixed |
-| State | the ring glyph and the state word in the state's ink — «مؤيَّد», «مؤيَّد مع ملاحظة», «يحتاج مراجعة», «لا مصدر», «مخالف للمصدر». Gold appears only in the verified ring. When a reviewer changed the state, «حالة معدَّلة بمراجعة بشرية» follows the word; no name | `override_state ?? card.state` |
+| State | the ring glyph and the state's canonical name in the state's ink — «مؤيَّد بمصدر معتمد», «مؤيَّد مع ملاحظة», «يحتاج مزيد تحقق», «لم يُعثر على مصدر موثوق», «مخالف للمصدر». Gold appears only in the verified ring. When a reviewer changed the state, «حالة معدَّلة بمراجعة بشرية» follows on the next line; no name | `override_state ?? card.state` |
 | Verdict sentence | one sentence in Plex, at most 3 lines (2 on the square card). Not drawn when a reviewer changed the state: the rule's sentence explains the engine's state, not the reviewer's | first sentence of `note_ar` / `note_en` (up to the first `.`, `؟`, `?` or `!`) |
 | «النص المتداول» | the claim in Naskh, in the state's ink, underlined in the state's colour — as the passage looks on the page | `card.text_as_quoted`, cut at 240 characters at a word boundary with «…» |
 | «في المصدر» | the source's own wording between two hairlines: Amiri Quran inside ﴿ ﴾ for a verse, Amiri for anything else. Words that differ from the claim are underlined in the state's colour | `card.source.text`; the underlined words are the source side of `card.diff`'s `replace` steps |
-| Takhrij line | the reference; then each grading as «its first line, verbatim», the muhaddith when the source names one, and the grading's source. Several gradings follow one another in the order given while they fit whole, the rest are counted «(+N)»; a grading is never shortened. «الحكم غير متاح من المصدر» when there is none. A verse has its reference only | `card.source.ref`, `card.grades[].text` / `.scholar` / `.source_name`, `card.grade_unavailable` |
+| Takhrij line | the reference, a dash, then: **one grading** — «its first line, verbatim» in Naskh, the muhaddith when the source names one, and the grading's source; **several gradings** — their count («3 أحكام في المصادر»), so that none is singled out; **none** — «الحكم غير متاح من المصدر» when `grade_unavailable`, otherwise the name of the source the text was retrieved from. A grading is never shortened | `card.source.ref`, `card.grades[].text` / `.scholar` / `.source_name`, `card.grade_unavailable`, `card.source.source_name` |
 | …instead, `not_found` | «لا نُصدر حكماً بلا مصدر، ولا نولّد بديلاً.», then the abstention verse between the hairlines and its reference. A source the card may carry is not drawn | `meta.abstention_verse` |
-| …instead, no source (`needs_review`, level C) or level D | nothing is quoted: the reason is the verdict sentence above, and the referral sentence below stands in the source's place. A personal case (level D) never shows a source | — |
+| …instead, no source (`needs_review`, level C) or level D | nothing is quoted. The reason is the verdict sentence above; between the hairlines stands the referral: «تبيّن لا يفتي ولا يرجّح؛ يُرجع في هذه المسألة إلى أهل العلم.» A personal case (level D) never shows a source | fixed |
 | Action | the canonical action of the drawn state, as a sentence: «الإجراء المقترح: …» | `STATE_ACTION[override_state ?? card.state]` |
 | Footer | a hairline; «تحقّق بنفسك على تبيّن», the app address without its scheme, and its QR code; the transparency line | app URL |
 
@@ -311,8 +311,9 @@ at 0.86 of the portrait's. If the card still does not hold everything at the sma
 
 - **a verse is never cut inside the quoted span.** The card shows the part of the verse that
   corresponds to the quotation, with «…» on each side that was cut; if that part does not fit
-  beside the claim, the claim gives up lines (down to one, ending in «…»); if it cannot fit at all,
-  the verse's words are not drawn and a sentence says so. Its reference is always drawn.
+  beside the claim, the claim gives up lines (down to one, ending in «…»), then the verse's type
+  goes below 30 (down to 22) rather than its words; if it cannot fit even so, the verse's words are
+  not drawn and a sentence says so. Its reference is always drawn.
 - **a narration or any other wording** is cut at a word boundary with «…». It starts at the quoted
   part (with a leading «…») when the text before it would push that part off the card. The claim
   stays whole as long as one line of the wording fits; on the square card a claim near 240

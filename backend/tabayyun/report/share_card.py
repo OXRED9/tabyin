@@ -33,6 +33,7 @@ from rapidfuzz.distance import Levenshtein
 from ..normalize import arabic_ratio
 from ..schemas import STATE_ACTION, Card, ContentLevel, EvidenceState, Summary
 from ..textalign import words_with_offsets
+from .labels import STATE
 
 FONTS = Path(__file__).resolve().parents[1] / "assets" / "fonts"
 SIZES = {"portrait": (1080, 1350), "square": (1080, 1080)}
@@ -65,14 +66,6 @@ STATE_TOKENS = {
         "contradicted": ("#E0605A", "#F4A29D"),
     },
 }
-# The word beside the ring (docs/DESIGN.md §2.2), as in the page's margin.
-STATE_WORD = {
-    "supported": ("مؤيَّد", "Supported"),
-    "supported_with_note": ("مؤيَّد مع ملاحظة", "Supported, with a note"),
-    "needs_review": ("يحتاج مراجعة", "Needs review"),
-    "not_found": ("لا مصدر", "No source"),
-    "contradicted": ("مخالف للمصدر", "Contradicts the source"),
-}
 # The five canonical actions, each said as a sentence — the same wording as the open note in the UI
 # (frontend dictionary `actionSentences`). TODO-SULAIMAN-REVIEW (wording).
 ACTION_SENTENCE = {
@@ -86,10 +79,13 @@ TEXT = {
     "brand": ("تبيّن", "Tabayyun"),
     "title": ("بطاقة تثبّت", "Verification card"),
     "summary_title": ("خلاصة التحقق", "Verification summary"),
-    "claim": ("النص المتداول", "As circulated"),
+    "claim": ("النص المتداول", "The text in circulation"),
     "source": ("في المصدر", "In the source"),
     "no_grading": ("الحكم غير متاح من المصدر", "Grading not available from the source"),
+    "one_grading": ("حكم واحد في المصدر", "one grading in the source"),
     "abstain": ("لا نُصدر حكماً بلا مصدر، ولا نولّد بديلاً.", "We issue no verdict without a source, and generate no substitute."),
+    # Stands in the source's place when nothing is quoted (no source, level C or D) — the client's `share.referral`.
+    "referral": ("تبيّن لا يفتي ولا يرجّح؛ يُرجع في هذه المسألة إلى أهل العلم.", "Tabayyun issues no fatwa and prefers no opinion; this matter is for qualified scholars."),
     "overridden": ("حالة معدَّلة بمراجعة بشرية", "State changed by human review"),
     "check": ("تحقّق بنفسك على تبيّن", "Check it yourself on Tabayyun"),
     "disclaimer": ("تبيّن أداة مدعومة بالذكاء الاصطناعي، لا تغني عن الرجوع إلى أهل العلم", "Tabayyun is an AI-assisted tool. It does not replace consulting qualified scholars."),
@@ -149,7 +145,7 @@ _FACES = {
     "naskh": "Amiri-Regular.ttf",
     "quran": "AmiriQuran-Regular.ttf",
 }
-_UNDERLINE_DROP = 0.38  # of the type size, below the baseline — where the page draws a passage's underline
+_UNDERLINE_DROP = 0.32  # of the type size, below the baseline (the client's text-underline-offset)
 _UNDERLINE = 3
 _BRACKET_GAP = 0.6  # of a space, between a verse and its brackets: the marks over a first letter need the room
 
@@ -197,7 +193,6 @@ class _W:
     ink: _Ink
     tie: bool = False
     space: float = 1.0  # what separates it from the word before it: 1 a space, 0 nothing, between: a thin gap
-    alone: bool = False  # shaped by itself, in its own direction (a count such as "(+2)" inside Arabic)
 
 
 def _words(text: str, ink: _Ink) -> list[_W]:
@@ -315,13 +310,11 @@ class _Chunk:
 def _chunks(line: list[_W], rtl: bool) -> list[_Chunk]:
     """Consecutive words set the same way are shaped as one string."""
     out: list[_Chunk] = []
-    apart = True
     for i, word in enumerate(line):
-        if not apart and not word.alone and out[-1].ink == word.ink and word.space in (0, 1):
+        if out and out[-1].ink == word.ink and word.space in (0, 1):
             out[-1].text += (" " if word.space else "") + word.text
         else:
             out.append(_Chunk(word.text, word.ink, _lead(word, rtl) if i else 0.0, len(out)))
-        apart = word.alone
     return out
 
 
@@ -404,7 +397,7 @@ def _qr(url: str, size: int, dark: str, tile: bool) -> Image.Image:
     tile with its own quiet zone, so any scanner reads it; on white paper the paper is the quiet zone."""
     matrix = [list(row) for row in segno.make(url, error="m").matrix]
     n = len(matrix)
-    quiet = 2 if tile else 0
+    quiet = 3 if tile else 0
     scale = max(1, size // (n + quiet * 2))
     side = (n + quiet * 2) * scale
     img = Image.new("RGB", (side, side), "#FFFFFF")
@@ -447,7 +440,7 @@ class _Sheet:
         self.img = Image.new("RGB", (self.W, self.H), self.t["paper"])
         self.draw = ImageDraw.Draw(self.img)
         self.frame = (FRAME, FRAME, self.W - FRAME, self.H - FRAME)
-        self.left = FRAME + self.px(48)
+        self.left = FRAME + HAIRLINE + self.px(52)
         self.right = self.W - self.left
         self.width = self.right - self.left
         self.blocks: list[Block] = []
@@ -535,10 +528,10 @@ class _Sheet:
         """Logotype in Naskh at the starting edge, the card's label in Plex at the other; a hairline
         under them. Returns the y where the body starts."""
         base = FRAME + self.px(74)
-        brand = _W(self.say("brand"), self.ink("naskh", 54))
+        brand = _W(self.say("brand"), self.ink("naskh", 58))
         ink, end = self._line([brand], self.rtl, base)
         self.blocks.append(Block("logotype", ink, ink, brand.text))
-        tag = self.ink("plex", 26, "quiet")
+        tag = self.ink("plex", 28, "quiet")
         text = TEXT[label][self.en]
         x = self.left if self.rtl else self.right
         kw = dict(font=_font(tag.face, tag.size), anchor="ls" if self.rtl else "rs", **_shaping("rtl" if self.rtl else "ltr"))
@@ -712,6 +705,13 @@ def _collate(card: Card) -> tuple[list[str], tuple[int, int] | None, set[int]]:
 # --------------------------------------------------------------------------- the claim card
 
 
+def _grades_count(n: int, en: bool) -> str:
+    """Several gradings: how many, in the page's words (frontend dictionary `gradesCount`)."""
+    if en:
+        return f"{n} gradings in the sources"
+    return "حكمان في المصادر" if n == 2 else f"{n} أحكام في المصادر" if n <= 10 else f"{n} حكماً في المصادر"
+
+
 def _first_sentence(text: str) -> str:
     """The verdict sentence: the first sentence of the rule's note (as the client cuts it)."""
     clean = " ".join(text.split())
@@ -720,13 +720,14 @@ def _first_sentence(text: str) -> str:
 
 
 def _claim_text(text: str) -> tuple[str, bool]:
-    """The words as they circulate, cut at 240 characters at a word boundary with «…»."""
+    """The words as they circulate, cut at 240 characters at a word boundary with «…» (the client's
+    `truncateClaim`: a last word so long that the boundary falls far back is cut where it stands)."""
     clean = " ".join(text.split())
     if len(clean) <= CLAIM_MAX_CHARS:
         return clean, False
     head = clean[:CLAIM_MAX_CHARS]
-    head = head.rsplit(" ", 1)[0] if " " in head else head
-    return head.rstrip("،؛:,;.") + "…", True
+    boundary = head.rfind(" ")
+    return (head[:boundary] if boundary > CLAIM_MAX_CHARS * 0.6 else head).rstrip() + "…", True
 
 
 # Type is reduced before anything is cut: the claim from 44 down to 34 and the source's wording from
@@ -734,6 +735,7 @@ def _claim_text(text: str) -> tuple[str, bool]:
 _CLAIM_SIZES = (44, 34)
 _VERSE_SIZES = (46, 30)
 _QUOTE_SIZES = (40, 30)
+_VERSE_FLOOR = 22  # only for the quoted part of a verse that fits no other way: smaller type, never fewer words
 _LADDER = range(0, 9)
 
 
@@ -785,11 +787,10 @@ class _Claim:
     def _state_row(self) -> list[_Item]:
         sh = self.sh
         size = sh.px(64)
-        word = _W(STATE_WORD[self.state][sh.en], sh.ink("plex600", 52, self.state_ink))
-        mark = _W(sh.say("overridden"), sh.ink("plex", 26, "quiet"))
-        gap = sh.px(18)
-        word_w = _width(word.text, word.ink.face, word.ink.size, sh.rtl)
-        inline = self.overridden and size + gap + word_w + sh.px(28) + _width(mark.text, mark.ink.face, mark.ink.size, sh.rtl) <= sh.width
+        gap = sh.px(20)
+        word = _W(STATE[self.state][sh.en], sh.ink("plex600", 52, self.state_ink))
+        while word.ink.size > 30 and _width(word.text, word.ink.face, word.ink.size, sh.rtl) > sh.width - size - gap:
+            word = replace(word, ink=replace(word.ink, size=word.ink.size - 2))  # the longest name stays on the ring's line
 
         def draw(y: int) -> None:
             x = sh.right - size if sh.rtl else sh.left
@@ -798,14 +799,10 @@ class _Claim:
             base = y + size // 2 + round(word.ink.size * 0.335)  # the word's middle on the ring's centre
             ink, end = sh._line([word], sh.rtl, base, start)
             sh.blocks.append(Block("state", (math.floor(min(start, end)), y, math.ceil(max(start, end)), y + size), ink, word.text))
-            if inline:
-                start = end - sh.px(28) if sh.rtl else end + sh.px(28)
-                ink, far = sh._line([mark], sh.rtl, base, start)
-                sh.blocks.append(Block("review-mark", (math.floor(min(start, far)), y, math.ceil(max(start, far)), y + size), ink, mark.text))
 
         items = [_Item(size, draw)]
-        if self.overridden and not inline:
-            items += [_gap(sh.px(8)), sh.item("review-mark", sh.tool(mark.text, mark.ink, max_lines=1))]
+        if self.overridden:  # a person changed the state: said right after it, and no name
+            items += [_gap(sh.px(6)), sh.item("review-mark", sh.tool(sh.say("overridden"), sh.ink("plex", 26, "quiet"), max_lines=1))]
         return items
 
     def _wording(self, a: int, b: int, size: int) -> list[_W]:
@@ -831,55 +828,50 @@ class _Claim:
         return _para(wording, self.sh.width, self.words_rtl, strut=(face, size), leading=2.2 if self.verse else 2.0, max_lines=max_lines)
 
     def _takhrij(self) -> _Para | None:
-        """Reference — «grading, verbatim» and who gave it. A grading is drawn whole or not at all."""
+        """Reference — «the grading, verbatim», who gave it and where it was copied from. Several
+        gradings are counted, not listed, so that none is singled out (as in the page's notes). A
+        grading is drawn whole or not at all."""
         sh, card = self.sh, self.card
         src = card.source
         ref = sh.ink("plex", 30)
         quiet = sh.ink("plex", 26, "quiet")
-        grade_ink = sh.ink("naskh", 36)
         comma = "," if sh.en else "،"
-        strut = ("naskh", sh.px(36))
 
         def build(tokens: list[_W]) -> _Para:
-            return _para(tokens, sh.width, sh.reads_rtl(" ".join(w.text for w in tokens)), strut=strut, leading=1.6)
+            return _para(tokens, sh.width, sh.reads_rtl(" ".join(w.text for w in tokens)), strut=("naskh", sh.px(36)), leading=1.6)
 
         ref_rtl = sh.reads_rtl(src.ref)
         lines, _cut = _clip(_wrap(_words(src.ref, ref), sh.width, ref_rtl), 2, sh.width, ref_rtl)
         head = [w for line in lines for w in line]
         dash = [_W("—", quiet, tie=True)] if head else []
         grades = [g for g in card.grades if g.text.strip()]
-        if not grades:
-            if card.grade_unavailable:
-                return build(head + dash + _words(sh.say("no_grading"), ref))
-            return build(head) if head else None
-
-        def grading(g) -> list[_W]:
+        if len(grades) == 1:
+            g = grades[0]
             words = g.text.strip().splitlines()[0].split()  # the grading itself; a source's added remarks follow on later lines
             giver = _words(f"{comma} ".join(p for p in (g.scholar, g.source_name) if p), quiet)
-            out = [_W(("«" if i == 0 else "") + w + ("»" if i == len(words) - 1 else ""), grade_ink) for i, w in enumerate(words)]
-            return out + ([_W(comma, quiet, tie=True, space=0)] + giver if giver else [])
+            grading = [_W(("«" if i == 0 else "") + w + ("»" if i == len(words) - 1 else ""), sh.ink("naskh", 36)) for i, w in enumerate(words)]
+            whole = build(head + dash + grading + ([_W(comma, quiet, tie=True, space=0)] + giver if giver else []))
+            if len(whole.lines) <= 5:
+                return whole
+            tail = sh.say("one_grading")  # longer than the card can carry: it is not shortened, it is not drawn
+        elif grades:
+            tail = _grades_count(len(grades), sh.en)
+        elif card.grade_unavailable:
+            tail = sh.say("no_grading")
+        else:
+            tail = src.source_name
+        tokens = head + (dash + _words(tail, quiet) if tail else [])
+        return build(tokens) if tokens else None
 
-        tokens = head + dash + grading(grades[0])
-        if len(build(tokens).lines) > 5:  # a grading longer than the card can carry is not shortened: it is not drawn
-            return build(head)
-        shown = 1
-        for g in grades[1:]:
-            more = tokens + [_W("·", quiet)] + grading(g)
-            rest = len(grades) - shown - 1
-            trial = more + ([_W(f"(+{rest})", quiet, tie=True, alone=True)] if rest else [])
-            if len(build(trial).lines) > 3:
-                break
-            tokens, shown = more, shown + 1
-        if shown < len(grades):
-            tokens = tokens + [_W(f"(+{len(grades) - shown})", quiet, tie=True, alone=True)]
-        return build(tokens)
-
-    def items(self, step: int, *, wording: tuple[int, int] | str | None, claim_lines: int | None = None, source_lines: int | None = None, verdict_lines: int | None = None) -> tuple[list[_Item], dict]:
+    def items(
+        self, step: int, *, wording: tuple[int, int] | str | None, claim_lines: int | None = None,
+        source_lines: int | None = None, verdict_lines: int | None = None, source_size: int | None = None,
+    ) -> tuple[list[_Item], dict]:  # fmt: skip
         """The card's body at one step of the ladder. ``wording`` is the slice of the source's words
         to draw, or the name of the sentence that stands in for it, or None for no wording at all."""
         sh = self.sh
         claim_size = _step(_CLAIM_SIZES, step)
-        source_size = _step(_VERSE_SIZES if self.verse else _QUOTE_SIZES, step)
+        source_size = source_size or _step(_VERSE_SIZES if self.verse else _QUOTE_SIZES, step)
         label = sh.ink("plex", 26, "quiet")
         facts: dict = {"claim_size": claim_size, "source_size": source_size, "claim_cut": self.claim_trimmed, "verdict_cut": False}
 
@@ -916,8 +908,9 @@ class _Claim:
             if body is not None:
                 items += ruled + [sh.item("abstention-verse", body), _gap(sh.px(6)), _Item(HAIRLINE, sh.hairline)]
                 items += [_gap(sh.px(10)), sh.item("abstention-ref", sh.tool(self.verse_ref, label, leading=1.45, max_lines=1))]
-        # "refer": nothing is quoted — the reason is the sentence under the state, and the referral
-        # sentence below stands where the source would be.
+        else:  # "refer": nothing is quoted — the reason is the sentence under the state; the referral stands here
+            items += [_gap(sh.px(22), sh.px(26)), _Item(HAIRLINE, sh.hairline), _gap(sh.px(14))]
+            items += [sh.item("referral", sh.tool(sh.say("referral"), sh.ink("plex", 30), max_lines=3)), _gap(sh.px(14)), _Item(HAIRLINE, sh.hairline)]
         items += [_gap(sh.px(22), sh.px(26), spring=1), sh.item("action", sh.tool(self.action, sh.ink("plex600", 30), max_lines=2))]
         return items, facts
 
@@ -929,8 +922,9 @@ class _Claim:
         1. Everything whole, at the largest step of the ladder that fits.
         2. A verse that does not fit whole even at the smallest size: only the part that corresponds
            to the quotation, «…» on each side that was cut — never a cut inside that part. If that
-           part still does not fit, the claim gives up lines for it; if it cannot fit at all, the
-           verse's words are not drawn and a sentence says so (its reference always is drawn).
+           part still does not fit, the claim gives up lines for it, then its own type goes below
+           the range (down to 22); if it cannot fit even so, the verse's words are not drawn and a
+           sentence says so (its reference always is drawn).
         3. Any other wording: cut at a word boundary with «…», starting at the quoted part when the
            text before it would push that part off the card.
         """
@@ -956,8 +950,8 @@ class _Claim:
         claim_needed = self.items(last, wording=None)[1]["claim_lines"]
         stand_in: str | None = None
 
-        def lines_of(a: int, b: int) -> int:
-            return len(self._wording_para(self._wording(a, b, source_size), source_size).lines)
+        def lines_of(a: int, b: int, size: int = source_size) -> int:
+            return len(self._wording_para(self._wording(a, b, size), size).lines)
 
         if whole:
             # the body without the claim's lines and without the wording's lines
@@ -971,9 +965,10 @@ class _Claim:
                     for step in _LADDER:
                         if done := attempt(kind, step, wording=uncut):
                             return done
-                keep = (room - fixed - lines_of(*uncut) * source_h) // claim_h  # the claim makes room for it
-                if keep >= 1 and (done := attempt(kind, last, wording=uncut, claim_lines=min(keep, claim_needed))):
-                    return done
+                for size in range(source_size, _VERSE_FLOOR - 1, -2):  # the claim makes room for it; then its type gives way
+                    keep = (room - fixed - lines_of(*uncut, size) * round(size * 2.2)) // claim_h
+                    if keep >= 1 and (done := attempt(kind, last, wording=uncut, claim_lines=min(keep, claim_needed), source_size=size)):
+                        return done
                 stand_in = "verse_too_long" if self.mode == "source" else None
             else:
 

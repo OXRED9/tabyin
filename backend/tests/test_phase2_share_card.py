@@ -4,7 +4,6 @@ House rule: no verse, narration or grading is typed here. Cards come from the re
 texts read from the data files by reference; faults and extreme lengths are produced from them.
 """
 import io
-import re
 from datetime import date
 
 import pytest
@@ -16,11 +15,11 @@ from tabayyun.config import settings
 from tabayyun.meta import build_meta
 from tabayyun.normalize import normalize_ar
 from tabayyun.report import share_card
+from tabayyun.report.labels import STATE
 from tabayyun.report.share_card import (
     ACTION_SENTENCE,
     SIZES,
     STATE_TOKENS,
-    STATE_WORD,
     TEXT,
     THEMES,
     Drawn,
@@ -123,7 +122,7 @@ def test_the_blocks_come_in_the_order_of_the_design(report):
     assert names(drawn) == ["state", "state-glyph", "verdict", "claim-label", "claim", "source-label", "source", "takhrij", "action"]
     assert {b.name for b in drawn.blocks} >= HEADER | FOOTER
     card = by(report, claim_type="hadith")
-    assert text_of(drawn, "state") == STATE_WORD["supported"][0]
+    assert text_of(drawn, "state") == STATE["supported"][0]
     assert text_of(drawn, "verdict") == _first_sentence(card.note_ar)
     assert text_of(drawn, "claim-label") == TEXT["claim"][0] and text_of(drawn, "source-label") == TEXT["source"][0]
     assert text_of(drawn, "action") == ACTION_SENTENCE["adopt"][0]
@@ -141,7 +140,7 @@ def test_a_state_is_a_glyph_a_word_and_its_colour_and_gold_is_only_on_the_verifi
         solid, ink = STATE_TOKENS[theme][state]
         seen = colours(body(drawn))
         assert rgb(solid) in seen and rgb(ink) in seen  # the underline and the words
-        assert drawn.block("state-glyph") is not None and text_of(drawn, "state") == STATE_WORD[state][0]
+        assert drawn.block("state-glyph") is not None and text_of(drawn, "state") == STATE[state][0]
         assert (gold in colours(drawn.image)) == (state == "supported")
 
 
@@ -150,7 +149,7 @@ def test_a_reviewers_state_is_drawn_instead_when_given(report):
     drawn = draw(card, override_state=EvidenceState.needs_review)
     seen = colours(body(drawn))
     assert rgb(STATE_TOKENS["light"]["needs_review"][0]) in seen and rgb(STATE_TOKENS["light"]["supported"][1]) not in seen
-    assert text_of(drawn, "state") == STATE_WORD["needs_review"][0]
+    assert text_of(drawn, "state") == STATE["needs_review"][0]
     assert text_of(drawn, "review-mark") == TEXT["overridden"][0]
     # the rule's sentence explained the engine's state, not the reviewer's: it is not drawn under another state
     assert drawn.block("verdict") is None
@@ -182,7 +181,7 @@ def test_the_sources_wording_is_drawn_and_the_words_that_differ_are_underlined(r
     drawn = draw(noted)
     assert solid in colours(drawn.image, drawn.block("source").ink)  # the collation's underline
     assert noted.source.text.split()[0] in text_of(drawn, "source")
-    assert text_of(drawn, "takhrij") == noted.source.ref  # a verse has a reference and no grading
+    assert text_of(drawn, "takhrij") == f"{noted.source.ref} — {noted.source.source_name}"  # a verse: its reference and where its text is from, no grading
 
     exact = by(report, state="supported", claim_type="ayah")
     drawn = draw(exact)
@@ -194,19 +193,26 @@ def test_a_grading_is_drawn_verbatim_with_its_source_and_never_shortened(report,
     card = by(report, claim_type="hadith")
     grade = card.grades[0]
     for size in SIZES:
-        takhrij = text_of(draw(card, size=size), "takhrij")
-        assert takhrij.startswith(card.source.ref) and f"«{grade.text}»" in takhrij and grade.source_name in takhrij
+        for lang, comma in (("ar", "،"), ("en", ",")):
+            takhrij = text_of(draw(card, size=size, lang=lang), "takhrij")
+            assert takhrij == f"{card.source.ref} — «{grade.text}»{comma} {grade.source_name}"
 
-    # the longest one-line grading in the data, on the smaller card: whole, or not there at all
+    # the longest one-line grading in the data, on the smaller card: whole, never shortened
     longest = max((r["grade"].splitlines()[0] for r in hadith.hadeethenc.values() if r.get("grade")), key=len)
     assert len(longest) > 40
-    long = card.model_copy(update={"grades": [grade.model_copy(update={"text": longest}), grade, grade]})
-    takhrij = text_of(draw(long, size="square"), "takhrij")
-    assert f"«{longest}»" in takhrij and "…" not in takhrij.split("«", 1)[1]
-    assert re.search(r"\(\+\d\)$", takhrij) or takhrij.count("«") == 3  # the rest are counted, not dropped silently
+    takhrij = text_of(draw(card.model_copy(update={"grades": [grade.model_copy(update={"text": longest})]}), size="square"), "takhrij")
+    assert f"«{longest}»" in takhrij and "…" not in takhrij
+    # the muhaddith, when the source names one, stands between the grading and its source
+    named = grade.model_copy(update={"scholar": "SCHOLAR-AS-THE-SOURCE-NAMES-HIM"})
+    assert "»، SCHOLAR-AS-THE-SOURCE-NAMES-HIM، " + grade.source_name in text_of(draw(card.model_copy(update={"grades": [named]})), "takhrij")
+
+    # several gradings are counted, not listed: none is singled out
+    several = card.model_copy(update={"grades": [grade, grade, grade]})
+    assert text_of(draw(several), "takhrij") == f"{card.source.ref} — 3 أحكام في المصادر"
+    assert text_of(draw(several, lang="en"), "takhrij") == f"{card.source.ref} — 3 gradings in the sources"
 
     unavailable = card.model_copy(update={"grades": [], "grade_unavailable": True})
-    assert text_of(draw(unavailable), "takhrij").endswith("الحكم غير متاح من المصدر")
+    assert text_of(draw(unavailable), "takhrij") == f"{card.source.ref} — الحكم غير متاح من المصدر"
     assert text_of(draw(unavailable, lang="en"), "takhrij").endswith(TEXT["no_grading"][1])
 
 
@@ -229,8 +235,9 @@ def test_not_found_shows_the_abstention_sentence_and_verse_and_no_source(report)
 def test_a_personal_case_gets_no_source_and_is_referred(report):
     card = by(report, personal_case=True)
     drawn = draw(card)
-    assert names(drawn) == ["state", "state-glyph", "verdict", "claim-label", "claim", "action"]
-    assert text_of(drawn, "verdict") == card.note_ar
+    assert names(drawn) == ["state", "state-glyph", "verdict", "claim-label", "claim", "referral", "action"]
+    assert text_of(drawn, "verdict") == card.note_ar  # the reason
+    assert text_of(drawn, "referral") == TEXT["referral"][0]  # in the source's place
     assert text_of(drawn, "action") == ACTION_SENTENCE["refer_to_scholars"][0]
     # even if a source were attached to a personal case, it is not drawn
     forged = card.model_copy(update={"source": by(report, claim_type="hadith").source})
@@ -326,15 +333,18 @@ def test_a_verse_is_never_cut_inside_the_quoted_span(card_of, ayah):
         at = 0
         for word in quoted:  # every quoted word is there, in order
             at = next(i for i in range(at, len(part)) if similarity(normalize_ar(part[i]), normalize_ar(word)) >= 0.5) + 1
-        assert text_of(drawn, "takhrij") == card.source.ref  # and always its reference
+        assert text_of(drawn, "takhrij").startswith(card.source.ref)  # and always its reference
 
-    # the whole of it quoted: no card can hold it, so its words are not drawn at all — never a part of them
+    # the whole of it quoted. The tall card holds it whole: the claim gives up lines, then the verse's type goes below 30
     whole = card_of(f"قال الله تعالى: ﴿{clean}﴾")
-    for size in SIZES:
-        drawn = draw(whole, size=size)
-        assert drawn.fit["source"] == "omitted" and drawn.block("source") is None
-        assert text_of(drawn, "source-note") == TEXT["verse_too_long"][0]
-        assert text_of(drawn, "takhrij") == whole.source.ref
+    drawn = draw(whole, size="portrait")
+    assert drawn.fit["source"] == "whole" and 22 <= drawn.fit["source_size"] < 30 and drawn.fit["claim_cut"]
+    assert text_of(drawn, "source") == "﴿" + " ".join(uthmani.split()) + "﴾"
+    # the square card cannot hold it: its words are not drawn at all — never a part of them
+    drawn = draw(whole, size="square")
+    assert drawn.fit["source"] == "omitted" and drawn.block("source") is None
+    assert text_of(drawn, "source-note") == TEXT["verse_too_long"][0]
+    assert text_of(drawn, "takhrij").startswith(whole.source.ref)
 
     # a verse that fits only if the claim gives up lines: the verse stays whole, the claim is cut
     kursi = card_of(f"قال الله تعالى: ﴿{ayah(2, 255)[1]}﴾")
