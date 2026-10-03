@@ -422,3 +422,67 @@ uncompressed assets; with compression and immutable caching on the API, 99 deskt
 final-pass removal); the mock's wording; and a performance pass — a static shell painted before any
 script, one Naskh weight, two Plex weights, and code-splitting of everything the first paint does
 not need.
+
+## 8. The verdict card («بطاقة تثبّت»), v2
+
+The card is the one piece of Tabayyun that travels without the app: it is forwarded into the same
+chats the claim came from. The first card (green header band, pill badge, a list of labelled
+fields) had two faults. It looked like the UI that was replaced, and it lacked context: a card
+that says «مخالف للمصدر» over a narration, then «رواه مسلم — صحيح», leaves the reader asking what
+exactly is wrong. The v2 card answers, in this order, the questions of someone who sees only the
+image:
+
+1. **What is this about?** — the words as they were circulating.
+2. **Is it right?** — the state (ring glyph + word) and one plain sentence.
+3. **What does the source say?** — the source's own wording, its reference, and for a narration the
+   grading in the source's word with who gave it.
+4. **What should I do with it?** — the suggested action as a sentence.
+5. **Can I check?** — the address and its QR code, and the transparency line.
+
+It is drawn twice from one content table — in the browser (`verdict-card.tsx`) and on the server
+(`report/share_card.py`, the fallback) — and both must show the same content in the same order.
+
+### Layout (1080 × 1350 portrait, 1080 × 1080 square; light and dark; Arabic and English)
+
+```
+┌──────────────────────────────────────────────┐   paper, one hairline frame inset 36px
+│ بطاقة تثبّت                              تبيّن │   logotype in Amiri; label in Plex, quiet
+│ ──────────────────────────────────────────── │
+│ ◎ مخالف للمصدر                                │   ring glyph 64 + state word, Plex 600 / 52, state ink
+│ نُسب هذا النص إلى القرآن الكريم ولم يُعثر عليه…   │   the verdict sentence, Plex 400 / 34, ink, ≤ 3 lines
+│                                              │
+│ النص المتداول                                 │   label, Plex 26, quiet
+│ رباط يوم وليلة خير من صيام شهر وقيامه           │   Amiri 44 / 1.9 in the state's ink, underlined 3px in
+│ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾          │   the state's colour — as the passage looks on the page
+│                                              │
+│ في المصدر                                     │   label
+│ ──────────────────────────────────────────── │
+│ the source's wording, Naskh                  │   a verse: Amiri Quran 46 / 2.2 · otherwise Amiri 40 / 2.0;
+│ ──────────────────────────────────────────── │   words that differ from the claim underlined (collation)
+│ رواه مسلم — «صحيح»، موسوعة الأحاديث النبوية      │   takhrij line: reference, Plex 30; grading verbatim in
+│                                              │   Amiri 36; its source in Plex 26 quiet
+│ الإجراء المقترح: حذف النسبة والتنبيه عليها.       │   Plex 600 / 30
+│ ──────────────────────────────────────────── │
+│ ▣ QR            تحقّق بنفسك على تبيّن           │   address in green, Plex 30; QR 150
+│                 tabayyun.example              │
+│ تبيّن أداة مدعومة بالذكاء الاصطناعي، لا تغني…     │   Plex 22, quiet
+└──────────────────────────────────────────────┘
+```
+
+- **No band, no pill, no shadow.** Paper, hairlines, ink — the page's language. Gold appears only in
+  the verified ring.
+- **States with nothing to quote**: `not_found` shows the abstention sentence and the abstention
+  verse (from `meta.abstention_verse`) in place of "في المصدر", as before; a `needs_review` or
+  level C/D card without a source shows the reason and the referral sentence there instead.
+- **Fitting**: type is reduced before anything is cut (claim down to 34, source down to 30, in steps
+  of 2). The claim is cut at 240 characters at a word boundary with «…». A narration or quotation
+  that still does not fit is cut at a word boundary with «…». **⚑ A verse is never cut in the
+  middle of the quoted span**: if the whole verse does not fit at the smallest size, the card shows
+  the part of the verse that corresponds to the quotation, with «…» on each side that was cut, and
+  always its reference (for the Sharia reviewer to confirm).
+- **Reviewed by a person**: when the state was changed by a reviewer, «حالة معدَّلة بمراجعة بشرية»
+  follows the state word; no name is drawn.
+- **The summary card** (`kind = "summary"`) uses the same frame and footer: the summary sentence
+  («تسعة استشهادات: ثلاثة مؤيَّدة، …») in Plex 600 / 44 with each clause in its state's ink and its
+  ring glyph, then the title of what was checked when the report has one.
+- Nothing identifying is drawn: no date, time, reviewer name or link to the clip.
