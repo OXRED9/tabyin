@@ -36,4 +36,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD python -c "import os,urllib.request;urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"PORT\",\"8080\")}/health',timeout=4)"
 # `pip install ./backend` puts the package in site-packages; data and frontend paths come from env.
 ENV DATA_DIR=/app/data FRONTEND_DIST=/app/frontend/dist
-CMD ["sh", "-c", "uvicorn tabayyun.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --no-access-log"]
+# Behind the platform's proxy: trust its X-Forwarded-For so the per-address limit sees real clients.
+CMD ["sh", "-c", "uvicorn tabayyun.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips '*' --no-access-log"]
