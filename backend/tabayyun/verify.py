@@ -81,14 +81,19 @@ def _stems(text: str) -> set[str]:
     return out
 
 
-def _lexical_floor(claim_text: str, source_text: str, minimum: float) -> bool:
-    """A model's pointer is only honoured when the two texts share real vocabulary."""
+def _shared_vocabulary(claim_text: str, source_text: str) -> tuple[int, float]:
+    """(number of shared word stems, share of the claim's stems found in the source)."""
     if arabic_ratio(claim_text) < 0.5:
         a = {w for w in normalize_latin(claim_text).split() if len(w) > 3}
         b = {w for w in normalize_latin(source_text).split() if len(w) > 3}
     else:
         a, b = _stems(claim_text), _stems(source_text)
-    return bool(a) and len(a & b) / len(a) >= minimum
+    return (len(a & b), len(a & b) / len(a)) if a else (0, 0.0)
+
+
+def _lexical_floor(claim_text: str, source_text: str, minimum: float) -> bool:
+    """A model's pointer is only honoured when the two texts share real vocabulary."""
+    return _shared_vocabulary(claim_text, source_text)[1] >= minimum
 
 
 async def judge(ctx: Context, task: str, claim_text: str, texts: list[str]) -> int | None:
@@ -412,7 +417,7 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
         idx = ctx.quran.by_ref.get(ref)
         if idx is not None:
             s, a, uthmani, clean = ctx.quran.ayahs[idx]
-            if _lexical_floor(f"{claim.quote} {query}", clean, 0.01):
+            if _shared_vocabulary(f"{claim.quote} {query}", clean)[0] >= 1:
                 qm = ctx.quran.match(clean)
                 if qm is not None:
                     candidates.append((clean, _quran_source(qm, ctx, None), []))
@@ -424,8 +429,12 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
     chosen: tuple[str, SourceRef, list[Grade]] | None = None
     if level in (ContentLevel.A, ContentLevel.B) and candidates:
         idx = await judge(ctx, "evidence", claim.quote, [c[0] for c in candidates])
-        if idx is not None and _lexical_floor(f"{claim.quote} {query}", candidates[idx][0], 0.15):
-            chosen = candidates[idx]
+        if idx is not None:
+            shared, ratio = _shared_vocabulary(f"{claim.quote} {query}", candidates[idx][0])
+            # the pointed-at text must share vocabulary with the claim: one stem for a verse the
+            # system fetched by number, more for a narration that only keyword search surfaced
+            if shared >= 1 if candidates[idx][1].kind == "quran" else (shared >= 2 or ratio >= 0.2):
+                chosen = candidates[idx]
 
     if claim.type == ClaimType.ruling or level in (ContentLevel.B, ContentLevel.C):
         decision = decide_ruling(level=level, explicit_text_found=chosen is not None)

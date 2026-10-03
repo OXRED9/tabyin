@@ -37,7 +37,7 @@ class AnthropicProvider:
 
     async def complete_json(self, *, system: str, user: str, schema: dict, model_cls: type[T], max_tokens: int = 8000) -> T:
         if self._client is None:
-            raise LLMError("anthropic: no API key configured")
+            raise LLMError("anthropic: no API key configured", cooldown=600)
         model = settings.anthropic_model
         output_config: dict = {"format": {"type": "json_schema", "schema": schema}}
         if model.startswith(_EFFORT_PREFIXES):
@@ -65,13 +65,13 @@ class AnthropicProvider:
             else:
                 raise LLMError(f"anthropic: bad request: {e}") from e
         except (anthropic.AuthenticationError, anthropic.PermissionDeniedError) as e:
-            raise LLMError(f"anthropic: credentials rejected: {e}") from e
+            raise LLMError(f"anthropic: credentials rejected: {e}", cooldown=600) from e
         except anthropic.RateLimitError as e:
-            raise LLMError(f"anthropic: rate limited: {e}") from e
+            raise LLMError(f"anthropic: rate limited: {e}", cooldown=30) from e
         except anthropic.APIStatusError as e:
-            raise LLMError(f"anthropic: HTTP {e.status_code}: {e}") from e
+            raise LLMError(f"anthropic: HTTP {e.status_code}: {e}", cooldown=30 if e.status_code >= 500 else 0) from e
         except anthropic.APIConnectionError as e:  # includes timeouts
-            raise LLMError(f"anthropic: connection error: {e}") from e
+            raise LLMError(f"anthropic: connection error: {e}", cooldown=30) from e
 
         if response.stop_reason == "refusal":
             raise LLMError("anthropic: request declined (refusal)")

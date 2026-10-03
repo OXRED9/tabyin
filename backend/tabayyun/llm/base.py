@@ -16,7 +16,15 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class LLMError(Exception):
-    """A provider failed in a way that should trigger failover (network, auth, rate limit, refusal)."""
+    """A provider failed in a way that should trigger failover (network, auth, rate limit, refusal).
+
+    ``cooldown``: seconds to skip this provider afterwards. Zero for failures tied to one request
+    (a refusal, a truncated or invalid answer); non-zero when the provider itself is unavailable.
+    """
+
+    def __init__(self, message: str, cooldown: float = 0.0) -> None:
+        super().__init__(message)
+        self.cooldown = cooldown
 
 
 class LLMProvider(Protocol):

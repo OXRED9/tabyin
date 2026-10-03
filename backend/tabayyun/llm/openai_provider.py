@@ -34,6 +34,10 @@ class OpenAIProvider:
                 response_format={"type": "json_schema", "json_schema": {"name": "result", "schema": schema, "strict": True}},
                 max_completion_tokens=max_tokens,
             )
+        except (openai.AuthenticationError, openai.PermissionDeniedError) as e:
+            raise LLMError(f"openai: credentials rejected: {e}", cooldown=600) from e
+        except (openai.RateLimitError, openai.APIConnectionError, openai.InternalServerError) as e:
+            raise LLMError(f"openai: {type(e).__name__}: {e}", cooldown=30) from e
         except openai.APIError as e:
             raise LLMError(f"openai: {type(e).__name__}: {e}") from e
         choice = response.choices[0]

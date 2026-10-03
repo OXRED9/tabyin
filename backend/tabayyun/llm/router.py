@@ -10,7 +10,6 @@ from .base import LLMError, LLMProvider, T
 from .openai_provider import OpenAIProvider
 
 log = logging.getLogger("tabayyun.llm")
-_COOLDOWN_SECONDS = 120.0
 
 
 class LLMRouter:
@@ -42,7 +41,8 @@ class LLMRouter:
             except LLMError as e:
                 log.warning("LLM provider failed, trying next: %s", e)
                 errors.append(str(e))
-                self._down_until[p.name] = time.monotonic() + _COOLDOWN_SECONDS
+                if e.cooldown:
+                    self._down_until[p.name] = time.monotonic() + e.cooldown
         raise LLMError("; ".join(errors) or "no LLM provider configured")
 
 
