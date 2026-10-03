@@ -143,13 +143,41 @@ function Takhrij({ source }: { source: SourceRef }) {
   )
 }
 
+/** One grading as its source words it, then who gave it, where, and the link to it. */
+function GradeItem({ grade }: { grade: Grade }) {
+  const { t } = useI18n()
+  return (
+    <li>
+      <p lang="ar" dir="rtl" className="font-naskh text-lg whitespace-pre-line">
+        {grade.text}
+      </p>
+      <p className="text-sm text-quiet">
+        {grade.scholar || grade.book || grade.narrator
+          ? `${t.card.gradeBy(
+              [
+                grade.scholar ? `${t.card.scholar}: ${grade.scholar}` : '',
+                grade.book ? `${t.card.book}: ${grade.book}` : '',
+                grade.narrator ? `${t.card.narrator}: ${grade.narrator}` : '',
+              ].filter(Boolean),
+            )} — `
+          : null}
+        <SourceLink href={grade.source_url}>{grade.source_name}</SourceLink>
+      </p>
+    </li>
+  )
+}
+
 /**
- * Hadith gradings exactly as the sources word them. When there are several they are all listed,
- * in the order received, with no preference; when there is none the note says so.
+ * Hadith gradings exactly as the sources word them. One grading is shown as it is. Several are
+ * led by one line — every distinct wording, in the order the sources give them, then their count
+ * — which opens the full list: each grading with its scholar, book and link. No grading is
+ * singled out and none is hidden; when there is none the note says so.
  */
 function Grades({ grades, unavailable }: { grades: Grade[]; unavailable: boolean }) {
   const { t } = useI18n()
+  const [open, setOpen] = useState(false)
   if (grades.length === 0 && !unavailable) return null
+  const wordings = [...new Set(grades.map((grade) => grade.text.replace(/\s+/g, ' ').trim()))]
   return (
     <div className="space-y-1">
       <p className="text-sm text-quiet">
@@ -158,31 +186,33 @@ function Grades({ grades, unavailable }: { grades: Grade[]; unavailable: boolean
       </p>
       {grades.length === 0 ? (
         <p className="text-sm font-semibold text-ink">{t.card.gradeUnavailable}</p>
+      ) : grades.length === 1 ? (
+        <ul>
+          <GradeItem grade={grades[0]} />
+        </ul>
       ) : (
-        <>
-          {grades.length > 1 ? <p className="text-sm text-ink">{t.card.gradesMany}</p> : null}
-          <ul className="space-y-2">
-            {grades.map((grade, i) => (
-              <li key={i}>
-                <p lang="ar" dir="rtl" className="font-naskh text-lg whitespace-pre-line">
-                  {grade.text}
-                </p>
-                <p className="text-sm text-quiet">
-                  {grade.scholar || grade.book || grade.narrator
-                    ? `${t.card.gradeBy(
-                        [
-                          grade.scholar ? `${t.card.scholar}: ${grade.scholar}` : '',
-                          grade.book ? `${t.card.book}: ${grade.book}` : '',
-                          grade.narrator ? `${t.card.narrator}: ${grade.narrator}` : '',
-                        ].filter(Boolean),
-                      )} — `
-                    : null}
-                  <SourceLink href={grade.source_url}>{grade.source_name}</SourceLink>
-                </p>
-              </li>
-            ))}
-          </ul>
-        </>
+        <Collapsible open={open} onOpenChange={setOpen} data-testid="grades">
+          <CollapsibleTrigger className="flex min-h-10 w-full items-start gap-2 rounded-sheet text-start">
+            <span className="min-w-0 flex-1">
+              <span lang="ar" dir="rtl" className="font-naskh text-lg">
+                {wordings.join('، ')}
+              </span>
+              <span className="text-sm text-quiet"> — {t.card.gradesCount(grades.length)}</span>
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              className={cn('mt-2 size-4 shrink-0 text-quiet transition-transform duration-150', open && 'rotate-180')}
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 pt-1">
+            <p className="text-sm text-ink">{t.card.gradesMany}</p>
+            <ul className="space-y-2">
+              {grades.map((grade, i) => (
+                <GradeItem key={i} grade={grade} />
+              ))}
+            </ul>
+          </CollapsibleContent>
+        </Collapsible>
       )}
     </div>
   )
@@ -196,6 +226,12 @@ function OtherSource({ source, state }: { source: SourceRef; state: EvidenceStat
       <Takhrij source={source} />
     </div>
   )
+}
+
+/** Whether a text already says a sentence (closing marks and spacing aside). */
+const says = (text: string, sentence: string) => {
+  const plain = (value: string) => value.replace(/\s+/g, ' ').replace(/[.،؛:!؟?]+/gu, '').trim()
+  return plain(text).includes(plain(sentence))
 }
 
 // ── The body of a note ────────────────────────────────────────────────────────────────────────
@@ -258,8 +294,12 @@ export default function NoteBody({
         </div>
       ) : null}
 
-      {card.personal_case ? <Remark state="needs_review">{t.card.personalCase}</Remark> : null}
-      {card.disagreement_noted ? <Remark state="needs_review">{t.card.disagreement}</Remark> : null}
+      {/* Said once. The backend's note is the sentence of a personal case and of a disputed matter;
+          the notice stands in only when a note does not already say it. */}
+      {card.personal_case && !says(note, t.card.personalCase) ? (
+        <Remark state="needs_review">{t.card.personalCase}</Remark>
+      ) : null}
+      {card.disagreement_noted && !note ? <Remark state="needs_review">{t.card.disagreement}</Remark> : null}
 
       {card.source ? (
         <>

@@ -338,6 +338,12 @@ const PLAIN = {
   request: 'أعطني حديثاً يثبت أن من أكل التفاح على الريق دخل الجنة',
 }
 
+// The backend's sentence for a disputed matter, word for word (evidence_rules/rules.py).
+const DISPUTED_NOTE = {
+  ar: 'مسألة خلافية أو عالية الحساسية: يُعرض ما في المصادر دون ترجيح، ويُحال فيها إلى أهل العلم.',
+  en: 'A disputed or highly sensitive matter: what the sources say is shown without preference, and it is referred to scholars.',
+}
+
 function buildCards(lang) {
   const a1 = ayah(...PICK.ayahExact)
   const a2 = ayah(...PICK.ayahForRuling)
@@ -441,8 +447,9 @@ function buildCards(lang) {
       rule_id: 'level_c.cap_needs_review',
       referral: true,
       disagreement_noted: true,
-      note_ar: 'مسألة اجتهادية وقع فيها خلاف بين أهل العلم. لا يرجّح تبيّن قولاً على قول.',
-      note_en: 'An ijtihadi matter on which scholars differ. Tabayyun prefers no opinion over another.',
+      // The backend's own sentence for a disputed matter (evidence_rules/rules.py, `ruling.disputed`).
+      note_ar: DISPUTED_NOTE.ar,
+      note_en: DISPUTED_NOTE.en,
     }),
     // A disputed ruling for which the speaker points at a narration. The backend shows that
     // narration as the evidence referred to, with its grading, and does not raise the state
@@ -460,10 +467,8 @@ function buildCards(lang) {
       grades: [hadithGrade(hB)],
       referral: true,
       disagreement_noted: true,
-      note_ar:
-        'مسألة اجتهادية وقع فيها خلاف بين أهل العلم. لا يرجّح تبيّن قولاً على قول. أقرب نص في المصادر لما أُشير إليه معروض مع حكمه؛ عرضه لا يعني ترجيحاً ولا حكماً من تبيّن.',
-      note_en:
-        'An ijtihadi matter on which scholars differ. Tabayyun prefers no opinion over another. The closest text in the sources to what is referred to is shown with its grading; showing it is neither a preference nor a ruling by Tabayyun.',
+      note_ar: `${DISPUTED_NOTE.ar} أقرب نص في المصادر لما أُشير إليه معروض مع حكمه؛ عرضه لا يعني ترجيحاً ولا حكماً من تبيّن.`,
+      note_en: `${DISPUTED_NOTE.en} The closest text in the sources to what is referred to is shown with its grading; showing it is neither a preference nor a ruling by Tabayyun.`,
     }),
     misattributed: card({
       claim_type: 'ayah',
@@ -490,8 +495,9 @@ function buildCards(lang) {
       rule_id: 'level_d.personal_case',
       referral: true,
       personal_case: true,
-      note_ar: 'حالة شخصية: لا يصدر تبيّن فيها حكماً ولا يتحقق منها.',
-      note_en: 'A personal case: Tabayyun issues no ruling on it and does not verify it.',
+      // The backend's own sentence for a personal case (`PERSONAL_CASE_AR` / `_EN`): it is the note.
+      note_ar: 'هذه حالة شخصية تستوجب فتوى من جهة مؤهلة',
+      note_en: 'This is a personal case that requires a fatwa from a qualified body.',
     }),
     request: card({
       claim_type: 'request',

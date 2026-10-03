@@ -2,7 +2,7 @@ import NoteBody from '@/components/report/note-body'
 import type { NoteBodyProps } from '@/components/report/note-body'
 import { StateWord } from '@/components/state-badge'
 import { useI18n } from '@/lib/i18n'
-import { referenceLine } from '@/lib/reference-line'
+import { referenceWhenOpen } from '@/lib/reference-line'
 import { STATE_STYLE } from '@/lib/states'
 import { cn } from '@/lib/utils'
 
@@ -12,9 +12,10 @@ import { cn } from '@/lib/utils'
  * the state's bar as an open margin note is.
  */
 export default function InlineNote(body: Omit<NoteBodyProps, 'showQuoted'>) {
-  const { t, pick } = useI18n()
+  const { t } = useI18n()
   const { card } = body
   const state = card.state
+  const reference = referenceWhenOpen(card, t)
   return (
     <article
       id={`note-${card.id}`}
@@ -28,7 +29,8 @@ export default function InlineNote(body: Omit<NoteBodyProps, 'showQuoted'>) {
         <StateWord state={state} className="text-base" />
         <span className="text-sm text-ink">— {t.claimTypes[card.claim_type]}</span>
       </p>
-      <p className="pb-3 text-sm text-quiet">{referenceLine(card, t, pick(card.note_ar, card.note_en))}</p>
+      {reference ? <p className="text-sm text-quiet">{reference}</p> : null}
+      <div className="h-3" />
       {/* Its words are right above, underlined: they are repeated only for a claim with no place in the text. */}
       <NoteBody {...body} showQuoted={!card.span} />
     </article>

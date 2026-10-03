@@ -65,7 +65,7 @@ export function NoteRow({
         <span className={cn(state && 'font-semibold', state && STATE_STYLE[state].ink)}>
           {state ? t.stateWords[state] : t.notes.pendingWord}
         </span>
-        {card ? ` — ${referenceLine(card, t, pick(card.note_ar, card.note_en))}` : null}
+        {card ? ` — ${referenceLine(card, t, pick(card.note_ar, card.note_en)) || t.claimTypes[card.claim_type]}` : null}
       </span>
     </>
   )

@@ -6,7 +6,7 @@ import NoteBody from '@/components/report/lazy-note-body'
 import type { NoteBodyProps } from '@/components/report/note-body'
 import { StateGlyph } from '@/components/state-glyph'
 import { useI18n } from '@/lib/i18n'
-import { referenceLine } from '@/lib/reference-line'
+import { referenceLine, referenceWhenOpen } from '@/lib/reference-line'
 import { STATE_STYLE } from '@/lib/states'
 import type { ClaimStub } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -53,6 +53,7 @@ export const MarginNote = memo(function MarginNote({
   const state = card.state
   const style = STATE_STYLE[state]
   const reference = referenceLine(card, t, pick(card.note_ar, card.note_en))
+  const openReference = referenceWhenOpen(card, t)
 
   return (
     <div
@@ -83,7 +84,7 @@ export const MarginNote = memo(function MarginNote({
           aria-expanded={inPlace ? open : undefined}
           aria-controls={inPlace && open ? bodyId : undefined}
           aria-haspopup={inPlace ? undefined : 'dialog'}
-          title={open ? undefined : reference}
+          title={open ? undefined : reference || undefined}
           onClick={() => onToggle(card.id)}
           onFocus={() => onHover(card.id)}
           onBlur={() => onHover(null)}
@@ -95,7 +96,8 @@ export const MarginNote = memo(function MarginNote({
           <span className="flex h-7 items-center gap-2 text-sm">
             <StateGlyph state={state} />
             <span className={cn('shrink-0 font-semibold', style.ink)}>{t.stateWords[state]}</span>
-            <span className="shrink-0 text-ink max-lg:hidden">— {t.claimTypes[card.claim_type]}</span>
+            {/* Where the margin is narrow the claim type gives way to the reference, unless there is none. */}
+            <span className={cn('shrink-0 text-ink', reference && 'max-lg:hidden')}>— {t.claimTypes[card.claim_type]}</span>
             <span className="min-w-0 flex-1 truncate text-quiet">{open ? null : reference}</span>
             {inPlace ? (
               <ChevronDown
@@ -106,8 +108,8 @@ export const MarginNote = memo(function MarginNote({
               <ChevronLeft aria-hidden="true" className="size-4 shrink-0 text-quiet ltr:-scale-x-100" />
             )}
           </span>
-          {/* Open, the reference is no longer cut short. */}
-          {open ? <span className="block pb-1 text-sm text-quiet">{reference}</span> : null}
+          {/* Open, the reference is no longer cut short. What the note itself says is not said here. */}
+          {open && openReference ? <span className="block pb-1 text-sm text-quiet">{openReference}</span> : null}
         </button>
         {open ? (
           <div id={bodyId} className="pt-3 pb-1">
