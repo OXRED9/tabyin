@@ -1,6 +1,6 @@
 # Design brief — binding UI requirements
 
-This is the product owner's brief for the UI, kept verbatim. `docs/DESIGN.md` records how it was
+This is the product owner's brief for the UI, kept verbatim. `docs/DESIGN_V1.md` records how it was
 applied. The visual reference is `docs/deck-ui-reference.png` (page 7 of the accepted pitch deck).
 
 ## Design and UI — top standard; this is half the score in the demo
@@ -61,7 +61,7 @@ Elements of User Experience, Lean UX, Sprint, Hooked). Apply as a checklist, not
   for the rest.
 
 ### Goal-directed design (About Face, Elements of UX)
-- Two personas in `docs/DESIGN.md`: "Primary user" (a da'i / content creator reviewing before
+- Two personas in `docs/DESIGN_V1.md`: "Primary user" (a da'i / content creator reviewing before
   publishing — needs the full report, export, reviewer mode) and "Extended user" (a Muslim who heard
   a hadith in a clip — needs a clear answer readable in under 3 seconds). The first screen serves
   the second; depth serves the first.

@@ -177,7 +177,7 @@ backend/.venv/bin/python eval/run.py             # ثلاثة أنظمة × ثل
 | [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md) | خط المعالجة، القواعد والعتبات النهائية، التقييم |
 | [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | التشغيل، النشر، التكلفة، الاعتمادات، الخصوصية |
 | [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) | ما لا تفعله الأداة وما لم يُختبر |
-| [`docs/DESIGN.md`](docs/DESIGN.md) | الشخصيات وقرارات التصميم |
+| [`docs/DESIGN.md`](docs/DESIGN.md) | خطة التصميم (الصفحة وحاشيتها) ومراجعتها ونقد اللقطات؛ الشخصيات في [`docs/DESIGN_V1.md`](docs/DESIGN_V1.md) |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | سجل القرارات، وما ينتظر تأكيد المراجع الشرعي |
 | [`docs/USABILITY_TEST.md`](docs/USABILITY_TEST.md) | اختبار الاستخدام: خمس مهام لثلاثة مستخدمين |
 | [`docs/API.md`](docs/API.md) | عقد الواجهة البرمجية وأحداث البث |
