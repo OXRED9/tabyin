@@ -77,7 +77,7 @@ def decide_ayah(
             "The text is close to a verse of the Mushaf but the wording differs; correct it to the Mushaf text shown."
             + (" (The difference may come from the machine transcript.)" if machine_transcribed else ""),
         )
-    if similarity >= t.ayah_partial:
+    if similarity >= t.partial_floor(t.ayah_partial, quoted_words):
         if explicit_attribution and machine_transcribed:
             return Decision(
                 S.needs_review,
@@ -125,7 +125,7 @@ def decide_hadith(
 ) -> Decision:
     """``paraphrase`` means the candidate was confirmed as the same narration reported by meaning
     (lexical similarity alone is below the match threshold)."""
-    if not found or (similarity < t.hadith_partial and not paraphrase):
+    if not found or (similarity < t.partial_floor(t.hadith_partial, quoted_words) and not paraphrase):
         return Decision(
             S.not_found,
             "hadith.none",

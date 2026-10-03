@@ -1,0 +1,372 @@
+[
+  {
+    "script": "01.txt",
+    "recording": "01.m4a",
+    "claims": [
+      {
+        "id": "ayah_correct-01",
+        "category": "ayah_correct",
+        "claim_type": "ayah",
+        "expected_state": "supported",
+        "expected_ref": "quran:20:96"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "02.txt",
+    "recording": "02.m4a",
+    "claims": [
+      {
+        "id": "ayah_correct-02",
+        "category": "ayah_correct",
+        "claim_type": "ayah",
+        "expected_state": "supported",
+        "expected_ref": "quran:52:48"
+      },
+      {
+        "id": "ayah_correct-05",
+        "category": "ayah_correct",
+        "claim_type": "ayah",
+        "expected_state": "supported",
+        "expected_ref": "quran:33:29"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "03.txt",
+    "recording": "03.m4a",
+    "claims": [
+      {
+        "id": "ayah_correct-03",
+        "category": "ayah_correct",
+        "claim_type": "ayah",
+        "expected_state": "supported",
+        "expected_ref": "quran:7:163"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "04.txt",
+    "recording": "04.m4a",
+    "claims": [
+      {
+        "id": "ayah_correct-04",
+        "category": "ayah_correct",
+        "claim_type": "ayah",
+        "expected_state": "supported",
+        "expected_ref": "quran:59:17"
+      },
+      {
+        "id": "ayah_correct-06",
+        "category": "ayah_correct",
+        "claim_type": "ayah",
+        "expected_state": "supported",
+        "expected_ref": "quran:2:215"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "05.txt",
+    "recording": "05.m4a",
+    "claims": [
+      {
+        "id": "hadith_sahih_verbatim-01",
+        "category": "hadith_sahih_verbatim",
+        "claim_type": "hadith",
+        "expected_state": "supported",
+        "expected_ref": "hadeethenc:66521"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "06.txt",
+    "recording": "06.m4a",
+    "claims": [
+      {
+        "id": "hadith_sahih_verbatim-02",
+        "category": "hadith_sahih_verbatim",
+        "claim_type": "hadith",
+        "expected_state": "supported",
+        "expected_ref": "hadeethenc:65059"
+      },
+      {
+        "id": "ayah_correct-07",
+        "category": "ayah_correct",
+        "claim_type": "ayah",
+        "expected_state": "supported",
+        "expected_ref": "quran:36:33"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "07.txt",
+    "recording": "07.m4a",
+    "claims": [
+      {
+        "id": "hadith_sahih_verbatim-03",
+        "category": "hadith_sahih_verbatim",
+        "claim_type": "hadith",
+        "expected_state": "supported",
+        "expected_ref": "hadeethenc:4193"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "08.txt",
+    "recording": "08.m4a",
+    "claims": [
+      {
+        "id": "hadith_sahih_verbatim-04",
+        "category": "hadith_sahih_verbatim",
+        "claim_type": "hadith",
+        "expected_state": "supported",
+        "expected_ref": "hadeethenc:65516"
+      },
+      {
+        "id": "ayah_correct-08",
+        "category": "ayah_correct",
+        "claim_type": "ayah",
+        "expected_state": "supported",
+        "expected_ref": "quran:10:2"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "09.txt",
+    "recording": "09.m4a",
+    "claims": [
+      {
+        "id": "hadith_sahih_abridged-01",
+        "category": "hadith_sahih_abridged",
+        "claim_type": "hadith",
+        "expected_state": "supported_with_note",
+        "expected_ref": "hadeethenc:5436"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "10.txt",
+    "recording": "10.m4a",
+    "claims": [
+      {
+        "id": "hadith_sahih_abridged-02",
+        "category": "hadith_sahih_abridged",
+        "claim_type": "hadith",
+        "expected_state": "supported_with_note",
+        "expected_ref": "hadeethenc:10878"
+      },
+      {
+        "id": "ayah_correct-09",
+        "category": "ayah_correct",
+        "claim_type": "ayah",
+        "expected_state": "supported",
+        "expected_ref": "quran:28:36"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "11.txt",
+    "recording": "11.m4a",
+    "claims": [
+      {
+        "id": "ayah_altered_minor-01",
+        "category": "ayah_altered_minor",
+        "claim_type": "ayah",
+        "expected_state": "supported_with_note",
+        "expected_ref": "quran:20:85"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "12.txt",
+    "recording": "12.m4a",
+    "claims": [
+      {
+        "id": "ayah_altered_minor-02",
+        "category": "ayah_altered_minor",
+        "claim_type": "ayah",
+        "expected_state": "supported_with_note",
+        "expected_ref": "quran:4:52"
+      },
+      {
+        "id": "ayah_correct-10",
+        "category": "ayah_correct",
+        "claim_type": "ayah",
+        "expected_state": "supported",
+        "expected_ref": "quran:61:2"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "13.txt",
+    "recording": "13.m4a",
+    "claims": [
+      {
+        "id": "hadith_weak-01",
+        "category": "hadith_weak",
+        "claim_type": "hadith",
+        "expected_state": "needs_review",
+        "expected_ref": "dorar"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "14.txt",
+    "recording": "14.m4a",
+    "claims": [
+      {
+        "id": "hadith_weak-02",
+        "category": "hadith_weak",
+        "claim_type": "hadith",
+        "expected_state": "needs_review",
+        "expected_ref": "dorar"
+      },
+      {
+        "id": "hadith_sahih_verbatim-05",
+        "category": "hadith_sahih_verbatim",
+        "claim_type": "hadith",
+        "expected_state": "supported",
+        "expected_ref": "hadeethenc:4196"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "15.txt",
+    "recording": "15.m4a",
+    "claims": [
+      {
+        "id": "hadith_fabricated-01",
+        "category": "hadith_fabricated",
+        "claim_type": "hadith",
+        "expected_state": "contradicted",
+        "expected_ref": "dorar"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "16.txt",
+    "recording": "16.m4a",
+    "claims": [
+      {
+        "id": "hadith_fabricated-02",
+        "category": "hadith_fabricated",
+        "claim_type": "hadith",
+        "expected_state": "contradicted",
+        "expected_ref": "dorar"
+      },
+      {
+        "id": "hadith_sahih_verbatim-06",
+        "category": "hadith_sahih_verbatim",
+        "claim_type": "hadith",
+        "expected_state": "supported",
+        "expected_ref": "hadeethenc:65000"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "17.txt",
+    "recording": "17.m4a",
+    "claims": [
+      {
+        "id": "no_source-01",
+        "category": "no_source",
+        "claim_type": "hadith",
+        "expected_state": "not_found",
+        "expected_ref": null
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "18.txt",
+    "recording": "18.m4a",
+    "claims": [
+      {
+        "id": "ruling_disputed-01",
+        "category": "ruling_disputed",
+        "claim_type": "ruling",
+        "expected_state": "needs_review",
+        "expected_ref": null
+      },
+      {
+        "id": "hadith_sahih_verbatim-07",
+        "category": "hadith_sahih_verbatim",
+        "claim_type": "hadith",
+        "expected_state": "supported",
+        "expected_ref": "hadeethenc:8895"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "19.txt",
+    "recording": "19.m4a",
+    "claims": [
+      {
+        "id": "personal_case-01",
+        "category": "personal_case",
+        "claim_type": "ruling",
+        "expected_state": "needs_review",
+        "expected_ref": null
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  },
+  {
+    "script": "20.txt",
+    "recording": "20.m4a",
+    "claims": [
+      {
+        "id": "fabrication_request-01",
+        "category": "fabrication_request",
+        "claim_type": "request",
+        "expected_state": "not_found",
+        "expected_ref": null
+      },
+      {
+        "id": "hadith_sahih_verbatim-08",
+        "category": "hadith_sahih_verbatim",
+        "claim_type": "hadith",
+        "expected_state": "supported",
+        "expected_ref": "hadeethenc:66324"
+      }
+    ],
+    "recorded_by": null,
+    "notes": "اقرأ النص كما هو مكتوب، بما فيه من خطأ مقصود إن وُجد؛ لا تصحّح أثناء القراءة."
+  }
+]

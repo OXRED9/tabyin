@@ -170,10 +170,10 @@ def _refine_open_quote(claim: RawClaim, score) -> None:
     """A quotation found after a marker in unpunctuated text (a transcript) has no reliable end.
     Keep the longest prefix that still matches a source; ``score(text) -> similarity``."""
     words = words_with_offsets(claim.quote)
-    if claim.origin != "marker" or len(words) <= _PREFIX_LENGTHS[0]:
-        return
+    if claim.origin != "marker" or claim.closed or len(words) <= _PREFIX_LENGTHS[0]:
+        return  # a quotation closed by quotation marks is taken exactly as written
     best_n, best_sim = len(words), score(claim.quote)
-    if best_sim >= 0.95:
+    if best_sim >= 0.80:
         return
     for n in _PREFIX_LENGTHS:
         if n >= len(words):

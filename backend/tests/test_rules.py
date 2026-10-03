@@ -58,6 +58,15 @@ def test_ayah_rules():
     assert ayah(found=False).state == S.not_found
 
 
+def test_short_quotes_need_more_similarity_before_they_count_as_partial():
+    # 6 words resemble some span of the Mushaf by chance up to ~0.70; 12+ words do not pass 0.60
+    assert ayah(similarity=0.70, quoted_words=6).state == S.not_found
+    assert ayah(similarity=0.74, quoted_words=6).state == S.contradicted
+    assert ayah(similarity=0.62, quoted_words=14).state == S.contradicted
+    assert hadith(similarity=0.66, quoted_words=7).state == S.not_found
+    assert hadith(similarity=0.66, quoted_words=14).state == S.needs_review
+
+
 def test_ayah_actions_follow_states():
     assert ayah(exact=True, similarity=1.0).action == Action.adopt
     assert ayah(similarity=0.90).action == Action.correct_wording
