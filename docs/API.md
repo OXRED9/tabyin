@@ -285,17 +285,42 @@ Used only when client-side rendering fails. Nothing is stored; no timestamp or i
 
 ### What a verdict card shows (client and server render the same content)
 
-| Element | Source |
-|---|---|
-| Brand header | logo mark, «تبيّن», «بطاقة تثبّت» / "Verification card" |
-| State badge | colour + icon + word (`override_state ?? card.state`); «حالة معدَّلة بمراجعة بشرية» when overridden |
-| Claim | `card.text_as_quoted`, truncated to 240 characters with «…»; type is reduced before lines are cut |
-| Verdict line | first sentence of `note_ar` / `note_en` |
-| Reference | `card.source.ref` |
-| Grading | `card.grades[0].text` verbatim + its `source_name`; «+N» when there are more; «الحكم غير متاح من المصدر» when `grade_unavailable` |
-| Source domain | hostname of `card.source.url` |
-| `not_found` | the abstention line + `meta.abstention_verse` (text and reference) instead of reference/grading |
-| Footer | «تحقّق بنفسك على تبيّن» + app URL + QR code of the app URL + the transparency line |
+The v2 card (`docs/DESIGN.md` §8): paper inside one hairline frame, no band, pill or shadow. The
+blocks, top to bottom:
 
-Never drawn: date or time, reviewer name, video URL or timestamp, anything about the user.
-A summary card shows the total and the count per state (colour + icon + word), no claim text.
+| Block | What is drawn | Source |
+|---|---|---|
+| Header | logotype «تبيّن» in Naskh; the label «بطاقة تثبّت» / "Verification card" in Plex, quiet; a hairline | fixed |
+| State | the ring glyph and the state word in the state's ink — «مؤيَّد», «مؤيَّد مع ملاحظة», «يحتاج مراجعة», «لا مصدر», «مخالف للمصدر». Gold appears only in the verified ring. When a reviewer changed the state, «حالة معدَّلة بمراجعة بشرية» follows the word; no name | `override_state ?? card.state` |
+| Verdict sentence | one sentence in Plex, at most 3 lines (2 on the square card). Not drawn when a reviewer changed the state: the rule's sentence explains the engine's state, not the reviewer's | first sentence of `note_ar` / `note_en` (up to the first `.`, `؟`, `?` or `!`) |
+| «النص المتداول» | the claim in Naskh, in the state's ink, underlined in the state's colour — as the passage looks on the page | `card.text_as_quoted`, cut at 240 characters at a word boundary with «…» |
+| «في المصدر» | the source's own wording between two hairlines: Amiri Quran inside ﴿ ﴾ for a verse, Amiri for anything else. Words that differ from the claim are underlined in the state's colour | `card.source.text`; the underlined words are the source side of `card.diff`'s `replace` steps |
+| Takhrij line | the reference; then each grading as «its first line, verbatim», the muhaddith when the source names one, and the grading's source. Several gradings follow one another in the order given while they fit whole, the rest are counted «(+N)»; a grading is never shortened. «الحكم غير متاح من المصدر» when there is none. A verse has its reference only | `card.source.ref`, `card.grades[].text` / `.scholar` / `.source_name`, `card.grade_unavailable` |
+| …instead, `not_found` | «لا نُصدر حكماً بلا مصدر، ولا نولّد بديلاً.», then the abstention verse between the hairlines and its reference. A source the card may carry is not drawn | `meta.abstention_verse` |
+| …instead, no source (`needs_review`, level C) or level D | nothing is quoted: the reason is the verdict sentence above, and the referral sentence below stands in the source's place. A personal case (level D) never shows a source | — |
+| Action | the canonical action of the drawn state, as a sentence: «الإجراء المقترح: …» | `STATE_ACTION[override_state ?? card.state]` |
+| Footer | a hairline; «تحقّق بنفسك على تبيّن», the app address without its scheme, and its QR code; the transparency line | app URL |
+
+Never drawn: date or time, reviewer name, the source's URL, video URL or timestamp, who the content
+attributes the text to, anything about the user.
+
+**Fitting** (`docs/DESIGN.md` §8, as the server applies it — deterministic). Type is reduced
+before anything is cut: the claim from 44px down to 34 and the source's wording from 46 (a verse)
+or 40 down to 30, two pixels at a step, together. The square card sets its other type and spacing
+at 0.86 of the portrait's. If the card still does not hold everything at the smallest sizes:
+
+- **a verse is never cut inside the quoted span.** The card shows the part of the verse that
+  corresponds to the quotation, with «…» on each side that was cut; if that part does not fit
+  beside the claim, the claim gives up lines (down to one, ending in «…»); if it cannot fit at all,
+  the verse's words are not drawn and a sentence says so. Its reference is always drawn.
+- **a narration or any other wording** is cut at a word boundary with «…». It starts at the quoted
+  part (with a leading «…») when the text before it would push that part off the card. The claim
+  stays whole as long as one line of the wording fits; on the square card a claim near 240
+  characters gives up lines so that the wording keeps at least one.
+
+**The summary card** (`kind = "summary"`) has the same frame, header (label «خلاصة التحقق») and
+footer. It shows the report's summary sentence in Plex 600 — «سبعة استشهادات:» and then one clause
+per state present, each on its line with its ring glyph and in its state's ink («اثنان مؤيَّدان،» …
+«وواحد مخالف للمصدر»), the same wording as the page's summary. `human_reviewed` adds «حالة معدَّلة
+بمراجعة بشرية». No claim text. The title of what was checked (§8) is not drawn by the server:
+the request does not carry it.

@@ -30,7 +30,7 @@ The source code in this repository is released under the MIT licence (`LICENSE`)
 | React, Vite, Tailwind CSS, shadcn/ui, Radix UI, lucide-react | MIT / ISC |
 | IBM Plex Sans Arabic and IBM Plex Sans (© IBM Corp.): the tool's own words. Self-hosted in the UI from `@fontsource/ibm-plex-sans-arabic` (400, 600; 700 for the verdict card only) and `@fontsource/ibm-plex-sans` (Latin 400, 600; 700 for the verdict card only) | SIL Open Font License 1.1 |
 | Amiri (400, Arabic and Latin files) and Amiri Quran (© The Amiri Project Authors): the text under examination, source quotes, the headline and logotype (Amiri); verses (Amiri Quran). Self-hosted in the UI from `@fontsource/amiri` and `@fontsource/amiri-quran` | SIL Open Font License 1.1 |
-| TTF copies of IBM Plex Sans Arabic and Amiri Quran, with their OFL texts, in `backend/tabayyun/assets/fonts/` for server-side verdict cards | SIL Open Font License 1.1 |
+| TTF copies of IBM Plex Sans Arabic (400, 600, 700), Amiri Quran and Amiri Regular 1.002 (added for the v2 card: `Amiri-Regular.ttf` and its `OFL.txt` from the Google Fonts repository, `github.com/google/fonts` → `ofl/amiri`, unmodified), each with its OFL text, in `backend/tabayyun/assets/fonts/` for server-side verdict cards. Latin is drawn with the Plex Arabic file, which carries the Latin letters | SIL Open Font License 1.1 |
 | Pillow (with libraqm, HarfBuzz, FriBiDi), segno | MIT-CMU / MIT, LGPL (FriBiDi, system library) / BSD-3-Clause |
 | html-to-image, qrcode-generator (UI) | MIT |
 

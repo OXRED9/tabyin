@@ -249,3 +249,44 @@ plainly below, with the command that finishes the job in `OPERATIONS.md`.
 64. **A photo's metadata never leaves the server**: the image is re-encoded before it is sent to the
     vision model, which drops EXIF (including location).
 
+
+## The verdict card, v2 — server renderer (`report/share_card.py`)
+
+Decided while building `DESIGN.md` §8 on the server; the browser's card must match. Items marked ⚑
+touch how a religious text is shown and wait for Sulaiman.
+
+65. **The card's state word is the short one of `DESIGN.md` §2.2** («مؤيَّد», «يحتاج مراجعة», «لا
+    مصدر»…), as §8 draws it beside the ring. This replaces, for the card only, the part of item 55
+    that kept the full canonical names there; a `not_found` card still abstains in words (the rule's
+    sentence, «لا نُصدر حكماً بلا مصدر، ولا نولّد بديلاً.» and the abstention verse).
+66. ⚑ **A verse is drawn whole, or as the quoted part, or not at all.** §8 says a verse is never cut
+    inside the quoted span. Two cases it leaves open were decided the same way: when the quoted part
+    fits only if the claim is shorter, the claim gives up lines (it ends in «…»); when the quoted
+    part cannot fit at all (the whole of a very long verse was quoted), the verse's words are not
+    drawn and a sentence stands in their place («نص الآية أطول من أن تسعه البطاقة؛ يُقرأ كاملاً في
+    موضعه من المصحف.» — new wording, `TODO-SULAIMAN-REVIEW`). The reference is always drawn. When
+    the quoted part cannot be located in the verse, the whole verse counts as that part.
+67. ⚑ **Several gradings are drawn in the order given, each whole, while they fit in three lines;
+    the rest are counted «(+N)».** None is preferred and none is shortened: a grading too long for
+    the card is left out rather than cut. As in the page's notes, a grading's first line is the
+    grading; remarks a source adds on later lines are not on the card.
+68. **A reviewer's state comes without the rule's sentence.** The sentence explains the engine's
+    state («النص مطابق لنص المصحف الشريف.») and would contradict a different state set by a person;
+    the card shows the state, «حالة معدَّلة بمراجعة بشرية» and the action of the reviewer's state. A
+    reviewer's «لا مصدر» also hides the source the engine had matched.
+69. **A claim with nothing to quote shows nothing in the source's place but the referral.** For
+    `needs_review` without a source and for levels C and D the reason is already the sentence under
+    the state (the rule's note), so it is not repeated; the action sentence («الإجراء المقترح: إحالة
+    المسألة إلى أهل العلم.») follows the claim. A personal case never shows a source, even if one is
+    attached to the card.
+70. **Only replaced words are underlined in the source's wording** — the `replace` steps of
+    `card.diff`, as the page's collation marks them. A word the quotation left out from its middle is
+    not marked (open: it could be). `card.diff` covers the matched span only and, for a verse, may
+    spell words as the matcher's plain text does, so the renderer aligns it to `source.text` by
+    letters (no model) before underlining.
+71. **Fitting choices §8 does not spell out**: the square card sets its fixed type and spacing at
+    0.86 of the portrait's (the claim's and the source's ranges are the same on both); a narration
+    that must be cut starts at the quoted part when its opening would push that part off the card;
+    the claim stays whole while at least one line of the source's wording fits, and gives up lines
+    after that. The summary card does not draw the title of what was checked: `ShareCardRequest`
+    does not carry it.
