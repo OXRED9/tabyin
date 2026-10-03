@@ -71,7 +71,8 @@ Quran matching, hadith retrieval, the rules and the report need no network at al
 
 - Memory: about 320 MB resident on the host (281 MiB inside the container) with every index loaded and after serving requests. Local Whisper
   (`small`) adds more than 1 GB and is for development machines only.
-- Disk: image data ≈ 110 MB (hadith books index 85 MB, HadeethEnc 17 MB, Quran 2 MB).
+- Disk: image data ≈ 110 MB (hadith books index 85 MB, HadeethEnc 17 MB, Quran 2 MB); the whole
+  image is 1.42 GB (Python, ffmpeg and the dependencies), built in about 5 minutes.
 - Startup: indexes build in about 1 second.
 - Latency in lexical-only mode: a pasted text with a verse, a narration and a request — 0.6 s end
   to end (first card under 0.1 s); a 3-minute YouTube clip with captions — about 3 s; the same

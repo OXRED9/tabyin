@@ -16,7 +16,9 @@ and unresolved as of 3 October 2026.
 - **Cloud speech-to-text has not been run**; only YouTube captions and local faster-whisper were.
 - **Performance targets with the LLM are unmeasured.** In lexical-only mode a pasted text completes
   in under a second and a 3-minute captioned clip in 3–8 seconds.
-- **The app is not deployed.** The backend image builds and runs locally (health check, a verification and Dorar access were tested inside the container); the full image including the frontend stage and a public deployment are still to do.
+- **The app is not deployed.** The complete image (frontend + API + data) builds and was run locally:
+  the UI, the health check and a YouTube verification were tested inside the container. A public
+  deployment has not been made.
 
 ## Coverage
 
