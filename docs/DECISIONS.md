@@ -195,4 +195,38 @@ plainly below, with the command that finishes the job in `OPERATIONS.md`.
 51. **The development server listens on the local network** (`--host 0.0.0.0`) so the UI can be opened
     from a phone on the same Wi-Fi; it is started with the OpenRouter key blanked, so that session
     cannot spend credit.
+52. **The sheet widens when a verification starts, not when it ends.** `DESIGN.md` §3 says the sheet
+    widens once the report is complete, and §3.2 says notes take their place in the margin while the
+    request runs. Both cannot hold without the text re-wrapping at the end, so the sheet takes its
+    text-and-margin width on «تحقّق»: the text is set once, in its final measure, and nothing moves
+    when notes arrive or the report completes (measured layout shift for the clip scenario: 0.002 at
+    1440px, 0.003 at 390px). A pasted text is put on the page at once; a clip or an article waits on
+    ruled lines.
+53. **One composer, four request types.** A file wins over the field; a field whose whole content is
+    one address is a link (YouTube, TikTok and other known video hosts → `video_url`, anything else →
+    `article_url`); everything else is `text`. Because an unknown host is a guess, the tag offers
+    «هذا رابط مقطع / هذا رابط مقال» to correct it, which is what choosing the tab used to do. The
+    backend's error hints still name the old tabs («تبويب «نص»»); the UI swaps such a hint for its
+    own wording until `report/messages.py` is updated.
+54. **⚑ The suggested action is said as a sentence** in the open note («الإجراء المقترح: تصحيح اللفظ
+    على ما في المصدر.»). The five canonical action names are unchanged in the exports and the
+    reviewer's menu; the five sentences are new wording and are tagged `TODO-SULAIMAN-REVIEW` in
+    `frontend/src/lib/dictionary.ts`.
+55. **The margin's state words are the short ones from `DESIGN.md` §2.2** («مؤيَّد», «يحتاج مراجعة»,
+    «لا مصدر»…). The full canonical names («مؤيَّد بمصدر معتمد», «يحتاج مزيد تحقق», «لم يُعثر على مصدر
+    موثوق») stay in the exports, the verdict card, the reviewer's menu and the note's reference line.
+56. **Left out because the plan has no place for them:** the motto verse under the first screen's
+    headline (the plan keeps the headline alone), the phone's fixed «تحقّق» bar (the wide button is
+    on the first screen), and the history button in the header (history opens from «آخر ما تحققتَ
+    منه», in the composer and in a report's footer). The data and the functions behind them are
+    untouched.
+57. **Inter is gone from the verdict card too.** The card's English text falls to IBM Plex Sans,
+    which is what its server-side twin already draws Latin with (the Plex Arabic TTF); weight 700 of
+    both Plex faces is declared for the card alone. Nothing else in the card changed.
+58. **Mock mode has a direct route to a report**: `?mock=1&scenario=<name>&autorun=1` submits the
+    scenario's input on load (for Lighthouse and the screenshot scripts). It does nothing without
+    `mock`, and works in the production build.
+59. **The v1 capture scripts are kept as a record, not ported.** `scripts/screenshots.mjs` and
+    `scripts/screenshots-phase2.mjs` drive the first UI (tabs, cards) and no longer match the page;
+    `scripts/screenshots-v2.mjs` and `scripts/a11y.mjs` are the ones that run.
 

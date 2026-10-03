@@ -28,9 +28,16 @@ The source code in this repository is released under the MIT licence (`LICENSE`)
 | faster-whisper (optional), CTranslate2 | MIT |
 | openai SDK (used as the OpenAI-compatible client for OpenRouter) | Apache-2.0 |
 | React, Vite, Tailwind CSS, shadcn/ui, Radix UI, lucide-react | MIT / ISC |
-| IBM Plex Sans Arabic, Inter, Amiri Quran (self-hosted via Fontsource in the UI; TTF copies with their OFL texts in `backend/tabayyun/assets/fonts/` for server-side verdict cards) | SIL Open Font License 1.1 |
+| IBM Plex Sans Arabic and IBM Plex Sans (© IBM Corp.): the tool's own words. Self-hosted in the UI from `@fontsource/ibm-plex-sans-arabic` (400, 500, 600; 700 for the verdict card only) and `@fontsource/ibm-plex-sans` (Latin 400, 500, 600; 700 for the verdict card only) | SIL Open Font License 1.1 |
+| Amiri (400, 700) and Amiri Quran (© The Amiri Project Authors): the text under examination, source quotes, the headline and logotype (Amiri); verses (Amiri Quran). Self-hosted in the UI from `@fontsource/amiri` and `@fontsource/amiri-quran` | SIL Open Font License 1.1 |
+| TTF copies of IBM Plex Sans Arabic and Amiri Quran, with their OFL texts, in `backend/tabayyun/assets/fonts/` for server-side verdict cards | SIL Open Font License 1.1 |
 | Pillow (with libraqm, HarfBuzz, FriBiDi), segno | MIT-CMU / MIT, LGPL (FriBiDi, system library) / BSD-3-Clause |
 | html-to-image, qrcode-generator (UI) | MIT |
+
+Fonts are never loaded from a CDN: the files are bundled from the Fontsource packages and served
+from the app's own origin. Inter was the Latin UI face of the first design; the v2 rebuild removed
+it (`@fontsource-variable/inter` is no longer a dependency and no Inter file is shipped). The King
+Fahd Complex fonts are not shipped either (see `DESIGN.md` §2.3).
 
 ## Third-party services
 
