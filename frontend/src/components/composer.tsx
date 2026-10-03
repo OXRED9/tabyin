@@ -60,6 +60,8 @@ interface ComposerProps {
   /** The picture being read, or read, if there is one. */
   image: ImageReading | null
   onImage: (file: File) => void
+  /** Text taken from the clipboard by the «لصق» button: placed in the field and, unless very short, verified. */
+  onPasteText: (text: string) => void
   onImageRemove: () => void
   examples: MetaExample[]
   onExample: (example: MetaExample) => void
@@ -90,6 +92,7 @@ export function Composer({
   notice,
   image,
   onImage,
+  onPasteText,
   onImageRemove,
   examples,
   onExample,
@@ -182,7 +185,11 @@ export function Composer({
     }
   }
 
-  /** The clipboard's picture goes to the reader; otherwise its text goes into the field. */
+  /**
+   * The «لصق» button. The clipboard's picture goes to the reader, which stops to ask as always;
+   * its text goes into the field and is verified at once (`onPasteText`). Typing, and a paste
+   * from the keyboard, never start anything.
+   */
   const pasteClipboard = async () => {
     try {
       if (typeof navigator.clipboard.read === 'function') {
@@ -198,12 +205,12 @@ export function Composer({
         for (const item of items) {
           if (!item.types.includes('text/plain')) continue
           const text = await (await item.getType('text/plain')).text()
-          if (text.trim()) onChange({ text, linkAs: null })
+          if (text.trim()) onPasteText(text)
           break
         }
       } else {
         const text = await navigator.clipboard.readText()
-        if (text.trim()) onChange({ text, linkAs: null })
+        if (text.trim()) onPasteText(text)
       }
     } catch {
       /* Reading was refused or the clipboard is empty: the keyboard's paste still works. */

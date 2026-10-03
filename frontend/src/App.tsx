@@ -55,6 +55,9 @@ function draftFromInput(input: SubmittedInput | VerifyInput): InputDraft {
   return { ...emptyDraft, text: input.url ?? '', linkAs: input.input_type }
 }
 
+/** A pasted text shorter than this is placed in the field, not verified. */
+const MIN_PASTE_TO_VERIFY = 10
+
 function Shell() {
   const { t, lang, dir } = useI18n()
   const { state, start, cancel, reset, restore, clearError, showError } = useVerify(lang)
@@ -247,6 +250,19 @@ function Shell() {
       else setShareUnavailable(true)
     })
   }, [showError])
+
+  // The «لصق» button: what it takes from the clipboard is put in the field and verified at once.
+  // A few characters are not something to verify: they are only placed. (A picture goes to the
+  // reader instead, which asks first; typing and a keyboard paste never start anything.)
+  const pasteAndVerify = useCallback(
+    (text: string) => {
+      const next: InputDraft = { ...draft, text, linkAs: null }
+      patchDraft({ text, linkAs: null })
+      if (Array.from(text.trim()).length >= MIN_PASTE_TO_VERIFY) submit(next)
+      else focusField()
+    },
+    [draft, focusField, patchDraft, submit],
+  )
 
   const applyExample = useCallback(
     (example: MetaExample) => {
@@ -509,6 +525,7 @@ function Shell() {
                   notice={shareUnavailable ? t.pwa.shareUnavailable : null}
                   image={image}
                   onImage={readImageFile}
+                  onPasteText={pasteAndVerify}
                   onImageRemove={() => {
                     // The error about a picture leaves with the picture.
                     if (image?.status === 'failed') clearError()
