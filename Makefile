@@ -1,7 +1,7 @@
 # Tabayyun — common tasks. `make help` lists them.
 PY := backend/.venv/bin/python
 
-.PHONY: help setup data api web test test-live eval testset audio-scripts build docker
+.PHONY: help setup data api web test test-llm test-live eval testset audio-scripts build docker key models-check models-verify models-bakeoff-rest
 
 help:            ## list tasks
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -19,8 +19,11 @@ api:             ## run the API on :8765 with reload
 web:             ## run the frontend dev server (proxies /api to :8765)
 	cd frontend && npm run dev
 
-test:            ## offline tests (deterministic, no network, no LLM)
-	cd backend && .venv/bin/pytest -q -m "not network"
+test:            ## offline tests (deterministic, no network, no model calls)
+	cd backend && .venv/bin/pytest -q
+
+test-llm:        ## the 8 content-safety cases through the real model (paid: about half a cent)
+	cd backend && .venv/bin/pytest -q -m llm
 
 test-live:       ## tests that call the live sources
 	cd backend && .venv/bin/pytest -q -m network
@@ -30,6 +33,28 @@ testset:         ## rebuild eval/testset/claims.jsonl from the sources
 
 eval:            ## three-system comparison, 3 runs; updates eval/results and the README block
 	$(PY) eval/run.py --runs 3
+
+key:             ## prompt for the OpenRouter key (not echoed), validate it, write it to .env
+	$(PY) scripts/set_openrouter_key.py
+
+models-check:    ## one tiny Arabic test per configured model: latency, cost, pass/fail (about 1 cent)
+	$(PY) scripts/check_models.py
+
+# The measurements below need a funded OpenRouter balance (audio calls need at least $0.50 on it).
+# They run one after another with few calls in flight; the amounts are estimates from the first runs.
+AUDIO_CANDIDATES := google/gemini-3.5-flash-lite,google/gemini-3.1-flash-lite,qwen/qwen3.8-omni-flash,xiaomi/mimo-v2.6-flash
+OCR_RERUN := google/gemini-3.5-flash-lite,google/gemini-3.1-flash-lite,qwen/qwen3.8-flash,z-ai/glm-5.3-flash,qwen/qwen3.7-flash
+
+models-verify:   ## the measurements still owed, cheapest first (about $0.25 in total)
+	$(PY) scripts/check_models.py || true
+	$(PY) scripts/check_models.py --only audio --audio "$(AUDIO_CANDIDATES)" --write eval/results/model_check_audio.md || true
+	$(PY) eval/bakeoff_extract.py --concurrency 2 --reasoning-effort none --models "$$(grep '^MODEL_EXTRACT=' .env | cut -d= -f2)"
+	$(PY) eval/ocr_exactness.py --concurrency 2 --models "$(OCR_RERUN)"
+	$(PY) scripts/transcribe_sample.py --seconds 60
+	$(PY) eval/run.py --runs 1 --concurrency 2
+
+models-bakeoff-rest:  ## the bake-off candidates that were refused for lack of credit (about $0.26; Sonnet 5.5 is $0.17 of it)
+	$(PY) eval/bakeoff_extract.py --concurrency 2 --models "google/gemini-3.8-flash,qwen/qwen3.7-plus,deepseek/deepseek-v4-pro-0813,anthropic/claude-sonnet-5.5"
 
 audio-scripts:   ## 20 reading scripts for the audio test
 	$(PY) eval/make_audio_scripts.py

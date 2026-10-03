@@ -175,6 +175,8 @@ export const ar = {
     lexicalBody:
       'نموذج اللغة غير متاح الآن، فاقتصر الفحص على الآيات والأحاديث المنقولة بلفظها. قد لا تُلتقط الأحكام والروايات بالمعنى.',
     dorarUnavailable: 'أحكام المحدّثين من «الدرر السنية» غير متاحة الآن.',
+    backupModelBody:
+      'النموذج اللغوي الأساسي غير متاح الآن، فأُجيب هذا الطلب بنموذج احتياطي. قد يفوته بعض الاستشهادات؛ الأحكام نفسها ما زالت تصدر عن القواعد والمصادر.',
     noClaimsTitle: 'لم نجد في هذا المحتوى استشهاداً دينياً نتحقق منه',
     noClaimsHint: 'جرّب نصاً فيه آية أو حديث أو قول منسوب.',
     finishTitle: 'اكتمل التحقق',
@@ -570,6 +572,8 @@ export const en: Dictionary = {
     lexicalBody:
       'The language model is unavailable, so only verbatim verses and hadith were checked. Rulings and paraphrased narrations may be missed.',
     dorarUnavailable: 'Scholars’ gradings from Dorar.net are unavailable right now.',
+    backupModelBody:
+      'The main language model is unavailable right now, so a backup model handled this request. It may miss some citations; the verdicts themselves still come from the rules and the sources.',
     noClaimsTitle: 'We found no religious citation to verify in this content',
     noClaimsHint: 'Try a text that contains a verse, a hadith or an attributed saying.',
     finishTitle: 'Verification complete',

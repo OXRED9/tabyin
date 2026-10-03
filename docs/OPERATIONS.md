@@ -5,7 +5,7 @@
 ### Docker (one command after the env file)
 
 ```bash
-cp .env.example .env        # optional: add ANTHROPIC_API_KEY / OPENAI_API_KEY
+backend/.venv/bin/python scripts/set_openrouter_key.py   # optional: prompts for the OpenRouter key, validates it, writes .env
 docker compose up --build   # → http://localhost:8080
 ```
 
@@ -21,18 +21,31 @@ cd backend && .venv/bin/uvicorn tabayyun.main:app --reload --port 8765
 cd frontend && npm install && npm run dev                    # http://localhost:5173, proxies /api → :8765
 ```
 
-Tests: `cd backend && .venv/bin/pytest -q -m "not network"` (offline, deterministic) and
-`-m network` for the live-source tests. Evaluation: `backend/.venv/bin/python eval/run.py`.
+Tests: `cd backend && .venv/bin/pytest -q` (offline, deterministic, no model calls); `-m network`
+runs the live-source tests and `-m llm` the eight content-safety cases through the real model
+(paid, about half a cent). Evaluation: `backend/.venv/bin/python eval/run.py`.
+Model checks: `make models-check` (one tiny test per configured model), `make models-verify` and
+`make models-bakeoff-rest` (the measurements listed under "Models" below).
 
 ## Configuration (`.env`, documented in `.env.example`)
 
 | Variable | Default | Effect |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | primary LLM. Without any key the app runs in lexical-only mode. |
-| `ANTHROPIC_MODEL` | `claude-opus-5` | any Claude model id (`claude-sonnet-5`, `claude-haiku-4-5` cost less) |
-| `ANTHROPIC_EFFORT` | `medium` | reasoning depth vs latency for extraction |
-| `OPENAI_API_KEY` | — | fallback LLM, and cloud speech-to-text |
-| `TRANSCRIPTION_PROVIDER` | `auto` | captions → OpenAI transcription → local faster-whisper (if installed) |
+| `OPENROUTER_API_KEY` | — | the only model key. Without it the app runs in lexical-only mode. |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | one OpenAI-compatible endpoint for text, vision and audio |
+| `OPENROUTER_APP_URL` / `OPENROUTER_APP_TITLE` | `PUBLIC_URL` / `Tabayyun` | sent as `HTTP-Referer` and `X-Title` |
+| `MODEL_EXTRACT` | `qwen/qwen3.8-flash` | finds citations, classifies the level, points at retrieved texts |
+| `MODEL_VISION` | `qwen/qwen3.7-flash` | reads the text of an image exactly as written |
+| `MODEL_AUDIO` | `google/gemini-3.5-flash-lite` (provisional) | speech → timestamped segments |
+| `MODEL_CHEAP` | `deepseek/deepseek-v4-flash` | one-line topic summaries, build-time chores |
+| `MODEL_FALLBACK` | `nvidia/nemotron-3-super-120b-a12b:free` | used after the primary fails twice, or past the daily limit |
+| `MODEL_BASELINE_LLM` | `openai/gpt-6.1-sol` | the "general chatbot" baseline in `eval/run.py` only |
+| `LLM_REASONING_EFFORT` | `low` | `none`/`minimal`/`low`/`medium`/`high` for models that reason first |
+| `DAILY_SPEND_LIMIT_USD` | `10` | past it, every call uses `MODEL_FALLBACK` until midnight UTC |
+| `EMBEDDING_PROVIDER` / `EMBEDDING_MODEL` | `local` / `intfloat/multilingual-e5-small` | local only, never through OpenRouter (not used by a shipped feature yet) |
+| `TRANSCRIPTION_PROVIDER` | `auto` | captions → `MODEL_AUDIO` → local faster-whisper (if installed) |
+| `AUDIO_CHUNK_SECONDS` | `600` | longer recordings are split and their timestamps offset |
+| `DEV_MODE` | `false` | `true` enables `GET /admin/usage` |
 | `DORAR_ENABLED` | `true` | live gradings from Dorar |
 | `MAX_TEXT_CHARS` / `MAX_UPLOAD_MB` / `MAX_MEDIA_MINUTES` | 60000 / 50 / 30 | input limits |
 | `EXAMPLE_VIDEO_URL` | — | the YouTube example on the first screen (hidden when empty) |
@@ -42,23 +55,25 @@ Tests: `cd backend && .venv/bin/pytest -q -m "not network"` (offline, determinis
 
 One container serves the API and the built frontend.
 
-- **Render**: `render.yaml` is a Blueprint for a Docker web service with `/health` as the health
-  check. Create the service from the repository and enter the API keys in the dashboard.
-- **Fly.io**: `fly launch --dockerfile Dockerfile` then `fly secrets set ANTHROPIC_API_KEY=…`;
-  internal port 8080.
+- **Fly.io** (`fly.toml`): `fly launch --copy-config --no-deploy`, then
+  `fly secrets set OPENROUTER_API_KEY=… PUBLIC_URL=https://<app>.fly.dev OPENROUTER_APP_URL=https://<app>.fly.dev`
+  and `fly deploy`. The model IDs are in `fly.toml` (they are not secrets). One shared-CPU machine
+  with 1 GB that sleeps when idle.
+- **Render** (`render.yaml`): a Blueprint for a Docker web service with `/health` as the health
+  check. Create the service from the repository and enter `OPENROUTER_API_KEY` in the dashboard.
 - **Any Docker host**: `docker run --env-file .env -p 8080:8080 tabayyun`.
 - **Keep-alive**: `.github/workflows/keepalive.yml` requests `/health` every 10 minutes once the
   repository variable `TABAYYUN_URL` is set. `.github/workflows/tests.yml` runs the offline tests.
 
-`GET /health` reports the mode (`full` / `lexical_only`), which providers are configured, index
-sizes and whether Dorar was reachable on the last call.
+`GET /health` reports the mode (`full` / `lexical_only`), the model configured for each task, whether
+the daily spend guard is active, index sizes and whether Dorar was reachable on the last call.
 
 ## Dependencies and what happens when each fails
 
 | Dependency | Needed for | If it is down |
 |---|---|---|
-| Anthropic API | claim extraction, paraphrase and evidence pointing | automatic failover to OpenAI |
-| OpenAI API | LLM fallback; speech-to-text | lexical-only mode with a visible "reduced coverage" notice; captions or local Whisper for audio |
+| OpenRouter (the primary model of a task) | claim extraction, paraphrase and evidence pointing, image reading, speech-to-text | one retry on 429/5xx/timeout, then `MODEL_FALLBACK` for that request; the report says coverage is reduced, and nothing the backup model points at can become `supported` |
+| OpenRouter (primary and fallback both failing, or no key) | the same | lexical-only mode with a visible "reduced coverage" notice; captions or local Whisper for audio; a readable error for images |
 | Dorar.net | scholars' gradings | «الحكم غير متاح حالياً»; `needs_review` unless the narration is in al-Bukhari/Muslim or HadeethEnc |
 | QuranEnc.com | English translation of verses | the verse is shown without a translation |
 | YouTube / TikTok | video input | readable error asking for a file upload or a pasted transcript |
@@ -78,23 +93,60 @@ Quran matching, hadith retrieval, the rules and the report need no network at al
   to end (first card under 0.1 s); a 3-minute YouTube clip with captions — about 3 s; the same
   length without captions, local Whisper `small` on CPU — about 57 s. Evaluation: 0.08–0.13 s per
   claim (Dorar answers cached after the first run).
-- LLM latency has not been measured (no key was available); see `LIMITATIONS.md`.
+- With the model: see "Models" below — the chosen extraction model takes 13–28 s on a short text at `LLM_REASONING_EFFORT=low`.
 
-## Cost estimate
+## Models (all through OpenRouter)
 
-These are estimates from list prices, **not measurements** — no paid call has been made yet.
+IDs and list prices were read from the live catalog (`GET /api/v1/models`) on 3 October 2026; costs
+marked "measured" are what the API reported for the calls made that day. Reasons for each choice,
+and what is still unmeasured, are in `DECISIONS.md` (items 33–47).
 
-| Item | Assumption | Estimate |
-|---|---|---|
-| Claim extraction, per document | ≈ 4k input + 2k output tokens | Claude Opus 5 ($5/$25 per MTok): ≈ $0.07 · Claude Sonnet 5 ($2/$10): ≈ $0.03 · Claude Haiku 4.5 ($1/$5): ≈ $0.014 |
-| Pointing call, per paraphrased narration or ruling | ≈ 2k input + 0.2k output | Opus 5: ≈ $0.015 |
-| Speech-to-text | OpenAI `whisper-1`, $0.006 per minute | 5-minute clip: $0.03 (zero when the platform has captions) |
-| Sources | Tanzil, QuranEnc, HadeethEnc, Dorar, Open-Hadith-Data | free |
-| Hosting | one small container (512 MB) | free tier for the demo; a few dollars a month for an always-on instance |
+| Task | Model (`.env`) | List price per million tokens (in / out) | Cost | Latency |
+|---|---|---|---|---|
+| Claim extraction, level, pointing | `MODEL_EXTRACT=qwen/qwen3.8-flash` | $0.15 / $0.47 | measured: $0.0008 per short text (extraction + pointing); about $0.0012 for a 5k-in / 1k-out document | measured: 13 s for one call, 28 s per item with four items in flight |
+| Image → text | `MODEL_VISION=qwen/qwen3.7-flash` | $0.03 / $0.13 | measured: $0.00006 per image | measured: 4–6 s |
+| Speech → timestamped segments | `MODEL_AUDIO=google/gemini-3.5-flash-lite` | $0.30 / $2.50 (audio input $0.30) | **not measured** | **not measured** |
+| Topic line, build-time chores | `MODEL_CHEAP=deepseek/deepseek-v4-flash` | $0.028 / $0.056 | measured: $0.00005 per call | measured: 7 s |
+| Fallback | `MODEL_FALLBACK=nvidia/nemotron-3-super-120b-a12b:free` | free | $0 | measured: 8 s |
+| Eval baseline only | `MODEL_BASELINE_LLM=openai/gpt-6.1-sol` | $2 / $10 | about $0.10 per 79-item run (estimate) | measured: 3 s |
+| Sources | Tanzil, QuranEnc, HadeethEnc, Dorar, Open-Hadith-Data | free | | |
+| Hosting | one shared-CPU machine, 1 GB, sleeps when idle | | a few dollars a month if it never sleeps | |
 
-A typical verification (one article or a five-minute clip) therefore costs a few cents with the
-default model and about one cent with a smaller one. Verbatim verses and narrations cost nothing:
-they are decided before any model is called.
+A typical verification (an article or a five-minute captioned clip) therefore costs about a tenth of
+a cent. Verbatim verses and narrations cost nothing: they are decided before any model is called.
+
+### Cost control
+
+- **Usage log**: every model call is written to `data/cache/usage.sqlite` — time, task, model, token
+  counts, cost as reported by the API, latency, success, whether it was the fallback, and the error
+  *type*. No prompt, no answer, no user text.
+- **`GET /admin/usage`** (only when `DEV_MODE=true`; 404 otherwise) returns the totals per day, task
+  and model.
+- **Daily guard**: once the day's logged cost reaches `DAILY_SPEND_LIMIT_USD`, every call goes to
+  `MODEL_FALLBACK` until midnight UTC, a warning is logged once, and reports carry the reduced-coverage
+  notice. The log is a file: on a host without a persistent volume it restarts with the machine, so
+  also set a credit limit on the OpenRouter key itself (the key used here is capped at $50).
+- **Output budgets** per task (`MAX_TOKENS` in `llm/openrouter.py`): extract 8000, pointing 2500,
+  image 4000, audio 12000, cheap 800, baseline 1200. Reasoning tokens count against them.
+- **No loops**: a request makes one extraction call, at most one pointing call per paraphrased
+  narration or ruling, one retry and one fallback attempt per call — never more.
+- **Prompt caching**: system prompts are byte-stable and sent first. An explicit cache breakpoint
+  is added for Anthropic and Gemini models; other providers cache a repeated prefix themselves.
+  Cached tokens are recorded in the usage log: in the bake-off 84% of the extraction model's prompt
+  tokens (22.5k of 26.7k) were served from cache.
+
+### Measurements still owed
+
+Paid calls were refused (HTTP 402) part-way through the first session because the OpenRouter account
+had no credit. After adding credit, run in this order (cheapest first):
+
+```bash
+make models-verify        # ≈ $0.25: model check, audio candidates, reasoning-off bake-off row,
+                          #          OCR re-run, one 60-second transcription, eval/run.py once
+make models-bakeoff-rest  # ≈ $0.26: Gemini 3.8 Flash, Qwen 3.7 Plus, DeepSeek V4 Pro 0813, Claude Sonnet 5.5
+```
+
+Audio calls are refused until the balance is at least $0.50.
 
 ### Phase 2 features — cost and flags
 
@@ -119,10 +171,11 @@ the address the request came to.
 - No religious or personal attribute of the user is inferred or stored.
 - Verdict cards carry no date, time, reviewer name or video link. The server-side card endpoint
   receives the card to draw, returns the image with `Cache-Control: no-store`, and keeps nothing.
-- Disclosed data flows to third parties: the text being verified is sent to the configured LLM
-  provider; a quoted narration (its first words) is sent to Dorar's search; audio is sent to the
-  speech-to-text provider when cloud transcription is used; a video URL is requested from its
-  platform. The container runs with `--no-access-log`.
+- Disclosed data flows to third parties: the text being verified is sent to OpenRouter, which
+  forwards it to the provider of the configured model; a quoted narration (its first words) is sent
+  to Dorar's search; audio is sent the same way when `MODEL_AUDIO` transcribes it; a video URL is
+  requested from its platform. The container runs with `--no-access-log`.
+- The usage log (`data/cache/usage.sqlite`) holds call metadata and cost only — never content.
 - Logs carry no user text: HTTP client loggers that print request URLs are silenced, and errors are
   logged by type and code location only (a test enforces this).
 

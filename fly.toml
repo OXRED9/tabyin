@@ -1,0 +1,41 @@
+# Fly.io — one machine running the single container (API + built frontend + data).
+#   fly launch --copy-config --no-deploy          # first time: creates the app (name must be unique)
+#   fly secrets set OPENROUTER_API_KEY=...         # the only secret
+#   fly deploy
+# Model IDs are not secrets; they mirror .env.example (docs/DECISIONS.md explains each choice).
+app = "tabayyun"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  LLM_PROVIDER = "openrouter"
+  OPENROUTER_APP_TITLE = "Tabayyun"
+  MODEL_EXTRACT = "qwen/qwen3.8-flash"
+  MODEL_VISION = "qwen/qwen3.7-flash"
+  MODEL_AUDIO = "google/gemini-3.5-flash-lite"
+  MODEL_CHEAP = "deepseek/deepseek-v4-flash"
+  MODEL_FALLBACK = "nvidia/nemotron-3-super-120b-a12b:free"
+  LLM_REASONING_EFFORT = "low"
+  DAILY_SPEND_LIMIT_USD = "10"
+  TRANSCRIPTION_PROVIDER = "auto"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"     # the machine sleeps when idle and wakes on the next request
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/health"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "40s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"                  # indexes take about 320 MB; ffmpeg and uploads need the headroom

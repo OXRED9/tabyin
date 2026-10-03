@@ -83,7 +83,7 @@
 
 ```bash
 git clone <repo-url> tabayyun && cd tabayyun
-cp .env.example .env          # اختياري: أضف ANTHROPIC_API_KEY و/أو OPENAI_API_KEY
+cp .env.example .env          # اختياري: أضف OPENROUTER_API_KEY (مفتاح واحد لكل النماذج)
 docker compose up --build     # ثم افتح http://localhost:8080
 ```
 
@@ -100,7 +100,7 @@ docker compose up --build     # ثم افتح http://localhost:8080
 | الجزء | التقنية |
 |---|---|
 | الخادم | Python 3.11 · FastAPI · بث SSE · SQLite FTS5 (بلا قواعد بيانات خارجية) |
-| النموذج اللغوي | Anthropic (أساسي) ← OpenAI (بديل تلقائي) ← الوضع اللفظي |
+| النموذج اللغوي | OpenRouter بمفتاح واحد: نموذج لكل مهمة (استخراج، صورة، صوت) ← نموذج احتياطي مجاني ← الوضع اللفظي |
 | التفريغ | ترجمة المنصة النصية ← تفريغ سحابي ← faster-whisper محلي |
 | الواجهة | Vite · React · TypeScript · Tailwind · shadcn/ui — عربية أولاً (RTL) مع الإنجليزية، فاتح وداكن |
 | النشر | حاوية Docker واحدة · `/health` · تنبيه دوري كل 10 دقائق |
@@ -151,8 +151,10 @@ backend/.venv/bin/python eval/run.py             # ثلاثة أنظمة × ثل
 
 ## الحدود — بصراحة
 
-- **مسار النموذج اللغوي لم يُشغَّل بعد على مزوّد حقيقي** (لم يتوفر مفتاح وقت البناء): كل الأرقام
-  أدناه من الوضع اللفظي، ومقارنة «روبوت المحادثة العام» لم تُقَس بعد.
+- **مسار النموذج اللغوي قيس على 20 عنصراً فقط** (85% للنموذج المختار مقابل 70% للعناصر نفسها بالوضع
+  اللفظي). أرقام الجدول أعلاه كلها من الوضع اللفظي، والتقييم الكامل بالنموذج ومقارنة «روبوت المحادثة
+  العام» وتفريغ الصوت عبر OpenRouter لم تُقَس بعد لأن الحساب كان بلا رصيد. التفاصيل في
+  [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 - **مجموعة الاختبار لم يراجعها المختص الشرعي بعد**؛ الحالات المتوقعة مبنية على طريقة توليد كل صف.
 - **الأحكام والمعلومات** لا تُؤيَّد إلا بآية أو حديث صريح؛ مواقع الفتاوى روابط إحالة فقط وليست
   مصدر بحث بعد.
@@ -208,7 +210,8 @@ recommended action. When there is no source it says so and generates nothing in 
 matched algorithmically against the Madinah Mushaf text with no model involved. Hadith gradings are
 copied verbatim from Dorar and HadeethEnc. A `supported` card cannot be constructed without source
 text, reference and URL. Disputed matters are shown with the disagreement and referred to scholars;
-personal cases get no ruling. Without any LLM key the tool still verifies verbatim verses and
+personal cases get no ruling. Every model call goes through OpenRouter with one key (one model per
+task, a free fallback, a daily spend guard). Without a key the tool still verifies verbatim verses and
 narrations ("lexical-only mode") and says that coverage is reduced.
 
 Run: `cp .env.example .env && docker compose up --build`, then open `http://localhost:8080`.

@@ -292,6 +292,8 @@ export function ReportView({
   const noClaimsNotice = state.notices.find((n) => n.code === 'no_claims')
   const lexical = summary?.mode === 'lexical_only' || !!lexicalNotice
   const dorarDown = summary?.warnings.includes('dorar_unreachable') ?? false
+  // The backup model answered some of this request (primary model down, or the daily spend limit).
+  const backupModel = !lexical && (summary?.warnings.includes('llm_fallback') ?? false)
   const noClaims = done && ordered.length === 0
   const used = useMemo(() => sourcesUsed(readyCards), [readyCards])
 
@@ -348,6 +350,7 @@ export function ReportView({
               : t.report.lexicalBody}
           </Notice>
         ) : null}
+        {backupModel ? <Notice title={t.report.lexicalTitle}>{t.report.backupModelBody}</Notice> : null}
         {dorarDown ? <Notice>{t.report.dorarUnavailable}</Notice> : null}
         {state.restored ? (
           <p className="text-xs text-muted-foreground">{t.report.restored}</p>

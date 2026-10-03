@@ -11,11 +11,19 @@ streamed. Types below mirror `backend/tabayyun/schemas.py` (source of truth) and
   "status": "ok",
   "version": "0.1.0",
   "mode": "full | lexical_only",
-  "llm": { "anthropic": true, "openai": false },
+  "llm": {
+    "provider": "openrouter", "configured": true, "spend_guard_active": false,
+    "models": { "extract": "…", "vision": "…", "audio": "…", "cheap": "…", "baseline": "…", "fallback": "…" }
+  },
   "transcription": { "captions": true, "cloud": false, "local": false },
   "sources": { "quran_ayahs": 6236, "hadeethenc": 4000, "hadith_books": 60000, "dorar": "unreachable | ok | unknown" }
 }
 ```
+
+## `GET /admin/usage` (development only)
+
+404 unless `DEV_MODE=true`. Totals of model calls and cost per day, task and model, from the local
+usage log. The log holds no prompt, answer or user text.
 
 ## `GET /api/meta`
 
@@ -155,8 +163,9 @@ interface Summary {
   total: number;
   by_state: Record<EvidenceState, number>;
   mode: "full" | "lexical_only";     // lexical_only => show the "reduced coverage" warning
-  llm_provider: string | null;
-  warnings: string[];                // e.g. "dorar_unreachable", "partial_llm_extraction"
+  llm_provider: string | null;       // the model id(s) that answered, comma-separated
+  warnings: string[];                // "dorar_unreachable", "partial_llm_extraction",
+                                     // "llm_fallback" (the backup model answered: show "reduced coverage")
   elapsed_seconds: number;
 }
 ```

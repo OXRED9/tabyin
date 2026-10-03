@@ -74,10 +74,9 @@ religious behaviour or the challenge rules and were decided provisionally; they 
     from 0.60 to 0.72 as quotes get shorter (measured chance levels in `METHODOLOGY.md`).
 23. **A delimited, explicitly attributed quotation is one claim**: the intact fragments of a
     misquoted verse are folded into it so the user sees one card with a diff.
-24. **Default model `claude-opus-5`**, configurable. Smaller models are cheaper and may be enough;
-    that is a cost decision for the team, left in `.env`.
-25. **Refusals fail over.** A provider refusal or timeout moves to the next provider and then to
-    lexical-only mode; the UI says coverage is reduced.
+24. **Models are chosen per task and set in `.env`**, never in code (see "Models" below).
+25. **Refusals and failures fail over.** One retry, then `MODEL_FALLBACK`, then lexical-only mode; the
+    UI says coverage is reduced.
 
 ## Product and operations
 
@@ -93,3 +92,74 @@ religious behaviour or the challenge rules and were decided provisionally; they 
     and fails WCAG AA.
 32. **A collapsed card shows the grading only when there is exactly one**; with several it shows a
     count, so no single grading is singled out.
+
+## Models — everything through OpenRouter (3 October 2026)
+
+IDs and prices come from the live catalog; results are in `eval/results/` (`model_check_candidates.md`,
+`bakeoff_extract.md`, `ocr_exactness.md`). The OpenRouter account had no credit during this session:
+calls were refused with HTTP 402 part-way through, so some candidates are **not measured** — said
+plainly below, with the command that finishes the job in `OPERATIONS.md`.
+
+33. **One provider, one key.** The Anthropic and OpenAI provider modules, settings and dependency were
+    removed. `llm/openrouter.py` is the only client (the OpenAI-compatible SDK pointed at OpenRouter);
+    text, image and audio all go to `chat/completions`.
+34. **`MODEL_EXTRACT = qwen/qwen3.8-flash` — provisional.** Bake-off on 20 test-set items through the
+    real pipeline. Four candidates completed: Qwen 3.8 Flash 85%, DeepSeek V4 Pro 85%, GPT-6 Luna 80%,
+    GLM 5.3 Flash 80%. The two leaders miss the same three items; Qwen costs less than half as much
+    per item ($0.00079 against $0.00174, measured), so it wins the tie. **Not measured**: Claude
+    Sonnet 5.5 (every call refused), Gemini 3.8 Flash (5 of 20 refused), Qwen 3.7 Plus and DeepSeek
+    V4 Pro 0813 (most refused). The choice stands until they run.
+35. **GPT-6 Luna and GLM 5.3 Flash are rejected whatever they cost.** Both answered "same narration"
+    for a test text that is word salad from four narrations, and the paraphrase rule then returned
+    `supported_with_note` — a fabricated attribution in the eval's terms. The two leaders did not.
+36. **⚑ A pointer from the fallback model is never used.** Item 35 shows that the paraphrase and
+    evidence rules lean on the quality of the pointing model. The fallback is free and unmeasured for
+    that job, so when it answers the pointing call the claim keeps its conservative state
+    (`needs_review` / `not_found`). This narrows what the tool will support, never widens it; it
+    changes verdict behaviour, so it is listed for confirmation. The 34% vocabulary floor of the
+    paraphrase rule was not changed; whether to raise it is a threshold question for the full eval.
+37. **`MODEL_VISION = qwen/qwen3.7-flash`.** Ten rendered images, each with a verse in which one word
+    was replaced by code. It kept the altered wording in 8 and never restored the original verse; it
+    is also the cheapest candidate ($0.00006 per image). DeepSeek V4.1 Flash restored the original
+    wording in 2 of 10 — the failure that would hide a misquotation — and is rejected. Gemini 3.5 and
+    3.1 Flash-Lite and GLM 5.3 Flash had most calls refused and are **not measured** (the three images
+    the Gemini models did read were exact). Qwen 3.8 Flash returned an invalid or truncated answer for
+    3 images and restored the original wording in one. GLM-4.6V failed the single-image check.
+    The two images Qwen misread are character errors, so a verse mismatch read from an image should
+    be treated like one from a machine transcript when image input ships (F1) — a decision for then.
+38. **`MODEL_AUDIO = google/gemini-3.5-flash-lite` — provisional and untested.** Every audio call was
+    refused ("requires at least $0.50 in balance for audio"). The model accepts audio and supports
+    strict JSON output according to the catalog; that is all that is known. Until it is measured,
+    captions and local Whisper are the transcription paths that have actually run.
+39. **`MODEL_CHEAP = deepseek/deepseek-v4-flash`**: the cheapest paid text model in the check
+    ($0.028 / $0.056 per million tokens), exact quote and valid JSON in 7 s.
+40. **`MODEL_FALLBACK = nvidia/nemotron-3-super-120b-a12b:free`**: free, a different family from every
+    primary, supports strict JSON output, passed the text check. It reads text only, so **images have
+    no fallback** (the request fails with a readable message) and audio falls back to local Whisper
+    where it is installed. The free models that accept images or audio were rejected: one did not
+    read the altered verse exactly, one is rate-limited to the point of failing the check, and one is
+    not available to API callers.
+41. **`MODEL_BASELINE_LLM = openai/gpt-6.1-sol`**: a mid-tier general model at the price of the
+    mid-tier of other labs ($2 / $10), so the "general chatbot" baseline is not a straw man. It is
+    called without retrieval and without a fallback. Not run yet.
+42. **`LLM_REASONING_EFFORT = low`** is the setting the bake-off measured. On one item, `none` cut
+    Qwen 3.8 Flash from 25.5 s to 3.8 s and the cost by two thirds with the same answer; its accuracy
+    is unmeasured, and that 20-item run is first in `make models-verify`.
+43. **Strict JSON where the catalog says the model supports it** (`response_format: json_schema` with
+    `provider.require_parameters`); otherwise the schema goes in the prompt. Either way the answer is
+    validated with Pydantic and an invalid one is retried once, then failed. Of the 231 calls that
+    were not refused for lack of credit, 221 succeeded, 5 were truncated at the output budget (four
+    of them pointing calls — that budget was raised from 1200 to 2500), 2 failed validation (both
+    Qwen 3.8 Flash reading an image), 2 were rate-limited (a free model) and 1 was not permitted.
+44. **Daily spend guard counts the cost the API reports**, kept in a local SQLite file that holds no
+    content. On a host without a volume the file restarts with the machine; the credit limit on the
+    OpenRouter key is the hard stop.
+45. **Embeddings stay local** (`intfloat/multilingual-e5-small`), are configured, and are not used by
+    any shipped feature yet.
+46. **Test-set artefact, left as is.** The two "misattributed quotation" items embed the narrator
+    line of the narration («عن … مرفوعاً»), so every system that reads the passage reports an authentic
+    hadith and the row counts as a miss. Changing expected results after seeing outputs would be
+    worse than reporting it.
+47. **Image input is not exposed.** `ingest/image.py` and `MODEL_VISION` are tested by the scripts
+    only; the upload endpoint does not accept images until F1 is built.
+

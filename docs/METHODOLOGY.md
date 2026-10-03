@@ -51,7 +51,8 @@ are also dropped, because speakers add and omit them freely.
 - English quotes are matched against HadeethEnc's published English translations.
 - Paraphrase («رواية بالمعنى»): when nothing reaches the match threshold, the LLM is shown the top
   retrieved texts and asked which, if any, is the same narration. Its answer is honoured only if
-  the two texts also share vocabulary (≥ 34% of the quote's word stems). The card then shows the
+  the two texts also share vocabulary (≥ 34% of the quote's word stems) and the answer came from the
+  model chosen for the task — a pointer from the fallback model is ignored. The card then shows the
   source's own wording and can at most be `supported_with_note`.
 - Gradings: HadeethEnc's `grade` field, and Dorar entries whose text aligns with the quote (same
   narrator when our source names one). The text is copied verbatim; a keyword classifier maps it to

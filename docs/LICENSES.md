@@ -26,7 +26,7 @@ The source code in this repository is released under the MIT licence (`LICENSE`)
 | yt-dlp | Unlicense |
 | ffmpeg (system package in the Docker image) | LGPL/GPL |
 | faster-whisper (optional), CTranslate2 | MIT |
-| anthropic, openai SDKs | MIT / Apache-2.0 |
+| openai SDK (used as the OpenAI-compatible client for OpenRouter) | Apache-2.0 |
 | React, Vite, Tailwind CSS, shadcn/ui, Radix UI, lucide-react | MIT / ISC |
 | IBM Plex Sans Arabic, Inter, Amiri Quran (self-hosted via Fontsource in the UI; TTF copies with their OFL texts in `backend/tabayyun/assets/fonts/` for server-side verdict cards) | SIL Open Font License 1.1 |
 | Pillow (with libraqm, HarfBuzz, FriBiDi), segno | MIT-CMU / MIT, LGPL (FriBiDi, system library) / BSD-3-Clause |
@@ -34,6 +34,6 @@ The source code in this repository is released under the MIT licence (`LICENSE`)
 
 ## Third-party services
 
-LLM calls go to Anthropic (primary) and OpenAI (fallback) under the team's own API keys; speech-to-text
-goes to OpenAI when a key is configured. Their terms apply to the text sent to them (see
-`docs/OPERATIONS.md` → Privacy).
+Every model call (text, image, speech) goes to OpenRouter under the team's own API key, and from
+there to the provider of the model configured for the task (`docs/OPERATIONS.md` → Models).
+OpenRouter's terms and that provider's terms apply to what is sent (see `docs/OPERATIONS.md` → Privacy).

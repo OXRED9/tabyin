@@ -5,17 +5,34 @@ and unresolved as of 3 October 2026.
 
 ## What has not been verified
 
-- **The LLM path has not been run.** No API key was available while building, so claim extraction
-  by the model, the paraphrase check and the evidence check for rulings are implemented and
-  unit-tested around, but never executed against a real provider. All measured results are from
-  lexical-only mode. Expect prompt and schema fixes on first contact with a key.
-- **The second baseline (general LLM without retrieval) has not been run** for the same reason, so
-  the three-way comparison currently has two measured systems.
+- **The model path has run on 20 test items only.** The extraction bake-off (20 items, real
+  pipeline) is the only measurement of full mode: 85% for the chosen model against 70% for the same
+  items in lexical-only mode. The full 79-item evaluation in full mode has not been run; every
+  number in the README's results table is still from lexical-only mode.
+- **The OpenRouter account had no credit while this was set up**, so calls were refused part-way
+  through. Not measured: four of the eight extraction candidates (among them Claude Sonnet 5.5),
+  four of the six image candidates, every audio model, and the "general chatbot" baseline.
+  `docs/OPERATIONS.md` → "Measurements still owed" has the two commands that finish this.
+- **Speech-to-text through OpenRouter has not produced a single transcript.** `MODEL_AUDIO` is a
+  provisional choice from the catalog. Also by design: **its timestamps come from a chat model, not
+  from a dedicated speech-recognition endpoint.** They are the model's estimate of where each
+  sentence starts and ends, cleaned to be ordered and inside the recording; they are good enough to
+  jump to a passage, not to cut on. Recordings over ten minutes are split and the offsets added,
+  which can cut a sentence at a boundary. Platform captions and local Whisper give measured timings.
+- **Image reading is not exact.** The chosen model kept a deliberately altered verse as written in
+  8 of 10 rendered images and never "corrected" one, but misread a letter in the other two. Image
+  input is not exposed in the API yet.
+- **The fallback model is weaker and text-only.** When it serves a request the report says so; its
+  pointing is not used, so paraphrased narrations and rulings come back `needs_review` or
+  `not_found`. Images have no fallback.
+- **The second baseline (general LLM without retrieval) has not been run**, so the three-way
+  comparison still has two measured systems.
 - **No row of the test set has been reviewed by the Sharia reviewer.** Expected states come from how
   each row was constructed.
-- **Cloud speech-to-text has not been run**; only YouTube captions and local faster-whisper were.
-- **Performance targets with the LLM are unmeasured.** In lexical-only mode a pasted text completes
-  in under a second and a 3-minute captioned clip in 3–8 seconds.
+- **The model is slow at the measured setting.** Qwen 3.8 Flash at `LLM_REASONING_EFFORT=low` takes
+  13–28 s on a short text. Verbatim verses and narrations still appear in under a second (they do
+  not wait for the model); what waits is everything paraphrased, attributed or stated as a ruling.
+  With reasoning off the same call took 3.8 s on one item — accuracy at that setting is unmeasured.
 - **The app is not deployed.** The complete image (frontend + API + data) builds and was run locally:
   the UI, the health check and a YouTube verification were tested inside the container. A public
   deployment has not been made.
@@ -106,7 +123,7 @@ and unresolved as of 3 October 2026.
   transcript. TikTok is allowed through the same code path but untested.
 - **Dorar availability** differs by network and client. Without it, narrations outside al-Bukhari,
   Muslim and HadeethEnc lose their gradings.
-- **Abuse protection is minimal**: an in-memory per-address request limit (30 requests per 10 minutes by default). There is no authentication, CAPTCHA or spend cap, so a public deployment with paid API keys should set provider-side budget limits.
+- **Abuse protection is minimal**: an in-memory per-address request limit (30 requests per 10 minutes by default). There is no authentication or CAPTCHA. The daily spend guard (`DAILY_SPEND_LIMIT_USD`) moves every call to the free fallback model once the day's logged cost reaches the limit, but its log restarts with the machine on a host without a volume, so the credit limit on the OpenRouter key is the real cap.
 
 ## What the tool is not
 

@@ -91,7 +91,11 @@ docs/               SOURCES, LICENSES, METHODOLOGY, OPERATIONS, LIMITATIONS, DES
 - Data (once): `backend/.venv/bin/python scripts/bootstrap_data.py`
 - Run API: `cd backend && .venv/bin/uvicorn tabayyun.main:app --reload --port 8765`
   (port 8000 is taken by another app on the dev machine)
-- Tests: `cd backend && .venv/bin/pytest -q -m "not network"` (add `-m network` for live-source tests)
+- Tests: `cd backend && .venv/bin/pytest -q` (offline, free; `-m network` for live-source tests,
+  `-m llm` for the 8 cases that make real, paid model calls)
+- Models: every model call goes through OpenRouter (`llm/openrouter.py`, one key, one model per task
+  in `.env`). `make models-check` tests the configured models; model calls cost money — keep test
+  inputs small and never run paid checks in a loop.
 - Frontend: `cd frontend && npm install && npm run dev` (proxies `/api` to `:8765`)
 - Evaluation: `backend/.venv/bin/python eval/build_testset.py && backend/.venv/bin/python eval/run.py`
 

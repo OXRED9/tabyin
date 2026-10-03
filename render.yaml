@@ -1,4 +1,5 @@
-# Render Blueprint — one Docker web service. Secrets are entered in the Render dashboard, never here.
+# Render Blueprint — one Docker web service. The key is entered in the Render dashboard, never here.
+# Model IDs are not secrets; they mirror .env.example (see docs/DECISIONS.md for why each was chosen).
 services:
   - type: web
     name: tabayyun
@@ -8,12 +9,28 @@ services:
     healthCheckPath: /health
     autoDeploy: true
     envVars:
-      - key: ANTHROPIC_API_KEY
+      - key: OPENROUTER_API_KEY
         sync: false
-      - key: OPENAI_API_KEY
+      - key: LLM_PROVIDER
+        value: openrouter
+      - key: OPENROUTER_APP_TITLE
+        value: Tabayyun
+      - key: OPENROUTER_APP_URL
         sync: false
-      - key: ANTHROPIC_MODEL
-        value: claude-opus-5
+      - key: PUBLIC_URL
+        sync: false
+      - key: MODEL_EXTRACT
+        value: qwen/qwen3.8-flash
+      - key: MODEL_VISION
+        value: qwen/qwen3.7-flash
+      - key: MODEL_AUDIO
+        value: google/gemini-3.5-flash-lite
+      - key: MODEL_CHEAP
+        value: deepseek/deepseek-v4-flash
+      - key: MODEL_FALLBACK
+        value: nvidia/nemotron-3-super-120b-a12b:free
+      - key: DAILY_SPEND_LIMIT_USD
+        value: "10"
       - key: TRANSCRIPTION_PROVIDER
         value: auto
       - key: EXAMPLE_VIDEO_URL
