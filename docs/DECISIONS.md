@@ -328,3 +328,55 @@ touch how a religious text is shown and wait for Sulaiman.
     set is unaffected — that review happens on the data, not in the UI.
 78. **State and action words** — «له مرجعية» for «مؤيَّد», «نقله مع ذكر مرجعه» for «اعتماد» — are the
     team's wording (`report/labels.py`, `DESIGN.md` §8.2). The identifiers and the rules did not change.
+
+Decided while building the frontend's block of 4 October 2026 (answer first, paste, the installable
+app, the browser's verdict card, sharing) and the product owner's changes that followed.
+
+79. **One claim: the answer is open without a tap.** Below 1024px the note is set open, inline, under
+    the text (no sheet, no one-item list); from 1024px its margin note opens by itself, once, and can
+    be closed. Only when the report completes. The note's code is fetched in the moment between the
+    end of matching and the end of the run, so the colophon is not set first and pushed down.
+80. **The «لصق» button exists only where it can work**: a secure context with the clipboard API. On
+    plain http over a LAN address it is absent, not disabled.
+81. **The manifest is linked after the page has loaded, not in its head.** Chrome fetches the manifest
+    and an icon as soon as it sees the link (to decide installability); on the throttled phone
+    profile that cost one Lighthouse point (LCP 3.5 → 3.6 s). `lib/pwa.ts` adds
+    `<link rel="manifest">` and the home-screen icon three seconds after `load`, when it also
+    registers the worker. Browsers read the link when it appears (the install prompt still fires) and
+    again when the user asks to install. A tool that reads only the served HTML will not see it.
+82. **What is shared to the app stays in the browser until the user's own verification sends it.**
+    The worker keeps the payload in Cache Storage (`tabayyun-share`), the page reads it once and
+    deletes the cache. The worker caches the page and `/assets/*` only; `/api/*` is never touched.
+83. **The app icons are the mark** (`public/favicon.svg`), drawn by `npm run icons`: 192 and 512 as
+    it is, and a maskable 512 with the green to every edge, which is also the iOS home-screen icon
+    (iOS does not draw transparency).
+84. **The header holds the mark and the logotype, export (once there is a report), theme, language.**
+    On a phone export is its icon alone. The phone's «المزيد» menu is gone with the feature it held.
+85. **The v1 capture scripts are deleted** (this replaces 59): `scripts/screenshots.mjs` and
+    `scripts/screenshots-phase2.mjs` drove a UI that no longer exists, including the removed
+    human-review flow. `npm run screenshots` now runs the v2 script. `docs/DESIGN_V1.md` still
+    names them, as the record it is.
+86. **English state words**: the short forms are the team's («Has a reference», …); the long forms
+    mirror `report/labels.py` («Has a reference in an approved source», «Needs further
+    verification», «No reliable source found», «Contradicts the source»). In the English summary
+    sentence the note clause has no comma («one has a reference with a note»), because the sentence
+    is itself a comma list.
+87. **The browser's card aligns as the server's does.** `lib/collate.ts` is a port of `_collate`
+    (same normalisation, same alignment, same 60% floor): the source's own words are always the ones
+    drawn, and `card.diff` only says which of them differ. A grading longer than 60 characters is
+    counted, not quoted. The browser's card still draws the title of what was checked on the
+    summary card and sends `cards` and `title` to the server fallback.
+88. **Summary card rows are fitted by measuring**: rows leave from the end until the body no longer
+    overflows (never half a row), and a quotation that overflows its line loses whole words and ends
+    in «…». At most twelve rows are tried.
+89. **Sharing to a named app sends text, and says so.** Under the row of apps one line says that
+    WhatsApp, X and Telegram receive the verdict as text with the address and that the image goes
+    through «مشاركة» or after saving it. The text is the card's state, its quoted words (120
+    characters, fewer when X's 280 would be passed), the reference with one grading word, and the
+    address. The four app marks are small line drawings made here, not the companies' logo files.
+90. **The phone's report head is 182px tall** (it was 152): the summary sentence with the new state
+    words runs to four lines with all five states, and the link to the notes sits under it. The
+    progress line stands in the same height, so the page under it does not move at completion. An
+    English five-state sentence is longer still and moves the page by one or two lines.
+91. **The link to the notes counts in the page's digits** («الحواشي (9)»), as every other number in
+    the interface does.
