@@ -3,6 +3,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import type { CSSProperties, ReactNode } from 'react'
 
 import { ProgressPanel } from '@/components/progress-panel'
+import { LegendLink } from '@/components/legend-link'
 import LazyNoteBody from '@/components/report/lazy-note-body'
 import { MarginNote, PendingNote } from '@/components/report/note'
 import { NoteRow, OrderToggle } from '@/components/report/notes-list'
@@ -342,11 +343,11 @@ export function ReportView({
   return (
     <section aria-label={t.report.title}>
       {/* The head of the sheet: the progress line while running, then the report in one sentence.
-          Both have the same height, in the same place, so the page under them does not move. */}
+          Each takes the height it needs and no more: the answer starts at the top of the sheet. */}
       {running ? (
         <ProgressPanel state={state} onCancel={onCancel} />
       ) : noClaims ? (
-        <div className="flex min-h-(--sheet-head) flex-col items-start justify-center gap-3 border-b pb-5">
+        <div className="flex flex-col items-start gap-3 border-b pb-5">
           <div>
             <p className="text-lg font-semibold text-ink">
               {noClaimsNotice ? pick(noClaimsNotice.message_ar, noClaimsNotice.message_en) : t.report.noClaimsTitle}
@@ -361,7 +362,7 @@ export function ReportView({
           </Button>
         </div>
       ) : (
-        <div className="flex min-h-(--sheet-head) items-center gap-x-6 border-b pb-5">
+        <div className="flex items-start gap-x-6 border-b pb-5">
           <div className="min-w-0 flex-1">
             <SummarySentence
               total={ordered.length}
@@ -369,8 +370,9 @@ export function ReportView({
               filter={activeFilter}
               onFilter={setFilter}
             />
-            {/* On a phone the notes follow the text. When they start below the first screen,
-                this takes the reader to them. */}
+            {/* Two quiet links under the sentence: what the states mean, and, on a phone where the
+                notes follow the text and start below the first screen, the way to them. */}
+            <div className="flex flex-wrap items-center gap-x-5">
             {notesBelow && !withMargin && !singleInline ? (
               <a
                 href="#notes-title"
@@ -385,6 +387,8 @@ export function ReportView({
                 <ChevronDown aria-hidden="true" className="size-4" />
               </a>
             ) : null}
+              <LegendLink className="min-h-8 text-sm" />
+            </div>
           </div>
           <Button type="button" variant="outline" size="touch" onClick={onVerifyAnother} className="shrink-0 max-md:hidden">
             <RotateCcw aria-hidden="true" />

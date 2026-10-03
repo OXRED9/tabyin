@@ -14,6 +14,7 @@ import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState } from 'r
 import type { DragEvent, ReactNode, RefObject } from 'react'
 
 import { StateGlyph } from '@/components/state-glyph'
+import { LegendLink } from '@/components/legend-link'
 import { Button } from '@/components/ui/button'
 import type { ImageReading } from '@/hooks/use-image-reader'
 import type { InputDraft } from '@/lib/draft'
@@ -553,11 +554,14 @@ export function Composer({
         ))}
       </div>
 
-      {historyCount > 0 ? (
-        <Button type="button" variant="link" onClick={onOpenHistory} className="mt-6">
-          {t.input.recent(historyCount)}
-        </Button>
-      ) : null}
+      <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <LegendLink />
+        {historyCount > 0 ? (
+          <Button type="button" variant="link" onClick={onOpenHistory}>
+            {t.input.recent(historyCount)}
+          </Button>
+        ) : null}
+      </div>
     </form>
   )
 }

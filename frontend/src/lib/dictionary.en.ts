@@ -156,6 +156,26 @@ export const en: Dictionary = {
     contradicted: 'Differs from the source',
   },
 
+  legend: {
+    link: 'What do these states mean?',
+    title: 'What do these states mean?',
+    description: 'A state says what was found about the source of a text. It is not a ruling on acting on it.',
+    states: {
+      supported:
+        'The text was found in an approved source, word for word, and the grading shown is copied from that source. It is not a ruling by Tabayyun that acting on it is correct.',
+      supported_with_note:
+        'The text was found in an approved source, and the wording in circulation differs slightly from it or is only part of it. It does not endorse the circulating wording: quote the source’s.',
+      needs_review:
+        'The sources neither confirm it nor rule it out: the wording is far from the source, the source grades the narration as weak or gives no grading, or the matter is disputed or personal. It does not mean it is wrong; refer it to scholars.',
+      not_found:
+        'The text was not found in the approved sources Tabayyun searches. It does not mean it is fabricated; it may be in another source, so do not pass it on until its source is known.',
+      contradicted:
+        'The text departs from the source: a verse with altered wording, a saying attributed to someone else, or a narration the source grades as not attributable to the Prophet ﷺ. The grading is the source’s; it is not a judgment by Tabayyun on whoever passed it on.',
+    },
+    notDone:
+      'Tabayyun issues no fatwa, prefers no opinion among scholars and rules on no personal case; it shows what the sources say as it is.',
+  },
+
   actions: {
     adopt: 'Cite it with its reference',
     correct_wording: 'Correct the wording',

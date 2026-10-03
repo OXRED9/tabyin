@@ -204,9 +204,6 @@
 :root {
   --font-ui: "IBM Plex Sans Arabic", "IBM Plex Sans", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
   --radius: 6px;
-  /* The head of the sheet is as tall while running (the progress line) as when done (the summary):
-     on a phone, the longest Arabic sentence (five states, four lines) and the link to the notes. */
-  --sheet-head: 11.375rem;
 
   --desk: #f5f8f7;
   --paper: #ffffff;
@@ -236,12 +233,6 @@
   --contra-soft: #f2d9d6;
 
   --overlay-shadow: 0 1px 2px rgb(17 34 30 / 0.06), 0 12px 32px -8px rgb(17 34 30 / 0.22);
-}
-
-@media (min-width: 48rem) {
-  :root {
-    --sheet-head: 7.75rem;
-  }
 }
 
 html[lang="en"] {
