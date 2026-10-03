@@ -115,6 +115,7 @@ async def judge(ctx: Context, task: str, claim_text: str, texts: list[str]) -> i
             user=f"task = \"{task}\"\n\n<claim>\n{claim_text}\n</claim>\n\n<source_texts>\n{listing}\n</source_texts>",
             schema=JUDGEMENT_SCHEMA,
             model_cls=LLMJudgement,
+            use_fallback=False,  # a pointer is only honoured from the model measured for it
         )
     except LLMError as e:
         log.warning("judge unavailable: %s", e)

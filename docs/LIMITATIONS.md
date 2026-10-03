@@ -5,34 +5,31 @@ and unresolved as of 3 October 2026.
 
 ## What has not been verified
 
-- **The model path has run on 20 test items only.** The extraction bake-off (20 items, real
-  pipeline) is the only measurement of full mode: 85% for the chosen model against 70% for the same
-  items in lexical-only mode. The full 79-item evaluation in full mode has not been run; every
-  number in the README's results table is still from lexical-only mode.
-- **The OpenRouter account had no credit while this was set up**, so calls were refused part-way
-  through. Not measured: four of the eight extraction candidates (among them Claude Sonnet 5.5),
-  four of the six image candidates, every audio model, and the "general chatbot" baseline.
-  `docs/OPERATIONS.md` → "Measurements still owed" has the two commands that finish this.
-- **Speech-to-text through OpenRouter has not produced a single transcript.** `MODEL_AUDIO` is a
-  provisional choice from the catalog. Also by design: **its timestamps come from a chat model, not
-  from a dedicated speech-recognition endpoint.** They are the model's estimate of where each
-  sentence starts and ends, cleaned to be ordered and inside the recording; they are good enough to
-  jump to a passage, not to cut on. Recordings over ten minutes are split and the offsets added,
-  which can cut a sentence at a boundary. Platform captions and local Whisper give measured timings.
+- **Full mode has been measured once.** The 79-item evaluation ran one time in full mode: 88.6%,
+  no fabricated attribution, no wrongly endorsed item, every abstention correct. One run gives no
+  spread, and the model is not deterministic across days or providers. The general-chatbot baseline
+  ran once as well (77.2%).
+- **Only four of eight extraction candidates were measured**, on 20 items. Claude Sonnet 5.5, Gemini
+  3.8 Flash, Qwen 3.7 Plus and DeepSeek V4 Pro 0813 were left out to save budget; so were four of the
+  six image candidates and the other audio models (`docs/OPERATIONS.md` → Models).
+- **Speech-to-text through OpenRouter is barely tested**: one verse recitation (exact) and the first
+  60 seconds of one clip. No word-error rate has been measured. Also by design: **its timestamps
+  come from a chat model, not from a dedicated speech-recognition endpoint.** They are the model's
+  estimate of where each sentence starts and ends, cleaned to be ordered and inside the recording;
+  they are good enough to jump to a passage, not to cut on. Recordings over ten minutes are split
+  and the offsets added, which can cut a sentence at a boundary. Platform captions and local Whisper
+  give measured timings.
 - **Image reading is not exact.** The chosen model kept a deliberately altered verse as written in
   8 of 10 rendered images and never "corrected" one, but misread a letter in the other two. Image
   input is not exposed in the API yet.
 - **The fallback model is weaker and text-only.** When it serves a request the report says so; its
   pointing is not used, so paraphrased narrations and rulings come back `needs_review` or
   `not_found`. Images have no fallback.
-- **The second baseline (general LLM without retrieval) has not been run**, so the three-way
-  comparison still has two measured systems.
 - **No row of the test set has been reviewed by the Sharia reviewer.** Expected states come from how
   each row was constructed.
-- **The model is slow at the measured setting.** Qwen 3.8 Flash at `LLM_REASONING_EFFORT=low` takes
-  13–28 s on a short text. Verbatim verses and narrations still appear in under a second (they do
-  not wait for the model); what waits is everything paraphrased, attributed or stated as a ruling.
-  With reasoning off the same call took 3.8 s on one item — accuracy at that setting is unmeasured.
+- **Speed with the model.** Extraction takes about 3 s on a short text. A claim that needs the
+  pointing call (a paraphrase, a ruling) waits 6–9 s more, and one pointing call in the bake-off ran
+  for 41 s before it was cut off. Verbatim verses and narrations still appear in under a second.
 - **The app is not deployed.** The complete image (frontend + API + data) builds and was run locally:
   the UI, the health check and a YouTube verification were tested inside the container. A public
   deployment has not been made.

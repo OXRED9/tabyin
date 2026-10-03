@@ -180,10 +180,13 @@ async def main() -> None:
     ap.add_argument("--models", required=True, help="comma-separated OpenRouter model ids")
     ap.add_argument("--concurrency", type=int, default=4, help="items in flight at once")
     ap.add_argument("--max-tokens", type=int, default=None, help="output budget for the extraction call (default: the production budget)")
-    ap.add_argument("--reasoning-effort", default=None, help="none | minimal | low | medium | high (default: LLM_REASONING_EFFORT); the result is stored under its own row")
+    ap.add_argument("--reasoning-effort", default=None, help="none | minimal | low | medium | high for extraction (default: LLM_REASONING_EFFORT); the result is stored under its own row")
+    ap.add_argument("--judge-effort", default=None, help="the same, for the pointing call (default: LLM_REASONING_EFFORT_JUDGE)")
     args = ap.parse_args()
     if args.reasoning_effort is not None:
         settings.llm_reasoning_effort = args.reasoning_effort
+    if args.judge_effort is not None:
+        settings.llm_reasoning_effort_judge = args.judge_effort
     models = [m.strip() for m in args.models.split(",") if m.strip()]
     catalog = load_catalog()
     items = pick_items()
@@ -202,7 +205,9 @@ async def main() -> None:
                 openrouter.MAX_TOKENS["extract"] = args.max_tokens
             r = await run_candidate(model, items, recorder, args.concurrency, args.max_tokens)
             r["reasoning_effort"] = settings.llm_reasoning_effort
-            r["label"] = model if args.reasoning_effort is None else f"{model} (reasoning {args.reasoning_effort})"
+            r["judge_effort"] = settings.llm_reasoning_effort_judge
+            custom = args.reasoning_effort is not None or args.judge_effort is not None
+            r["label"] = f"{model} (extraction {settings.llm_reasoning_effort}, pointing {settings.llm_reasoning_effort_judge})" if custom else model
             by_model[r["label"]] = r
             print(f"{model:40} state {pct(r['state_accuracy']):>4}  type {pct(r['type_accuracy']):>4}  level {pct(r['level_accuracy']):>4}  exact {pct(r['exact_quote_rate']):>4}  "
                   f"invalid {r['invalid_json_calls']}  refused {r['refused_calls']}  truncated {r['truncated_calls']}  without-model {r['lexical_only_items']}/{len(items)}  "

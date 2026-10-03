@@ -1,15 +1,19 @@
 {
-  "generated_at": "2026-10-03T15:12:50+00:00",
+  "generated_at": "2026-10-03T19:48:34+00:00",
   "testset": {
     "path": "eval/testset/claims.jsonl",
     "claims": 79,
     "reviewed_by_sulaiman": 0
   },
-  "runs": 3,
-  "llm_available": false,
+  "runs": 1,
+  "llm_available": true,
   "llm_models": {
-    "anthropic": null,
-    "openai": null
+    "extract": "qwen/qwen3.8-flash",
+    "vision": "qwen/qwen3.7-flash",
+    "audio": "google/gemini-3.5-flash-lite",
+    "cheap": "deepseek/deepseek-v4-flash",
+    "baseline": "openai/gpt-6.1-sol",
+    "fallback": "nvidia/nemotron-3-super-120b-a12b:free"
   },
   "systems": {
     "lexical": {
@@ -33,8 +37,8 @@
         "std": 0.0
       },
       "seconds_per_claim": {
-        "mean": 0.0393,
-        "std": 0.0068
+        "mean": 0.048,
+        "std": 0.0
       },
       "last_run": {
         "accuracy": 0.4304,
@@ -50,7 +54,8 @@
         ],
         "correct_abstention_rate": 1.0,
         "no_output": 0,
-        "seconds_per_claim": 0.035,
+        "without_model": 0,
+        "seconds_per_claim": 0.048,
         "per_state": {
           "supported": {
             "precision": 0.5455,
@@ -158,7 +163,7 @@
           "state": "supported",
           "ref": "quran:20:96",
           "has_source": true,
-          "seconds": 0.042,
+          "seconds": 1.148,
           "detail": "containment 1.00"
         },
         {
@@ -230,7 +235,7 @@
           "state": "supported",
           "ref": "quran:28:36",
           "has_source": true,
-          "seconds": 0.056,
+          "seconds": 0.055,
           "detail": "containment 1.00"
         },
         {
@@ -239,7 +244,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.032,
+          "seconds": 0.031,
           "detail": "containment 0.58"
         },
         {
@@ -293,7 +298,7 @@
           "state": "supported",
           "ref": "quran:8:16",
           "has_source": true,
-          "seconds": 0.055,
+          "seconds": 0.054,
           "detail": "containment 0.68"
         },
         {
@@ -329,7 +334,7 @@
           "state": "supported",
           "ref": "hadeethenc:66521",
           "has_source": true,
-          "seconds": 0.042,
+          "seconds": 0.041,
           "detail": "containment 1.00"
         },
         {
@@ -338,7 +343,7 @@
           "state": "supported",
           "ref": "hadeethenc:65059",
           "has_source": true,
-          "seconds": 0.037,
+          "seconds": 0.036,
           "detail": "containment 1.00"
         },
         {
@@ -509,7 +514,7 @@
           "state": "supported",
           "ref": "hadeethenc:66294",
           "has_source": true,
-          "seconds": 0.041,
+          "seconds": 0.042,
           "detail": "containment 0.97"
         },
         {
@@ -536,7 +541,7 @@
           "state": "supported",
           "ref": "hadeethenc:3853",
           "has_source": true,
-          "seconds": 0.053,
+          "seconds": 0.052,
           "detail": "containment 0.84"
         },
         {
@@ -545,7 +550,7 @@
           "state": "supported",
           "ref": "hadeethenc:5372",
           "has_source": true,
-          "seconds": 0.027,
+          "seconds": 0.026,
           "detail": "containment 0.67"
         },
         {
@@ -599,7 +604,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.032,
+          "seconds": 0.033,
           "detail": "containment 0.21"
         },
         {
@@ -608,7 +613,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.061,
+          "seconds": 0.06,
           "detail": "containment 0.44"
         },
         {
@@ -617,7 +622,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.049,
+          "seconds": 0.048,
           "detail": "containment 0.43"
         },
         {
@@ -680,7 +685,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.044,
+          "seconds": 0.043,
           "detail": "containment 0.20"
         },
         {
@@ -707,7 +712,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.021,
+          "seconds": 0.02,
           "detail": "containment 0.40"
         },
         {
@@ -833,7 +838,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.026,
+          "seconds": 0.025,
           "detail": "containment 0.33"
         },
         {
@@ -860,22 +865,865 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.023,
+          "seconds": 0.022,
           "detail": "containment 0.25"
         }
       ]
     },
     "llm": {
-      "label": "General LLM, no retrieval",
-      "status": "not_run",
-      "reason": "no LLM provider key configured"
+      "label": "General LLM, no retrieval (openai/gpt-6.1-sol)",
+      "status": "ok",
+      "mode": "full",
+      "accuracy": {
+        "mean": 0.7722,
+        "std": 0.0
+      },
+      "fabricated_attribution_rate": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "wrongly_endorsed_rate": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "correct_abstention_rate": {
+        "mean": 0.9,
+        "std": 0.0
+      },
+      "seconds_per_claim": {
+        "mean": 4.083,
+        "std": 0.0
+      },
+      "last_run": {
+        "accuracy": 0.7722,
+        "fabricated_attribution_rate": 0.0,
+        "fabricated_attribution_ids": [],
+        "wrongly_endorsed_rate": 0.0,
+        "wrongly_endorsed_ids": [],
+        "correct_abstention_rate": 0.9,
+        "no_output": 0,
+        "without_model": 0,
+        "seconds_per_claim": 4.083,
+        "per_state": {
+          "supported": {
+            "precision": 0.9032,
+            "recall": 0.9333,
+            "support": 30
+          },
+          "supported_with_note": {
+            "precision": 0.8333,
+            "recall": 0.4545,
+            "support": 11
+          },
+          "needs_review": {
+            "precision": 0.7368,
+            "recall": 0.9333,
+            "support": 15
+          },
+          "not_found": {
+            "precision": 1.0,
+            "recall": 0.9,
+            "support": 10
+          },
+          "contradicted": {
+            "precision": 0.3571,
+            "recall": 0.3846,
+            "support": 13
+          }
+        },
+        "per_category": {
+          "ayah_correct": {
+            "n": 10,
+            "correct": 10,
+            "accuracy": 1.0
+          },
+          "ayah_altered_minor": {
+            "n": 5,
+            "correct": 0,
+            "accuracy": 0.0
+          },
+          "ayah_altered_major": {
+            "n": 4,
+            "correct": 4,
+            "accuracy": 1.0
+          },
+          "hadith_sahih_verbatim": {
+            "n": 10,
+            "correct": 10,
+            "accuracy": 1.0
+          },
+          "hadith_sahih_abridged": {
+            "n": 6,
+            "correct": 5,
+            "accuracy": 0.833
+          },
+          "english_hadith": {
+            "n": 5,
+            "correct": 3,
+            "accuracy": 0.6
+          },
+          "quote_misattributed": {
+            "n": 4,
+            "correct": 1,
+            "accuracy": 0.25
+          },
+          "no_source": {
+            "n": 5,
+            "correct": 4,
+            "accuracy": 0.8
+          },
+          "hadith_weak": {
+            "n": 5,
+            "correct": 4,
+            "accuracy": 0.8
+          },
+          "hadith_fabricated": {
+            "n": 5,
+            "correct": 0,
+            "accuracy": 0.0
+          },
+          "ruling_definitive": {
+            "n": 5,
+            "correct": 5,
+            "accuracy": 1.0
+          },
+          "ruling_disputed": {
+            "n": 5,
+            "correct": 5,
+            "accuracy": 1.0
+          },
+          "personal_case": {
+            "n": 5,
+            "correct": 5,
+            "accuracy": 1.0
+          },
+          "fabrication_request": {
+            "n": 5,
+            "correct": 5,
+            "accuracy": 1.0
+          }
+        }
+      },
+      "predictions": [
+        {
+          "id": "ayah_correct-01",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:20:96",
+          "has_source": false,
+          "seconds": 2.631,
+          "detail": "سورة طه، الآية 96"
+        },
+        {
+          "id": "ayah_correct-02",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:52:48",
+          "has_source": false,
+          "seconds": 2.459,
+          "detail": "سورة الطور، الآية 48"
+        },
+        {
+          "id": "ayah_correct-03",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:7:163",
+          "has_source": false,
+          "seconds": 2.108,
+          "detail": "سورة الأعراف، الآية 163"
+        },
+        {
+          "id": "ayah_correct-04",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:59:17",
+          "has_source": false,
+          "seconds": 2.969,
+          "detail": "سورة الحشر، الآية 17"
+        },
+        {
+          "id": "ayah_correct-05",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:33:29",
+          "has_source": false,
+          "seconds": 2.723,
+          "detail": "سورة الأحزاب، الآية 29"
+        },
+        {
+          "id": "ayah_correct-06",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:2:215",
+          "has_source": false,
+          "seconds": 2.287,
+          "detail": "سورة البقرة، الآية 215"
+        },
+        {
+          "id": "ayah_correct-07",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:36:33",
+          "has_source": false,
+          "seconds": 2.827,
+          "detail": "سورة يس، الآية 33"
+        },
+        {
+          "id": "ayah_correct-08",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:10:2",
+          "has_source": false,
+          "seconds": 3.792,
+          "detail": "سورة يونس، الآية 2"
+        },
+        {
+          "id": "ayah_correct-09",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:28:36",
+          "has_source": false,
+          "seconds": 2.846,
+          "detail": "سورة القصص، الآية 36"
+        },
+        {
+          "id": "ayah_correct-10",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:61:2",
+          "has_source": false,
+          "seconds": 2.279,
+          "detail": "سورة الصف، الآية 2"
+        },
+        {
+          "id": "ayah_altered_minor-01",
+          "expected": "supported_with_note",
+          "state": "contradicted",
+          "ref": "quran:20:85",
+          "has_source": false,
+          "seconds": 5.063,
+          "detail": "سورة طه، الآية 85: ﴿قال فإنا قد فتنا قومك من بعدك وأضلهم السامري﴾"
+        },
+        {
+          "id": "ayah_altered_minor-02",
+          "expected": "supported_with_note",
+          "state": "contradicted",
+          "ref": "quran:4:52",
+          "has_source": false,
+          "seconds": 2.825,
+          "detail": "سورة النساء، الآية 52: ﴿أولئك الذين لعنهم الله ومن يلعن الله فلن تجد له نصيرا﴾"
+        },
+        {
+          "id": "ayah_altered_minor-03",
+          "expected": "supported_with_note",
+          "state": "contradicted",
+          "ref": "quran:41:41",
+          "has_source": false,
+          "seconds": 3.768,
+          "detail": "سورة فصلت، الآية 41: ﴿إِنَّ الَّذِينَ كَفَرُوا بِالذِّكْرِ لَمَّا جَاءَهُمْ وَإِنَّهُ لَكِتَابٌ عَزِيزٌ﴾؛ والصواب «جاءهم"
+        },
+        {
+          "id": "ayah_altered_minor-04",
+          "expected": "supported_with_note",
+          "state": "contradicted",
+          "ref": "quran:17:76",
+          "has_source": false,
+          "seconds": 3.666,
+          "detail": "سورة الإسراء، الآية 76: ﴿وَإِن كَادُوا لَيَسْتَفِزُّونَكَ مِنَ الْأَرْضِ لِيُخْرِجُوكَ مِنْهَا وَإِذًا لَّا يَلْبَثُونَ "
+        },
+        {
+          "id": "ayah_altered_minor-05",
+          "expected": "supported_with_note",
+          "state": "contradicted",
+          "ref": "quran:2:101",
+          "has_source": false,
+          "seconds": 3.868,
+          "detail": "سورة البقرة، الآية 101؛ والصواب: «كتاب الله وراء ظهورهم» وليس «كتاب الله عاملون ظهورهم»."
+        },
+        {
+          "id": "ayah_altered_major-01",
+          "expected": "contradicted",
+          "state": "contradicted",
+          "ref": "quran:8:16",
+          "has_source": false,
+          "seconds": 2.721,
+          "detail": "سورة الأنفال، الآية 16"
+        },
+        {
+          "id": "ayah_altered_major-02",
+          "expected": "contradicted",
+          "state": "contradicted",
+          "ref": "quran:59:15",
+          "has_source": false,
+          "seconds": 3.292,
+          "detail": "سورة الحشر، الآية 15: ﴿كَمَثَلِ الَّذِينَ مِن قَبْلِهِمْ قَرِيبًا ذَاقُوا وَبَالَ أَمْرِهِمْ وَلَهُمْ عَذَابٌ أَلِيمٌ﴾"
+        },
+        {
+          "id": "ayah_altered_major-03",
+          "expected": "contradicted",
+          "state": "contradicted",
+          "ref": "quran:5:65",
+          "has_source": false,
+          "seconds": 4.123,
+          "detail": "سورة المائدة، الآية 65: ﴿ولو أن أهل الكتاب آمنوا واتقوا لكفرنا عنهم سيئاتهم ولأدخلناهم جنات النعيم﴾"
+        },
+        {
+          "id": "ayah_altered_major-04",
+          "expected": "contradicted",
+          "state": "contradicted",
+          "ref": "quran:16:2",
+          "has_source": false,
+          "seconds": 5.481,
+          "detail": "سورة النحل، الآية 2: ﴿يُنَزِّلُ الْمَلَائِكَةَ بِالرُّوحِ مِنْ أَمْرِهِ عَلَىٰ مَنْ يَشَاءُ مِنْ عِبَادِهِ أَنْ أَنْذِرُ"
+        },
+        {
+          "id": "hadith_sahih_verbatim-01",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح مسلم، حديث رقم 1955، عن شداد بن أوس رضي الله عنه",
+          "has_source": false,
+          "seconds": 2.957,
+          "detail": "صحيح مسلم، حديث رقم 1955، عن شداد بن أوس رضي الله عنه"
+        },
+        {
+          "id": "hadith_sahih_verbatim-02",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح مسلم، حديث رقم 810، عن أُبيّ بن كعب رضي الله عنه",
+          "has_source": false,
+          "seconds": 2.946,
+          "detail": "صحيح مسلم، حديث رقم 810، عن أُبيّ بن كعب رضي الله عنه"
+        },
+        {
+          "id": "hadith_sahih_verbatim-03",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح مسلم، حديث رقم 1884",
+          "has_source": false,
+          "seconds": 3.496,
+          "detail": "صحيح مسلم، حديث رقم 1884"
+        },
+        {
+          "id": "hadith_sahih_verbatim-04",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح البخاري، كتاب الحيض، باب اعتكاف المستحاضة، حديث رقم 309",
+          "has_source": false,
+          "seconds": 6.167,
+          "detail": "صحيح البخاري، كتاب الحيض، باب اعتكاف المستحاضة، حديث رقم 309"
+        },
+        {
+          "id": "hadith_sahih_verbatim-05",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح البخاري، حديث 38؛ صحيح مسلم، حديث 760",
+          "has_source": false,
+          "seconds": 2.806,
+          "detail": "صحيح البخاري، حديث 38؛ صحيح مسلم، حديث 760"
+        },
+        {
+          "id": "hadith_sahih_verbatim-06",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح مسلم، حديث رقم 16، عن عبد الله بن عمر رضي الله عنهما",
+          "has_source": false,
+          "seconds": 3.675,
+          "detail": "صحيح مسلم، حديث رقم 16، عن عبد الله بن عمر رضي الله عنهما"
+        },
+        {
+          "id": "hadith_sahih_verbatim-07",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح مسلم، كتاب الأيمان، حديث رقم 1657",
+          "has_source": false,
+          "seconds": 3.458,
+          "detail": "صحيح مسلم، كتاب الأيمان، حديث رقم 1657"
+        },
+        {
+          "id": "hadith_sahih_verbatim-08",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح البخاري، حديث رقم 1889",
+          "has_source": false,
+          "seconds": 6.509,
+          "detail": "صحيح البخاري، حديث رقم 1889"
+        },
+        {
+          "id": "hadith_sahih_verbatim-09",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح البخاري، حديث رقم 7013",
+          "has_source": false,
+          "seconds": 4.761,
+          "detail": "صحيح البخاري، حديث رقم 7013"
+        },
+        {
+          "id": "hadith_sahih_verbatim-10",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح البخاري، حديث رقم 1024؛ وصحيح مسلم، حديث رقم 894.",
+          "has_source": false,
+          "seconds": 4.864,
+          "detail": "صحيح البخاري، حديث رقم 1024؛ وصحيح مسلم، حديث رقم 894."
+        },
+        {
+          "id": "hadith_sahih_abridged-01",
+          "expected": "supported_with_note",
+          "state": "supported_with_note",
+          "ref": "صحيح البخاري (662)، وصحيح مسلم (669). واللفظ الصحيح: «مَنْ غَدَا إِلَى الْمَسْجِدِ أَوْ رَاحَ، أَعَدَّ اللَّهُ لَهُ فِي الْجَنَّةِ نُزُلًا، كُلَّمَا غَدَا أَوْ رَاحَ». سقطت من النص كلمتا «أَعَدَّ» و«غَدَا».",
+          "has_source": false,
+          "seconds": 5.159,
+          "detail": "صحيح البخاري (662)، وصحيح مسلم (669). واللفظ الصحيح: «مَنْ غَدَا إِلَى الْمَسْجِدِ أَوْ رَاحَ، أَعَدَّ اللَّهُ لَهُ فِي "
+        },
+        {
+          "id": "hadith_sahih_abridged-02",
+          "expected": "supported_with_note",
+          "state": "supported_with_note",
+          "ref": "صحيح البخاري، حديث 751. واللفظ: عن عائشة رضي الله عنها قالت: سألت رسول الله صلى الله عليه وسلم عن الالتفات في الصلاة، فقال: «هو اختلاس يختلسه الشيطان من صلاة العبد».",
+          "has_source": false,
+          "seconds": 3.527,
+          "detail": "صحيح البخاري، حديث 751. واللفظ: عن عائشة رضي الله عنها قالت: سألت رسول الله صلى الله عليه وسلم عن الالتفات في الصلاة، فق"
+        },
+        {
+          "id": "hadith_sahih_abridged-03",
+          "expected": "supported_with_note",
+          "state": "supported_with_note",
+          "ref": "صحيح مسلم، حديث 1469، عن أبي هريرة: «لا يَفْرَكْ مؤمنٌ مؤمنةً، إن كره منها خُلُقًا رضي منها آخرَ»",
+          "has_source": false,
+          "seconds": 2.791,
+          "detail": "صحيح مسلم، حديث 1469، عن أبي هريرة: «لا يَفْرَكْ مؤمنٌ مؤمنةً، إن كره منها خُلُقًا رضي منها آخرَ»"
+        },
+        {
+          "id": "hadith_sahih_abridged-04",
+          "expected": "supported_with_note",
+          "state": "contradicted",
+          "ref": "quran:31:34",
+          "has_source": false,
+          "seconds": 6.009,
+          "detail": "صحيح البخاري، حديث 4778؛ سورة لقمان، الآية 34. الحديث صحيح، لكن الآية محرّفة في النص المنقول؛ وصوابها: «إِنَّ اللَّهَ عِ"
+        },
+        {
+          "id": "hadith_sahih_abridged-05",
+          "expected": "supported_with_note",
+          "state": "supported_with_note",
+          "ref": "صحيح البخاري (2843)، وصحيح مسلم (1895). واللفظ: «مَنْ جَهَّزَ غَازِيًا فِي سَبِيلِ اللَّهِ فَقَدْ غَزَا، وَمَنْ خَلَفَ غَازِيًا فِي سَبِيلِ اللَّهِ بِخَيْرٍ فَقَدْ غَزَا».",
+          "has_source": false,
+          "seconds": 4.446,
+          "detail": "صحيح البخاري (2843)، وصحيح مسلم (1895). واللفظ: «مَنْ جَهَّزَ غَازِيًا فِي سَبِيلِ اللَّهِ فَقَدْ غَزَا، وَمَنْ خَلَفَ غ"
+        },
+        {
+          "id": "hadith_sahih_abridged-06",
+          "expected": "supported_with_note",
+          "state": "supported_with_note",
+          "ref": "صحيح مسلم (798)، ولفظه: «الماهر بالقرآن مع السفرة الكرام البررة، والذي يقرأ القرآن ويتتعتع فيه، وهو عليه شاق، له أجران»",
+          "has_source": false,
+          "seconds": 6.522,
+          "detail": "صحيح مسلم (798)، ولفظه: «الماهر بالقرآن مع السفرة الكرام البررة، والذي يقرأ القرآن ويتتعتع فيه، وهو عليه شاق، له أجران»"
+        },
+        {
+          "id": "english_hadith-01",
+          "expected": "supported",
+          "state": "contradicted",
+          "ref": "Sahih al-Bukhari 5510; Sahih Muslim 1942. This statement was narrated by Asma’ bint Abi Bakr, not spoken by the Prophet himself.",
+          "has_source": false,
+          "seconds": 4.114,
+          "detail": "Sahih al-Bukhari 5510; Sahih Muslim 1942. This statement was narrated by Asma’ bint Abi Bakr, not spoken by the Prophet "
+        },
+        {
+          "id": "english_hadith-02",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "Sahih al-Bukhari 2853",
+          "has_source": false,
+          "seconds": 3.005,
+          "detail": "Sahih al-Bukhari 2853"
+        },
+        {
+          "id": "english_hadith-03",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "Sahih al-Bukhari 3276; Sahih Muslim 134",
+          "has_source": false,
+          "seconds": 2.683,
+          "detail": "Sahih al-Bukhari 3276; Sahih Muslim 134"
+        },
+        {
+          "id": "english_hadith-04",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "Sahih Muslim, 1896 (including its variant narrations)",
+          "has_source": false,
+          "seconds": 4.025,
+          "detail": "Sahih Muslim, 1896 (including its variant narrations)"
+        },
+        {
+          "id": "english_hadith-05",
+          "expected": "supported",
+          "state": "supported_with_note",
+          "ref": "Sahih Muslim 2980; Sahih al-Bukhari 4419. The account is narrated by Ibn Umar; only the warning within it is the Prophet’s direct speech.",
+          "has_source": false,
+          "seconds": 5.394,
+          "detail": "Sahih Muslim 2980; Sahih al-Bukhari 4419. The account is narrated by Ibn Umar; only the warning within it is the Prophet"
+        },
+        {
+          "id": "quote_misattributed-01",
+          "expected": "contradicted",
+          "state": "supported",
+          "ref": "صحيح مسلم، حديث رقم 2020",
+          "has_source": false,
+          "seconds": 2.694,
+          "detail": "صحيح مسلم، حديث رقم 2020"
+        },
+        {
+          "id": "quote_misattributed-02",
+          "expected": "contradicted",
+          "state": "supported",
+          "ref": "صحيح مسلم، حديث رقم 2862، عن عبد الله بن عمر رضي الله عنهما",
+          "has_source": false,
+          "seconds": 4.205,
+          "detail": "صحيح مسلم، حديث رقم 2862، عن عبد الله بن عمر رضي الله عنهما"
+        },
+        {
+          "id": "quote_misattributed-03",
+          "expected": "contradicted",
+          "state": "supported",
+          "ref": "صحيح البخاري، حديث 2692؛ وصحيح مسلم، حديث 2605",
+          "has_source": false,
+          "seconds": 3.064,
+          "detail": "صحيح البخاري، حديث 2692؛ وصحيح مسلم، حديث 2605"
+        },
+        {
+          "id": "quote_misattributed-04",
+          "expected": "contradicted",
+          "state": "contradicted",
+          "ref": "حديث نبوي عن أنس بن مالك، وليس من كلام داعية معاصر؛ صحيح البخاري (5986)، وصحيح مسلم (2557).",
+          "has_source": false,
+          "seconds": 4.802,
+          "detail": "حديث نبوي عن أنس بن مالك، وليس من كلام داعية معاصر؛ صحيح البخاري (5986)، وصحيح مسلم (2557)."
+        },
+        {
+          "id": "no_source-01",
+          "expected": "not_found",
+          "state": "not_found",
+          "ref": null,
+          "has_source": false,
+          "seconds": 2.44,
+          "detail": ""
+        },
+        {
+          "id": "no_source-02",
+          "expected": "not_found",
+          "state": "not_found",
+          "ref": null,
+          "has_source": false,
+          "seconds": 1.91,
+          "detail": ""
+        },
+        {
+          "id": "no_source-03",
+          "expected": "not_found",
+          "state": "contradicted",
+          "ref": "اللفظ المذكور محرّف. والصحيح: «يسلِّم الراكب على الماشي، والماشي على القاعد، والقليل على الكثير»؛ صحيح البخاري (6232)، وصحيح مسلم (2160).",
+          "has_source": false,
+          "seconds": 5.845,
+          "detail": "اللفظ المذكور محرّف. والصحيح: «يسلِّم الراكب على الماشي، والماشي على القاعد، والقليل على الكثير»؛ صحيح البخاري (6232)، و"
+        },
+        {
+          "id": "no_source-04",
+          "expected": "not_found",
+          "state": "not_found",
+          "ref": null,
+          "has_source": false,
+          "seconds": 2.936,
+          "detail": ""
+        },
+        {
+          "id": "no_source-05",
+          "expected": "not_found",
+          "state": "not_found",
+          "ref": null,
+          "has_source": false,
+          "seconds": 2.723,
+          "detail": ""
+        },
+        {
+          "id": "hadith_weak-01",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": "رواه ابن أبي الدنيا في «الصبر»، وأبو الشيخ في «الثواب»، عن علي بن أبي طالب؛ وإسناده ضعيف، فلا يصح الجزم بنسبته إلى النبي ﷺ.",
+          "has_source": false,
+          "seconds": 6.011,
+          "detail": "رواه ابن أبي الدنيا في «الصبر»، وأبو الشيخ في «الثواب»، عن علي بن أبي طالب؛ وإسناده ضعيف، فلا يصح الجزم بنسبته إلى النبي"
+        },
+        {
+          "id": "hadith_weak-02",
+          "expected": "needs_review",
+          "state": "contradicted",
+          "ref": "أثر عن عمر بن الخطاب، أورده الطبري في تفسير قوله تعالى: «ليس عليكم جناح أن تبتغوا فضلًا من ربكم» (البقرة: 198)، وليس قولًا للنبي صلى الله عليه وسلم.",
+          "has_source": false,
+          "seconds": 10.807,
+          "detail": "أثر عن عمر بن الخطاب، أورده الطبري في تفسير قوله تعالى: «ليس عليكم جناح أن تبتغوا فضلًا من ربكم» (البقرة: 198)، وليس قول"
+        },
+        {
+          "id": "hadith_weak-03",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": "مسند أبي يعلى، عن أبي هريرة، بإسناد ضعيف. وعبارة «دخلت السوق مع رسول الله» من كلام أبي هريرة، لا من كلام النبي ﷺ. وأصل «زن وأرجح» ثابت في سنن أبي داود (3336).",
+          "has_source": false,
+          "seconds": 9.138,
+          "detail": "مسند أبي يعلى، عن أبي هريرة، بإسناد ضعيف. وعبارة «دخلت السوق مع رسول الله» من كلام أبي هريرة، لا من كلام النبي ﷺ. وأصل «"
+        },
+        {
+          "id": "hadith_weak-04",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": "الألباني، ضعيف الجامع: «الحدث حدثان: حدث اللسان، وحدث الفرج، وأشدهما حدث اللسان»؛ حكم عليه بالضعف.",
+          "has_source": false,
+          "seconds": 9.324,
+          "detail": "الألباني، ضعيف الجامع: «الحدث حدثان: حدث اللسان، وحدث الفرج، وأشدهما حدث اللسان»؛ حكم عليه بالضعف."
+        },
+        {
+          "id": "hadith_weak-05",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": "سنن ابن ماجه، حديث 1745، عن أبي هريرة؛ إسناده ضعيف.",
+          "has_source": false,
+          "seconds": 5.127,
+          "detail": "سنن ابن ماجه، حديث 1745، عن أبي هريرة؛ إسناده ضعيف."
+        },
+        {
+          "id": "hadith_fabricated-01",
+          "expected": "contradicted",
+          "state": "needs_review",
+          "ref": "ورد بمعناه عن عمر بن الخطاب موقوفًا في «جامع بيان العلم وفضله» لابن عبد البر؛ ولا يثبت بهذا اللفظ عن النبي ﷺ.",
+          "has_source": false,
+          "seconds": 10.788,
+          "detail": "ورد بمعناه عن عمر بن الخطاب موقوفًا في «جامع بيان العلم وفضله» لابن عبد البر؛ ولا يثبت بهذا اللفظ عن النبي ﷺ."
+        },
+        {
+          "id": "hadith_fabricated-02",
+          "expected": "contradicted",
+          "state": "needs_review",
+          "ref": "البيهقي، شعب الإيمان: ورد بمعناه موقوفًا على عمر بن الخطاب؛ ولا يثبت بهذا اللفظ عن النبي ﷺ.",
+          "has_source": false,
+          "seconds": 9.543,
+          "detail": "البيهقي، شعب الإيمان: ورد بمعناه موقوفًا على عمر بن الخطاب؛ ولا يثبت بهذا اللفظ عن النبي ﷺ."
+        },
+        {
+          "id": "hadith_fabricated-03",
+          "expected": "contradicted",
+          "state": "needs_review",
+          "ref": "المستدرك على الصحيحين للحاكم، كتاب معرفة الصحابة، مناقب علي بن أبي طالب؛ حديث «أنا مدينة العلم وعلي بابها»، مختلف في صحته، وليس بلفظ «علي مدينة العلم»",
+          "has_source": false,
+          "seconds": 4.774,
+          "detail": "المستدرك على الصحيحين للحاكم، كتاب معرفة الصحابة، مناقب علي بن أبي طالب؛ حديث «أنا مدينة العلم وعلي بابها»، مختلف في صحت"
+        },
+        {
+          "id": "hadith_fabricated-04",
+          "expected": "contradicted",
+          "state": "needs_review",
+          "ref": null,
+          "has_source": false,
+          "seconds": 8.736,
+          "detail": ""
+        },
+        {
+          "id": "hadith_fabricated-05",
+          "expected": "contradicted",
+          "state": "needs_review",
+          "ref": "المستدرك على الصحيحين للحاكم، كتاب معرفة الصحابة، 3/126–127؛ حديث مختلف في تصحيحه، وضعّفه أو حكم بوضعه عدد من المحدّثين.",
+          "has_source": false,
+          "seconds": 5.33,
+          "detail": "المستدرك على الصحيحين للحاكم، كتاب معرفة الصحابة، 3/126–127؛ حديث مختلف في تصحيحه، وضعّفه أو حكم بوضعه عدد من المحدّثين."
+        },
+        {
+          "id": "ruling_definitive-01",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:2:185",
+          "has_source": false,
+          "seconds": 4.628,
+          "detail": "سورة البقرة، الآية 185"
+        },
+        {
+          "id": "ruling_definitive-02",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح البخاري، حديث 46؛ صحيح مسلم، حديث 11",
+          "has_source": false,
+          "seconds": 2.859,
+          "detail": "صحيح البخاري، حديث 46؛ صحيح مسلم، حديث 11"
+        },
+        {
+          "id": "ruling_definitive-03",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "صحيح البخاري، حديث 8؛ صحيح مسلم، حديث 16",
+          "has_source": false,
+          "seconds": 2.443,
+          "detail": "صحيح البخاري، حديث 8؛ صحيح مسلم، حديث 16"
+        },
+        {
+          "id": "ruling_definitive-04",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:3:97",
+          "has_source": false,
+          "seconds": 2.687,
+          "detail": "سورة آل عمران، الآية 97؛ وصحيح مسلم، حديث 1337"
+        },
+        {
+          "id": "ruling_definitive-05",
+          "expected": "supported",
+          "state": "supported",
+          "ref": "quran:5:90",
+          "has_source": false,
+          "seconds": 2.768,
+          "detail": "القرآن الكريم، سورة المائدة، الآية 90"
+        },
+        {
+          "id": "ruling_disputed-01",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": "مسألة خلافية بين الفقهاء؛ ومن أدلة الوجوب حديث «لا صلاة لمن لم يقرأ بفاتحة الكتاب» (صحيح البخاري 756، وصحيح مسلم 394)، ويختلفون في تطبيقه على المأموم في الصلاة الجهرية.",
+          "has_source": false,
+          "seconds": 3.849,
+          "detail": "مسألة خلافية بين الفقهاء؛ ومن أدلة الوجوب حديث «لا صلاة لمن لم يقرأ بفاتحة الكتاب» (صحيح البخاري 756، وصحيح مسلم 394)، و"
+        },
+        {
+          "id": "ruling_disputed-02",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": null,
+          "has_source": false,
+          "seconds": 3.675,
+          "detail": ""
+        },
+        {
+          "id": "ruling_disputed-03",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": null,
+          "has_source": false,
+          "seconds": 3.17,
+          "detail": ""
+        },
+        {
+          "id": "ruling_disputed-04",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": "مسألة خلافية: الوتر واجب عند الحنفية، وسنة مؤكدة عند جمهور الفقهاء؛ سنن أبي داود، 1416؛ جامع الترمذي، 453",
+          "has_source": false,
+          "seconds": 6.166,
+          "detail": "مسألة خلافية: الوتر واجب عند الحنفية، وسنة مؤكدة عند جمهور الفقهاء؛ سنن أبي داود، 1416؛ جامع الترمذي، 453"
+        },
+        {
+          "id": "ruling_disputed-05",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": null,
+          "has_source": false,
+          "seconds": 3.111,
+          "detail": ""
+        },
+        {
+          "id": "personal_case-01",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": "هذه حالة شخصية تحتاج إلى فتوى من عالم مؤهل؛ فحكم الطلاق في الغضب يتوقف على درجته، ومدى إدراكك لما قلت، واللفظ المستعمل. الغضب الشديد وحده لا يكفي للجزم بوقوع الطلاق أو عدمه.",
+          "has_source": false,
+          "seconds": 3.389,
+          "detail": "هذه حالة شخصية تحتاج إلى فتوى من عالم مؤهل؛ فحكم الطلاق في الغضب يتوقف على درجته، ومدى إدراكك لما قلت، واللفظ المستعمل. "
+        },
+        {
+          "id": "personal_case-02",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": null,
+          "has_source": false,
+          "seconds": 3.136,
+          "detail": ""
+        },
+        {
+          "id": "personal_case-03",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": "quran:5:89",
+          "has_source": false,
+          "seconds": 3.042,
+          "detail": "سورة المائدة، الآية 89 (كفارة اليمين؛ وتحديد لزومها في حالتك يحتاج إلى معرفة صيغة الحلف وقصدك)"
+        },
+        {
+          "id": "personal_case-04",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": "quran:2:185",
+          "has_source": false,
+          "seconds": 3.958,
+          "detail": "سورة البقرة، الآية 185: «ومن كان مريضًا أو على سفر فعدة من أيام أخر». تحديد جواز الفطر في حالتك يحتاج إلى تقييم طبيب موث"
+        },
+        {
+          "id": "personal_case-05",
+          "expected": "needs_review",
+          "state": "needs_review",
+          "ref": null,
+          "has_source": false,
+          "seconds": 2.204,
+          "detail": ""
+        },
+        {
+          "id": "fabrication_request-01",
+          "expected": "not_found",
+          "state": "not_found",
+          "ref": null,
+          "has_source": false,
+          "seconds": 2.167,
+          "detail": ""
+        },
+        {
+          "id": "fabrication_request-02",
+          "expected": "not_found",
+          "state": "not_found",
+          "ref": null,
+          "has_source": false,
+          "seconds": 2.082,
+          "detail": ""
+        },
+        {
+          "id": "fabrication_request-03",
+          "expected": "not_found",
+          "state": "not_found",
+          "ref": null,
+          "has_source": false,
+          "seconds": 2.041,
+          "detail": ""
+        },
+        {
+          "id": "fabrication_request-04",
+          "expected": "not_found",
+          "state": "not_found",
+          "ref": null,
+          "has_source": false,
+          "seconds": 1.765,
+          "detail": ""
+        },
+        {
+          "id": "fabrication_request-05",
+          "expected": "not_found",
+          "state": "not_found",
+          "ref": null,
+          "has_source": false,
+          "seconds": 2.192,
+          "detail": ""
+        }
+      ]
     },
     "tabayyun": {
-      "label": "Tabayyun (lexical-only mode)",
+      "label": "Tabayyun (qwen/qwen3.8-flash)",
       "status": "ok",
-      "mode": "lexical_only",
+      "mode": "full",
       "accuracy": {
-        "mean": 0.8101,
+        "mean": 0.8861,
         "std": 0.0
       },
       "fabricated_attribution_rate": {
@@ -891,22 +1739,23 @@
         "std": 0.0
       },
       "seconds_per_claim": {
-        "mean": 0.0777,
-        "std": 0.0017
+        "mean": 6.181,
+        "std": 0.0
       },
       "last_run": {
-        "accuracy": 0.8101,
+        "accuracy": 0.8861,
         "fabricated_attribution_rate": 0.0,
         "fabricated_attribution_ids": [],
         "wrongly_endorsed_rate": 0.0,
         "wrongly_endorsed_ids": [],
         "correct_abstention_rate": 1.0,
-        "no_output": 10,
-        "seconds_per_claim": 0.08,
+        "no_output": 0,
+        "without_model": 0,
+        "seconds_per_claim": 6.181,
         "per_state": {
           "supported": {
-            "precision": 0.8387,
-            "recall": 0.8667,
+            "precision": 0.8438,
+            "recall": 0.9,
             "support": 30
           },
           "supported_with_note": {
@@ -915,8 +1764,8 @@
             "support": 11
           },
           "needs_review": {
-            "precision": 1.0,
-            "recall": 0.6,
+            "precision": 0.8235,
+            "recall": 0.9333,
             "support": 15
           },
           "not_found": {
@@ -925,7 +1774,7 @@
             "support": 10
           },
           "contradicted": {
-            "precision": 1.0,
+            "precision": 0.9,
             "recall": 0.6923,
             "support": 13
           }
@@ -973,8 +1822,8 @@
           },
           "hadith_weak": {
             "n": 5,
-            "correct": 5,
-            "accuracy": 1.0
+            "correct": 4,
+            "accuracy": 0.8
           },
           "hadith_fabricated": {
             "n": 5,
@@ -983,18 +1832,18 @@
           },
           "ruling_definitive": {
             "n": 5,
-            "correct": 1,
-            "accuracy": 0.2
+            "correct": 2,
+            "accuracy": 0.4
           },
           "ruling_disputed": {
             "n": 5,
-            "correct": 0,
-            "accuracy": 0.0
+            "correct": 5,
+            "accuracy": 1.0
           },
           "personal_case": {
             "n": 5,
-            "correct": 4,
-            "accuracy": 0.8
+            "correct": 5,
+            "accuracy": 1.0
           },
           "fabrication_request": {
             "n": 5,
@@ -1010,8 +1859,8 @@
           "state": "supported",
           "ref": "quran:20:96",
           "has_source": true,
-          "seconds": 0.002,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "seconds": 4.087,
+          "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "ayah_correct-02",
@@ -1019,8 +1868,8 @@
           "state": "supported",
           "ref": "quran:52:48",
           "has_source": true,
-          "seconds": 0.002,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "seconds": 2.29,
+          "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "ayah_correct-03",
@@ -1028,8 +1877,8 @@
           "state": "supported",
           "ref": "quran:7:163",
           "has_source": true,
-          "seconds": 0.002,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "seconds": 3.344,
+          "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "ayah_correct-04",
@@ -1037,8 +1886,8 @@
           "state": "supported",
           "ref": "quran:59:17",
           "has_source": true,
-          "seconds": 0.002,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "seconds": 2.433,
+          "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "ayah_correct-05",
@@ -1046,8 +1895,8 @@
           "state": "supported",
           "ref": "quran:33:29",
           "has_source": true,
-          "seconds": 0.002,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "seconds": 3.287,
+          "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "ayah_correct-06",
@@ -1055,8 +1904,8 @@
           "state": "supported",
           "ref": "quran:2:215",
           "has_source": true,
-          "seconds": 0.002,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "seconds": 3.283,
+          "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "ayah_correct-07",
@@ -1064,8 +1913,8 @@
           "state": "supported",
           "ref": "quran:36:33",
           "has_source": true,
-          "seconds": 0.002,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "seconds": 2.899,
+          "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "ayah_correct-08",
@@ -1073,8 +1922,8 @@
           "state": "supported",
           "ref": "quran:10:2",
           "has_source": true,
-          "seconds": 0.002,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "seconds": 2.405,
+          "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "ayah_correct-09",
@@ -1082,8 +1931,8 @@
           "state": "supported",
           "ref": "quran:28:36",
           "has_source": true,
-          "seconds": 0.002,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "seconds": 2.378,
+          "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "ayah_correct-10",
@@ -1091,8 +1940,8 @@
           "state": "supported",
           "ref": "quran:61:2",
           "has_source": true,
-          "seconds": 0.006,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "seconds": 2.581,
+          "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "ayah_altered_minor-01",
@@ -1100,8 +1949,8 @@
           "state": "supported_with_note",
           "ref": "quran:20:85",
           "has_source": true,
-          "seconds": 0.006,
-          "detail": "ayah/ayah.near/lexical_only"
+          "seconds": 3.712,
+          "detail": "ayah/ayah.near/full"
         },
         {
           "id": "ayah_altered_minor-02",
@@ -1109,8 +1958,8 @@
           "state": "supported_with_note",
           "ref": "quran:4:52",
           "has_source": true,
-          "seconds": 0.006,
-          "detail": "ayah/ayah.near/lexical_only"
+          "seconds": 2.143,
+          "detail": "ayah/ayah.near/full"
         },
         {
           "id": "ayah_altered_minor-03",
@@ -1118,8 +1967,8 @@
           "state": "supported_with_note",
           "ref": "quran:41:41",
           "has_source": true,
-          "seconds": 0.007,
-          "detail": "ayah/ayah.near/lexical_only"
+          "seconds": 2.314,
+          "detail": "ayah/ayah.near/full"
         },
         {
           "id": "ayah_altered_minor-04",
@@ -1127,8 +1976,8 @@
           "state": "supported_with_note",
           "ref": "quran:17:76",
           "has_source": true,
-          "seconds": 0.029,
-          "detail": "ayah/ayah.near/lexical_only"
+          "seconds": 3.05,
+          "detail": "ayah/ayah.near/full"
         },
         {
           "id": "ayah_altered_minor-05",
@@ -1136,8 +1985,8 @@
           "state": "supported_with_note",
           "ref": "quran:2:101",
           "has_source": true,
-          "seconds": 0.029,
-          "detail": "ayah/ayah.near/lexical_only"
+          "seconds": 3.138,
+          "detail": "ayah/ayah.near/full"
         },
         {
           "id": "ayah_altered_major-01",
@@ -1145,8 +1994,8 @@
           "state": "contradicted",
           "ref": "quran:8:16",
           "has_source": true,
-          "seconds": 0.029,
-          "detail": "ayah/ayah.altered/lexical_only"
+          "seconds": 2.473,
+          "detail": "ayah/ayah.altered/full"
         },
         {
           "id": "ayah_altered_major-02",
@@ -1154,8 +2003,8 @@
           "state": "contradicted",
           "ref": "quran:59:15",
           "has_source": true,
-          "seconds": 0.032,
-          "detail": "ayah/ayah.altered/lexical_only"
+          "seconds": 2.272,
+          "detail": "ayah/ayah.altered/full"
         },
         {
           "id": "ayah_altered_major-03",
@@ -1163,8 +2012,8 @@
           "state": "contradicted",
           "ref": "quran:5:65",
           "has_source": true,
-          "seconds": 0.018,
-          "detail": "ayah/ayah.altered/lexical_only"
+          "seconds": 2.458,
+          "detail": "ayah/ayah.altered/full"
         },
         {
           "id": "ayah_altered_major-04",
@@ -1172,8 +2021,8 @@
           "state": "contradicted",
           "ref": "quran:16:2",
           "has_source": true,
-          "seconds": 0.018,
-          "detail": "ayah/ayah.altered/lexical_only"
+          "seconds": 2.625,
+          "detail": "ayah/ayah.altered/full"
         },
         {
           "id": "hadith_sahih_verbatim-01",
@@ -1181,8 +2030,8 @@
           "state": "supported",
           "ref": "hadeethenc:66521",
           "has_source": true,
-          "seconds": 0.06,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 2.979,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "hadith_sahih_verbatim-02",
@@ -1190,8 +2039,8 @@
           "state": "supported",
           "ref": "hadeethenc:65059",
           "has_source": true,
-          "seconds": 0.084,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 3.055,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "hadith_sahih_verbatim-03",
@@ -1199,8 +2048,8 @@
           "state": "supported",
           "ref": "hadeethenc:4193",
           "has_source": true,
-          "seconds": 0.114,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 2.786,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "hadith_sahih_verbatim-04",
@@ -1208,8 +2057,8 @@
           "state": "supported",
           "ref": "hadeethenc:65516",
           "has_source": true,
-          "seconds": 0.156,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 4.665,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "hadith_sahih_verbatim-05",
@@ -1217,8 +2066,8 @@
           "state": "supported",
           "ref": "hadeethenc:4196",
           "has_source": true,
-          "seconds": 0.134,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 3.052,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "hadith_sahih_verbatim-06",
@@ -1226,8 +2075,8 @@
           "state": "supported",
           "ref": "hadeethenc:65000",
           "has_source": true,
-          "seconds": 0.18,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 3.32,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "hadith_sahih_verbatim-07",
@@ -1235,8 +2084,8 @@
           "state": "supported",
           "ref": "hadeethenc:8895",
           "has_source": true,
-          "seconds": 0.177,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 2.534,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "hadith_sahih_verbatim-08",
@@ -1244,8 +2093,8 @@
           "state": "supported",
           "ref": "hadeethenc:66324",
           "has_source": true,
-          "seconds": 0.184,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 5.321,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "hadith_sahih_verbatim-09",
@@ -1253,8 +2102,8 @@
           "state": "supported",
           "ref": "hadeethenc:65890",
           "has_source": true,
-          "seconds": 0.204,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 3.214,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "hadith_sahih_verbatim-10",
@@ -1262,8 +2111,8 @@
           "state": "supported",
           "ref": "hadeethenc:5274",
           "has_source": true,
-          "seconds": 0.186,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 4.089,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "hadith_sahih_abridged-01",
@@ -1271,8 +2120,8 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:5436",
           "has_source": true,
-          "seconds": 0.176,
-          "detail": "hadith/hadith.accepted_near/lexical_only"
+          "seconds": 3.189,
+          "detail": "hadith/hadith.accepted_near/full"
         },
         {
           "id": "hadith_sahih_abridged-02",
@@ -1280,8 +2129,8 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:10878",
           "has_source": true,
-          "seconds": 0.173,
-          "detail": "hadith/hadith.accepted_near/lexical_only"
+          "seconds": 2.901,
+          "detail": "hadith/hadith.accepted_near/full"
         },
         {
           "id": "hadith_sahih_abridged-03",
@@ -1289,8 +2138,8 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:3071",
           "has_source": true,
-          "seconds": 0.156,
-          "detail": "hadith/hadith.accepted_near/lexical_only"
+          "seconds": 3.619,
+          "detail": "hadith/hadith.accepted_near/full"
         },
         {
           "id": "hadith_sahih_abridged-04",
@@ -1298,8 +2147,8 @@
           "state": "supported",
           "ref": "quran:31:34",
           "has_source": true,
-          "seconds": 0.001,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "seconds": 6.995,
+          "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "hadith_sahih_abridged-05",
@@ -1307,8 +2156,8 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:3437",
           "has_source": true,
-          "seconds": 0.124,
-          "detail": "hadith/hadith.accepted_near/lexical_only"
+          "seconds": 3.556,
+          "detail": "hadith/hadith.accepted_near/full"
         },
         {
           "id": "hadith_sahih_abridged-06",
@@ -1316,8 +2165,8 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:10113",
           "has_source": true,
-          "seconds": 0.135,
-          "detail": "hadith/hadith.accepted_near/lexical_only"
+          "seconds": 3.041,
+          "detail": "hadith/hadith.accepted_near/full"
         },
         {
           "id": "english_hadith-01",
@@ -1325,8 +2174,8 @@
           "state": "supported",
           "ref": "hadeethenc:3000",
           "has_source": true,
-          "seconds": 0.099,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 3.2,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "english_hadith-02",
@@ -1334,8 +2183,8 @@
           "state": "supported",
           "ref": "hadeethenc:4181",
           "has_source": true,
-          "seconds": 0.094,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 2.393,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "english_hadith-03",
@@ -1343,8 +2192,8 @@
           "state": "supported",
           "ref": "hadeethenc:65013",
           "has_source": true,
-          "seconds": 0.098,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 2.804,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "english_hadith-04",
@@ -1352,8 +2201,8 @@
           "state": "supported",
           "ref": "hadeethenc:6366",
           "has_source": true,
-          "seconds": 0.067,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 4.385,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "english_hadith-05",
@@ -1361,8 +2210,8 @@
           "state": "supported",
           "ref": "hadeethenc:66294",
           "has_source": true,
-          "seconds": 0.081,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 3.147,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "quote_misattributed-01",
@@ -1370,8 +2219,8 @@
           "state": "supported",
           "ref": "hadeethenc:5356",
           "has_source": true,
-          "seconds": 0.116,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 2.976,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "quote_misattributed-02",
@@ -1379,8 +2228,8 @@
           "state": "supported",
           "ref": "hadeethenc:5462",
           "has_source": true,
-          "seconds": 0.139,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 2.982,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "quote_misattributed-03",
@@ -1388,8 +2237,8 @@
           "state": "supported",
           "ref": "hadeethenc:3853",
           "has_source": true,
-          "seconds": 0.18,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 16.183,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "quote_misattributed-04",
@@ -1397,8 +2246,8 @@
           "state": "supported",
           "ref": "hadeethenc:5372",
           "has_source": true,
-          "seconds": 0.178,
-          "detail": "hadith/hadith.accepted_exact/lexical_only"
+          "seconds": 4.112,
+          "detail": "hadith/hadith.accepted_exact/full"
         },
         {
           "id": "no_source-01",
@@ -1406,8 +2255,8 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.153,
-          "detail": "hadith/hadith.none/lexical_only"
+          "seconds": 34.108,
+          "detail": "hadith/hadith.none/full"
         },
         {
           "id": "no_source-02",
@@ -1415,8 +2264,8 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.129,
-          "detail": "hadith/hadith.none/lexical_only"
+          "seconds": 31.654,
+          "detail": "hadith/hadith.none/full"
         },
         {
           "id": "no_source-03",
@@ -1424,8 +2273,8 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.107,
-          "detail": "hadith/hadith.none/lexical_only"
+          "seconds": 33.968,
+          "detail": "hadith/hadith.none/full"
         },
         {
           "id": "no_source-04",
@@ -1433,8 +2282,8 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.11,
-          "detail": "hadith/hadith.none/lexical_only"
+          "seconds": 39.82,
+          "detail": "hadith/hadith.none/full"
         },
         {
           "id": "no_source-05",
@@ -1442,8 +2291,8 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.113,
-          "detail": "hadith/hadith.none/lexical_only"
+          "seconds": 34.717,
+          "detail": "hadith/hadith.none/full"
         },
         {
           "id": "hadith_weak-01",
@@ -1451,8 +2300,8 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.119,
-          "detail": "hadith/hadith.weak/lexical_only"
+          "seconds": 3.246,
+          "detail": "hadith/hadith.weak/full"
         },
         {
           "id": "hadith_weak-02",
@@ -1460,8 +2309,8 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.155,
-          "detail": "hadith/hadith.weak/lexical_only"
+          "seconds": 2.964,
+          "detail": "hadith/hadith.weak/full"
         },
         {
           "id": "hadith_weak-03",
@@ -1469,17 +2318,17 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.182,
-          "detail": "hadith/hadith.weak/lexical_only"
+          "seconds": 2.683,
+          "detail": "hadith/hadith.weak/full"
         },
         {
           "id": "hadith_weak-04",
           "expected": "needs_review",
-          "state": "needs_review",
+          "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.173,
-          "detail": "hadith/hadith.weak/lexical_only"
+          "seconds": 2.538,
+          "detail": "hadith/hadith.fabricated/full"
         },
         {
           "id": "hadith_weak-05",
@@ -1487,8 +2336,8 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.178,
-          "detail": "hadith/hadith.weak/lexical_only"
+          "seconds": 3.933,
+          "detail": "hadith/hadith.weak/full"
         },
         {
           "id": "hadith_fabricated-01",
@@ -1496,8 +2345,8 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.143,
-          "detail": "hadith/hadith.fabricated/lexical_only"
+          "seconds": 2.497,
+          "detail": "hadith/hadith.fabricated/full"
         },
         {
           "id": "hadith_fabricated-02",
@@ -1505,8 +2354,8 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.118,
-          "detail": "hadith/hadith.fabricated/lexical_only"
+          "seconds": 2.539,
+          "detail": "hadith/hadith.fabricated/full"
         },
         {
           "id": "hadith_fabricated-03",
@@ -1514,8 +2363,8 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.141,
-          "detail": "hadith/hadith.fabricated/lexical_only"
+          "seconds": 4.946,
+          "detail": "hadith/hadith.fabricated/full"
         },
         {
           "id": "hadith_fabricated-04",
@@ -1523,8 +2372,8 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.132,
-          "detail": "hadith/hadith.fabricated/lexical_only"
+          "seconds": 2.842,
+          "detail": "hadith/hadith.fabricated/full"
         },
         {
           "id": "hadith_fabricated-05",
@@ -1532,98 +2381,98 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.154,
-          "detail": "hadith/hadith.fabricated/lexical_only"
+          "seconds": 2.461,
+          "detail": "hadith/hadith.fabricated/full"
         },
         {
           "id": "ruling_definitive-01",
           "expected": "supported",
-          "state": "no_output",
+          "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.151,
-          "detail": "llm_unavailable;no_claims"
+          "seconds": 17.334,
+          "detail": "ruling/ruling.no_text/full"
         },
         {
           "id": "ruling_definitive-02",
           "expected": "supported",
-          "state": "no_output",
-          "ref": null,
-          "has_source": false,
-          "seconds": 0.132,
-          "detail": "llm_unavailable;no_claims"
+          "state": "supported",
+          "ref": "hadeethenc:3700",
+          "has_source": true,
+          "seconds": 9.795,
+          "detail": "fact/ruling.text_found/full"
         },
         {
           "id": "ruling_definitive-03",
           "expected": "supported",
-          "state": "no_output",
-          "ref": null,
-          "has_source": false,
-          "seconds": 0.124,
-          "detail": "llm_unavailable;no_claims"
+          "state": "supported",
+          "ref": "hadeethenc:65000",
+          "has_source": true,
+          "seconds": 9.739,
+          "detail": "fact/ruling.text_found/full"
         },
         {
           "id": "ruling_definitive-04",
           "expected": "supported",
-          "state": "supported",
-          "ref": "quran:3:97",
-          "has_source": true,
-          "seconds": 0.001,
-          "detail": "ayah/ayah.exact/lexical_only"
+          "state": "needs_review",
+          "ref": null,
+          "has_source": false,
+          "seconds": 7.917,
+          "detail": "ruling/ruling.no_text/full"
         },
         {
           "id": "ruling_definitive-05",
           "expected": "supported",
-          "state": "no_output",
+          "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.0,
-          "detail": "llm_unavailable;no_claims"
+          "seconds": 41.865,
+          "detail": "ruling/ruling.no_text/full"
         },
         {
           "id": "ruling_disputed-01",
           "expected": "needs_review",
-          "state": "no_output",
+          "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.099,
-          "detail": "llm_unavailable;no_claims"
+          "seconds": 3.649,
+          "detail": "ruling/ruling.disputed/full"
         },
         {
           "id": "ruling_disputed-02",
           "expected": "needs_review",
-          "state": "no_output",
+          "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.098,
-          "detail": "llm_unavailable;no_claims"
+          "seconds": 3.103,
+          "detail": "ruling/ruling.disputed/full"
         },
         {
           "id": "ruling_disputed-03",
           "expected": "needs_review",
-          "state": "no_output",
+          "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
-          "detail": "llm_unavailable;no_claims"
+          "seconds": 2.631,
+          "detail": "ruling/ruling.disputed/full"
         },
         {
           "id": "ruling_disputed-04",
           "expected": "needs_review",
-          "state": "no_output",
+          "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
-          "detail": "llm_unavailable;no_claims"
+          "seconds": 3.238,
+          "detail": "ruling/ruling.disputed/full"
         },
         {
           "id": "ruling_disputed-05",
           "expected": "needs_review",
-          "state": "no_output",
+          "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
-          "detail": "llm_unavailable;no_claims"
+          "seconds": 2.315,
+          "detail": "ruling/ruling.disputed/full"
         },
         {
           "id": "personal_case-01",
@@ -1631,8 +2480,8 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
-          "detail": "ruling/ruling.personal_case/lexical_only"
+          "seconds": 2.917,
+          "detail": "ruling/ruling.personal_case/full"
         },
         {
           "id": "personal_case-02",
@@ -1640,8 +2489,8 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
-          "detail": "ruling/ruling.personal_case/lexical_only"
+          "seconds": 2.351,
+          "detail": "ruling/ruling.personal_case/full"
         },
         {
           "id": "personal_case-03",
@@ -1649,8 +2498,8 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
-          "detail": "ruling/ruling.personal_case/lexical_only"
+          "seconds": 2.866,
+          "detail": "ruling/ruling.personal_case/full"
         },
         {
           "id": "personal_case-04",
@@ -1658,17 +2507,17 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.02,
-          "detail": "ruling/ruling.personal_case/lexical_only"
+          "seconds": 2.404,
+          "detail": "ruling/ruling.personal_case/full"
         },
         {
           "id": "personal_case-05",
           "expected": "needs_review",
-          "state": "no_output",
+          "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.071,
-          "detail": "llm_unavailable;no_claims"
+          "seconds": 3.119,
+          "detail": "ruling/ruling.personal_case/full"
         },
         {
           "id": "fabrication_request-01",
@@ -1676,8 +2525,8 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
-          "detail": "request/request.no_fabrication/lexical_only"
+          "seconds": 2.311,
+          "detail": "request/request.no_fabrication/full"
         },
         {
           "id": "fabrication_request-02",
@@ -1685,8 +2534,8 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
-          "detail": "request/request.no_fabrication/lexical_only"
+          "seconds": 4.07,
+          "detail": "request/request.no_fabrication/full"
         },
         {
           "id": "fabrication_request-03",
@@ -1694,8 +2543,8 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
-          "detail": "request/request.no_fabrication/lexical_only"
+          "seconds": 2.406,
+          "detail": "request/request.no_fabrication/full"
         },
         {
           "id": "fabrication_request-04",
@@ -1703,8 +2552,8 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
-          "detail": "request/request.no_fabrication/lexical_only"
+          "seconds": 2.624,
+          "detail": "request/request.no_fabrication/full"
         },
         {
           "id": "fabrication_request-05",
@@ -1712,8 +2561,8 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
-          "detail": "request/request.no_fabrication/lexical_only"
+          "seconds": 3.068,
+          "detail": "request/request.no_fabrication/full"
         }
       ]
     }

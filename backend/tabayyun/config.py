@@ -28,7 +28,11 @@ class Settings(BaseSettings):
     model_cheap: str = ""  # one-line topic summaries and build-time chores
     model_fallback: str = ""  # free/near-free, a different family from the primaries
     model_baseline_llm: str = ""  # the "general LLM without retrieval" baseline in eval/run.py
-    llm_reasoning_effort: str = "low"  # for models that reason before answering; "" leaves the default
+    llm_reasoning_effort: str = "none"  # extraction only; "" leaves the model's default. Other tasks use "low".
+    # The pointing call ("is this retrieved text the same narration / explicit evidence?") can lift a
+    # claim to supported, so it keeps its own setting: with reasoning off the model accepted a
+    # no-source text as a paraphrase in the bake-off.
+    llm_reasoning_effort_judge: str = "low"
     llm_timeout_seconds: float = 60.0
     daily_spend_limit_usd: float = 1.0  # beyond this, every call uses MODEL_FALLBACK until midnight UTC
 

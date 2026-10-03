@@ -103,12 +103,15 @@ plainly below, with the command that finishes the job in `OPERATIONS.md`.
 33. **One provider, one key.** The Anthropic and OpenAI provider modules, settings and dependency were
     removed. `llm/openrouter.py` is the only client (the OpenAI-compatible SDK pointed at OpenRouter);
     text, image and audio all go to `chat/completions`.
-34. **`MODEL_EXTRACT = qwen/qwen3.8-flash` — provisional.** Bake-off on 20 test-set items through the
-    real pipeline. Four candidates completed: Qwen 3.8 Flash 85%, DeepSeek V4 Pro 85%, GPT-6 Luna 80%,
+34. **`MODEL_EXTRACT = qwen/qwen3.8-flash`.** Bake-off on 20 test-set items through the real
+    pipeline. Four candidates completed: Qwen 3.8 Flash 85%, DeepSeek V4 Pro 85%, GPT-6 Luna 80%,
     GLM 5.3 Flash 80%. The two leaders miss the same three items; Qwen costs less than half as much
-    per item ($0.00079 against $0.00174, measured), so it wins the tie. **Not measured**: Claude
-    Sonnet 5.5 (every call refused), Gemini 3.8 Flash (5 of 20 refused), Qwen 3.7 Plus and DeepSeek
-    V4 Pro 0813 (most refused). The choice stands until they run.
+    per item, so it wins the tie. On the full 79-item set in full mode it then scored 88.6% with no
+    fabricated attribution and no wrongly endorsed item (one run). **Not measured, on purpose**:
+    Claude Sonnet 5.5, Gemini 3.8 Flash, Qwen 3.7 Plus and DeepSeek V4 Pro 0813 were refused while
+    the account had no credit, and were not re-run afterwards — of the leaders' three misses, two are
+    artefacts of the test set that every system misses (item 46), so one item is all another model
+    could gain on this sample, and the budget is small (item 47).
 35. **GPT-6 Luna and GLM 5.3 Flash are rejected whatever they cost.** Both answered "same narration"
     for a test text that is word salad from four narrations, and the paraphrase rule then returned
     `supported_with_note` — a fabricated attribution in the eval's terms. The two leaders did not.
@@ -127,10 +130,12 @@ plainly below, with the command that finishes the job in `OPERATIONS.md`.
     3 images and restored the original wording in one. GLM-4.6V failed the single-image check.
     The two images Qwen misread are character errors, so a verse mismatch read from an image should
     be treated like one from a machine transcript when image input ships (F1) — a decision for then.
-38. **`MODEL_AUDIO = google/gemini-3.5-flash-lite` — provisional and untested.** Every audio call was
-    refused ("requires at least $0.50 in balance for audio"). The model accepts audio and supports
-    strict JSON output according to the catalog; that is all that is known. Until it is measured,
-    captions and local Whisper are the transcription paths that have actually run.
+38. **`MODEL_AUDIO = google/gemini-3.5-flash-lite`.** Chosen from the catalog while audio calls were
+    still refused; measured after credit was added: it transcribed the test recitation exactly, and
+    the first 60 seconds of a real clip came back as timestamped segments in 3.1 s for $0.0013. The
+    other audio candidates were not compared, and no word-error rate has been measured (the 20
+    reading scripts of the audio test have not been recorded). This endpoint refuses a request that
+    switches reasoning off, which is why only extraction and pointing have a reasoning setting.
 39. **`MODEL_CHEAP = deepseek/deepseek-v4-flash`**: the cheapest paid text model in the check
     ($0.028 / $0.056 per million tokens), exact quote and valid JSON in 7 s.
 40. **`MODEL_FALLBACK = nvidia/nemotron-3-super-120b-a12b:free`**: free, a different family from every
@@ -141,10 +146,16 @@ plainly below, with the command that finishes the job in `OPERATIONS.md`.
     not available to API callers.
 41. **`MODEL_BASELINE_LLM = openai/gpt-6.1-sol`**: a mid-tier general model at the price of the
     mid-tier of other labs ($2 / $10), so the "general chatbot" baseline is not a straw man. It is
-    called without retrieval and without a fallback. Not run yet.
-42. **`LLM_REASONING_EFFORT = low`** is the setting the bake-off measured. On one item, `none` cut
-    Qwen 3.8 Flash from 25.5 s to 3.8 s and the cost by two thirds with the same answer; its accuracy
-    is unmeasured, and that 20-item run is first in `make models-verify`.
+    called without retrieval and without a fallback. Run once on the 79 items: 77.2%, no fabricated
+    attribution, 90% correct abstention; it missed all five slightly altered verses and all five
+    fabricated narrations. $0.14 per run.
+42. **Reasoning: off for extraction, on for pointing.** Measured on the 20 items with Qwen 3.8 Flash:
+    reasoning on both calls 85% at $0.00079 and 28 s per item; off on both 80% at $0.00017 and 3 s —
+    and the pointing call then accepted a no-source text as a paraphrase, the fabricated attribution
+    of item 35; **off for extraction, low for pointing: 85% at $0.00027 and 8 s**, with the same
+    three misses as reasoning everywhere. That split is the default (`LLM_REASONING_EFFORT=none`,
+    `LLM_REASONING_EFFORT_JUDGE=low`). A pointing answer that runs to its output budget is not
+    retried, and a pointing call never goes to the fallback model.
 43. **Strict JSON where the catalog says the model supports it** (`response_format: json_schema` with
     `provider.require_parameters`); otherwise the schema goes in the prompt. Either way the answer is
     validated with Pydantic and an invalid one is retried once, then failed. Of the 231 calls that

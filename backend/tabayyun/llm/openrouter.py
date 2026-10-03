@@ -32,8 +32,9 @@ log = logging.getLogger("tabayyun.llm")
 
 # Output budgets per task: enough for the job, small enough that a runaway answer cannot cost much.
 # Reasoning tokens count against the budget, which is why "judge" (a two-field answer) is not smaller:
-# at 1200 the reasoning of the extraction model truncated two of four answers in the bake-off.
-MAX_TOKENS = {"extract": 8000, "judge": 2500, "vision": 4000, "audio": 12000, "cheap": 800, "baseline": 1200}
+# measured answers needed up to 460 tokens; the one that ran away did so at 1200 and at 2500 alike,
+# so a larger budget only makes the runaway dearer.
+MAX_TOKENS = {"extract": 8000, "judge": 1500, "vision": 4000, "audio": 12000, "cheap": 800, "baseline": 1200}
 TIMEOUT_SECONDS = {"audio": 240.0, "vision": 90.0}
 _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.IGNORECASE)
 _RETRYABLE = (openai.RateLimitError, openai.APITimeoutError, openai.APIConnectionError, openai.InternalServerError)
@@ -70,9 +71,9 @@ class LLMSession:
     def available(self) -> bool:
         return self.llm.available
 
-    async def complete_json(self, *, task: str, system: str, user: Any, schema: dict, model_cls: type[T], max_tokens: int | None = None, model: str | None = None) -> T:
+    async def complete_json(self, *, task: str, system: str, user: Any, schema: dict, model_cls: type[T], max_tokens: int | None = None, model: str | None = None, use_fallback: bool = True) -> T:
         try:
-            result, infos = await self.llm.complete_json(task=task, system=system, user=user, schema=schema, model_cls=model_cls, max_tokens=max_tokens, model=model)
+            result, infos = await self.llm.complete_json(task=task, system=system, user=user, schema=schema, model_cls=model_cls, max_tokens=max_tokens, model=model, use_fallback=use_fallback)
         except LLMError as e:
             self.calls += e.calls
             raise
@@ -165,8 +166,11 @@ class OpenRouterLLM:
             body["response_format"] = {"type": "json_object"}
         if info is None or info.supports("temperature"):
             body["temperature"] = 0
-        if info and info.supports("reasoning") and settings.llm_reasoning_effort:
-            body["extra_body"]["reasoning"] = {"effort": settings.llm_reasoning_effort, "exclude": True}
+        # Per task, as measured: extraction and pointing have their own settings; the other tasks keep
+        # "low" (some endpoints, e.g. the audio model's, reject a request that switches reasoning off).
+        effort = {"extract": settings.llm_reasoning_effort, "judge": settings.llm_reasoning_effort_judge}.get(task, "low")
+        if info and info.supports("reasoning") and effort:
+            body["extra_body"]["reasoning"] = {"effort": effort, "exclude": True}
         return body
 
     async def _once(self, model: str, task: str, system: str, user: Any, schema: dict, model_cls: type[T], max_tokens: int, fallback: bool) -> tuple[T | None, CallInfo, Exception | None]:
@@ -217,8 +221,9 @@ class OpenRouterLLM:
         )  # fmt: skip
         return parsed, info, error
 
-    async def complete_json(self, *, task: str, system: str, user: Any, schema: dict, model_cls: type[T], max_tokens: int | None = None, model: str | None = None) -> tuple[T, list[CallInfo]]:
-        """Returns (validated result, the calls made). Raises LLMError when primary and fallback both fail."""
+    async def complete_json(self, *, task: str, system: str, user: Any, schema: dict, model_cls: type[T], max_tokens: int | None = None, model: str | None = None, use_fallback: bool = True) -> tuple[T, list[CallInfo]]:
+        """Returns (validated result, the calls made). Raises LLMError when primary and fallback both fail.
+        ``use_fallback=False`` is for answers that are only honoured from the primary model (pointing)."""
         if self._client is None:
             raise LLMError("no OpenRouter API key configured")
         budget = max_tokens or MAX_TOKENS[task]
@@ -239,12 +244,15 @@ class OpenRouterLLM:
                 infos.append(info)
                 if parsed is not None:
                     return parsed, infos
-                retry = attempt == 1 and (isinstance(error, _RETRYABLE) or isinstance(error, ValueError))
+                # An answer cut off at the output budget is not retried: the same request runs to the
+                # same length again and is paid for twice (seen in the bake-off: 2 x 41 s, 2 x $0.0013).
+                truncated = isinstance(error, ValueError) and "truncated" in str(error)
+                retry = attempt == 1 and not truncated and (isinstance(error, _RETRYABLE) or isinstance(error, ValueError))
                 log.warning("model call failed (task=%s model=%s attempt=%d): %s", task, primary, attempt, info.error)
                 if not retry:
                     break
 
-        if fallback_model and fallback_model != primary and self._fallback_fits(fallback_model, task):
+        if use_fallback and fallback_model and fallback_model != primary and self._fallback_fits(fallback_model, task):
             parsed, info, _error = await self._once(fallback_model, task, system, user, schema, model_cls, budget, fallback=True)
             infos.append(info)
             if parsed is not None:

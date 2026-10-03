@@ -25,6 +25,30 @@
     {
       "model": "qwen/qwen3.8-flash",
       "state_accuracy": 0.85,
+      "type_accuracy": 0.85,
+      "level_accuracy": 0.625,
+      "exact_quote_rate": 0.7619047619047619,
+      "invalid_json_calls": 0,
+      "refused_calls": 0,
+      "truncated_calls": 2,
+      "calls": 25,
+      "max_tokens_extract": 8000,
+      "lexical_only_items": 0,
+      "seconds_per_item": 8.281981416750204,
+      "cost_per_item_usd": 0.00026781280000000003,
+      "cost_total_usd": 0.005356256,
+      "misses": [
+        "quote_misattributed-01→supported",
+        "quote_misattributed-02→supported",
+        "ruling_definitive-01→needs_review"
+      ],
+      "reasoning_effort": "none",
+      "judge_effort": "low",
+      "label": "qwen/qwen3.8-flash (extraction none, pointing low)"
+    },
+    {
+      "model": "qwen/qwen3.8-flash",
+      "state_accuracy": 0.85,
       "type_accuracy": 0.9,
       "level_accuracy": 0.625,
       "exact_quote_rate": 0.7,
@@ -77,6 +101,31 @@
         "no_source-01→supported_with_note",
         "ruling_definitive-01→needs_review"
       ]
+    },
+    {
+      "model": "qwen/qwen3.8-flash",
+      "state_accuracy": 0.8,
+      "type_accuracy": 0.85,
+      "level_accuracy": 0.625,
+      "exact_quote_rate": 0.7619047619047619,
+      "invalid_json_calls": 0,
+      "refused_calls": 0,
+      "truncated_calls": 0,
+      "calls": 24,
+      "max_tokens_extract": 8000,
+      "lexical_only_items": 0,
+      "seconds_per_item": 3.418043206100265,
+      "cost_per_item_usd": 0.00016799000000000002,
+      "cost_total_usd": 0.0033598000000000005,
+      "misses": [
+        "quote_misattributed-01→supported",
+        "quote_misattributed-02→supported",
+        "no_source-01→supported_with_note",
+        "ruling_definitive-01→needs_review"
+      ],
+      "reasoning_effort": "none",
+      "label": "qwen/qwen3.8-flash (extraction none, pointing none)",
+      "judge_effort": "none"
     },
     {
       "model": "z-ai/glm-5.3-flash",

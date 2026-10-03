@@ -129,6 +129,20 @@ def test_an_invalid_answer_is_retried_then_falls_back(llm):
     assert "validation" in infos[0].error and "USER TEXT" not in (infos[0].error or "")
 
 
+def test_a_truncated_answer_is_not_retried(llm):
+    fake = llm.script(reply(finish="length"), reply())
+    _result, infos = call(llm)
+    assert len(fake.requests) == 2 and infos[0].model != infos[1].model and infos[1].fallback  # primary once, then the fallback
+    assert "truncated" in infos[0].error
+
+
+def test_pointing_calls_can_opt_out_of_the_fallback(llm):
+    fake = llm.script(http_error(openai.InternalServerError, 500), http_error(openai.InternalServerError, 500), reply())
+    with pytest.raises(LLMError):
+        asyncio.run(llm.complete_json(task="judge", system="s", user="u", schema=SCHEMA, model_cls=Answer, use_fallback=False))
+    assert len(fake.requests) == 2  # the primary and its one retry; the fallback is never asked
+
+
 def test_code_fences_around_json_are_tolerated(llm):
     llm.script(reply(content='```json\n{"answer": "fenced"}\n```'))
     assert call(llm)[0].answer == "fenced"

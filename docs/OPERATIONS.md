@@ -24,8 +24,8 @@ cd frontend && npm install && npm run dev                    # http://localhost:
 Tests: `cd backend && .venv/bin/pytest -q` (offline, deterministic, no model calls); `-m network`
 runs the live-source tests and `-m llm` the eight content-safety cases through the real model
 (paid, about half a cent). Evaluation: `backend/.venv/bin/python eval/run.py`.
-Model checks: `make models-check` (one tiny test per configured model), `make models-verify` and
-`make models-bakeoff-rest` (the measurements listed under "Models" below).
+Model checks (paid, run by hand): `make models-check` (one tiny test per configured model, about a
+cent) and `make models-verify` (that check, one transcription and the evaluation once, about $0.17).
 
 ## Configuration (`.env`, documented in `.env.example`)
 
@@ -36,11 +36,12 @@ Model checks: `make models-check` (one tiny test per configured model), `make mo
 | `OPENROUTER_APP_URL` / `OPENROUTER_APP_TITLE` | `PUBLIC_URL` / `Tabayyun` | sent as `HTTP-Referer` and `X-Title` |
 | `MODEL_EXTRACT` | `qwen/qwen3.8-flash` | finds citations, classifies the level, points at retrieved texts |
 | `MODEL_VISION` | `qwen/qwen3.7-flash` | reads the text of an image exactly as written |
-| `MODEL_AUDIO` | `google/gemini-3.5-flash-lite` (provisional) | speech → timestamped segments |
+| `MODEL_AUDIO` | `google/gemini-3.5-flash-lite` | speech → timestamped segments |
 | `MODEL_CHEAP` | `deepseek/deepseek-v4-flash` | one-line topic summaries, build-time chores |
 | `MODEL_FALLBACK` | `nvidia/nemotron-3-super-120b-a12b:free` | used after the primary fails twice, or past the daily limit |
 | `MODEL_BASELINE_LLM` | `openai/gpt-6.1-sol` | the "general chatbot" baseline in `eval/run.py` only |
-| `LLM_REASONING_EFFORT` | `low` | `none`/`minimal`/`low`/`medium`/`high` for models that reason first |
+| `LLM_REASONING_EFFORT` | `none` | reasoning depth of the extraction call (`none`/`minimal`/`low`/`medium`/`high`) |
+| `LLM_REASONING_EFFORT_JUDGE` | `low` | reasoning depth of the pointing call; with `none` the model accepted a no-source text as a paraphrase |
 | `DAILY_SPEND_LIMIT_USD` | `1` | past it, every call uses `MODEL_FALLBACK` until midnight UTC (about 800 verifications a day at measured prices) |
 | `EMBEDDING_PROVIDER` / `EMBEDDING_MODEL` | `local` / `intfloat/multilingual-e5-small` | local only, never through OpenRouter (not used by a shipped feature yet) |
 | `TRANSCRIPTION_PROVIDER` | `auto` | captions → `MODEL_AUDIO` → local faster-whisper (if installed) |
@@ -93,7 +94,8 @@ Quran matching, hadith retrieval, the rules and the report need no network at al
   to end (first card under 0.1 s); a 3-minute YouTube clip with captions — about 3 s; the same
   length without captions, local Whisper `small` on CPU — about 57 s. Evaluation: 0.08–0.13 s per
   claim (Dorar answers cached after the first run).
-- With the model: see "Models" below — the chosen extraction model takes 13–28 s on a short text at `LLM_REASONING_EFFORT=low`.
+- With the model: the extraction call takes about 3 s on a short text; a claim that needs the pointing call
+  (a paraphrase, a ruling) takes 6–9 s more. Evaluation in full mode: 6.2 s per claim on average.
 
 ## Models (all through OpenRouter)
 
@@ -103,21 +105,22 @@ and what is still unmeasured, are in `DECISIONS.md` (items 33–48).
 
 | Task | Model (`.env`) | List price per million tokens (in / out) | Cost | Latency |
 |---|---|---|---|---|
-| Claim extraction, level, pointing | `MODEL_EXTRACT=qwen/qwen3.8-flash` | $0.15 / $0.47 | measured: $0.0008 per short text (extraction + pointing); about $0.0012 for a 5k-in / 1k-out document | measured: 13 s for one call, 28 s per item with four items in flight |
+| Claim extraction, level, pointing | `MODEL_EXTRACT=qwen/qwen3.8-flash` | $0.15 / $0.47 | measured: $0.0003 per short text ($0.0001 extraction, $0.0004 for each pointing call when one is needed) | measured: 3.3 s extraction; 6–9 s per pointing call |
 | Image → text | `MODEL_VISION=qwen/qwen3.7-flash` | $0.03 / $0.13 | measured: $0.00006 per image | measured: 4–6 s |
-| Speech → timestamped segments | `MODEL_AUDIO=google/gemini-3.5-flash-lite` | $0.30 / $2.50 (audio input $0.30) | **not measured** | **not measured** |
-| Topic line, build-time chores | `MODEL_CHEAP=deepseek/deepseek-v4-flash` | $0.028 / $0.056 | measured: $0.00005 per call | measured: 7 s |
-| Fallback | `MODEL_FALLBACK=nvidia/nemotron-3-super-120b-a12b:free` | free | $0 | measured: 8 s |
-| Eval baseline only | `MODEL_BASELINE_LLM=openai/gpt-6.1-sol` | $2 / $10 | about $0.10 per 79-item run (estimate) | measured: 3 s |
+| Speech → timestamped segments | `MODEL_AUDIO=google/gemini-3.5-flash-lite` | $0.30 / $2.50 (audio input $0.30) | measured: $0.0013 for 60 seconds — about $0.013 per 10 minutes | measured: 3.1 s for 60 seconds |
+| Topic line, build-time chores | `MODEL_CHEAP=deepseek/deepseek-v4-flash` | $0.028 / $0.056 | measured: $0.00005–$0.0003 per call | measured: 7 s once, 124 s another time — fine for build-time work, not for anything a user waits on |
+| Fallback | `MODEL_FALLBACK=nvidia/nemotron-3-super-120b-a12b:free` | free | $0 | measured: 7–8 s |
+| Eval baseline only | `MODEL_BASELINE_LLM=openai/gpt-6.1-sol` | $2 / $10 | measured: $0.0016 per item, $0.14 per 79-item run | measured: 4.1 s |
 | Sources | Tanzil, QuranEnc, HadeethEnc, Dorar, Open-Hadith-Data | free | | |
 | Hosting | one shared-CPU machine, 1 GB, sleeps when idle | | a few dollars a month if it never sleeps | |
 
-A typical verification (an article or a five-minute captioned clip) therefore costs about a tenth of
-a cent. Verbatim verses and narrations cost nothing: they are decided before any model is called.
+A typical verification (an article or a five-minute captioned clip) therefore costs well under a
+tenth of a cent; a five-minute clip without captions adds about two thirds of a cent for the transcript. Verbatim verses and narrations cost nothing: they are decided before any model is called.
 
 ### Cost control
 
-The whole project has a small OpenRouter budget (about 100 SAR, roughly 27 USD). The defaults are
+The whole project has a small OpenRouter budget (about 100 SAR, roughly 27 USD); $12 was added on
+3 October and $0.34 of it has been used by everything described on this page. The defaults are
 set for that: a 1 USD daily guard, cheap per-task models, free tests, and paid measurements that are
 run once, on purpose, with small inputs.
 
@@ -135,8 +138,10 @@ run once, on purpose, with small inputs.
   notice. The log is a file: on a host without a persistent volume it restarts with the machine, so
   also set a credit limit on the OpenRouter key itself — the key used here is capped at $50, which is
   more than the budget: lower it in the OpenRouter dashboard to the amount you are willing to spend.
-- **Output budgets** per task (`MAX_TOKENS` in `llm/openrouter.py`): extract 8000, pointing 2500,
-  image 4000, audio 12000, cheap 800, baseline 1200. Reasoning tokens count against them.
+- **Output budgets** per task (`MAX_TOKENS` in `llm/openrouter.py`): extract 8000, pointing 1500,
+  image 4000, audio 12000, cheap 800, baseline 1200. Reasoning tokens count against them. An answer
+  cut off at its budget is not retried (it would be cut off again and paid for twice), and a
+  pointing call never goes to the fallback model, whose answer would not be used.
 - **No loops**: a request makes one extraction call, at most one pointing call per paraphrased
   narration or ruling, one retry and one fallback attempt per call — never more.
 - **Prompt caching**: system prompts are byte-stable and sent first. An explicit cache breakpoint
@@ -144,22 +149,25 @@ run once, on purpose, with small inputs.
   Cached tokens are recorded in the usage log: in the bake-off 84% of the extraction model's prompt
   tokens (22.5k of 26.7k) were served from cache.
 
-### Measurements still owed
+### What was measured, and what was left out on purpose
 
-Paid calls were refused (HTTP 402) part-way through the first session because the OpenRouter account
-had no credit. After adding credit, run in this order (cheapest first):
+The first session ran on an account with no credit and many calls were refused (HTTP 402). After
+credit was added (3 October 2026) these were run, once each, for $0.17 in total:
 
-```bash
-make models-verify        # ≈ $0.25, once: model check, audio candidates, reasoning-off bake-off row,
-                          #   OCR re-run, one 60-second transcription, eval/run.py once
-make models-bakeoff-rest  # ≈ $0.09, optional: Gemini 3.8 Flash, Qwen 3.7 Plus, DeepSeek V4 Pro 0813
-```
+| Run | Result | Cost |
+|---|---|---|
+| `scripts/check_models.py` (`eval/results/model_check.md`) | all six configured models pass | $0.005 |
+| Bake-off rows for the reasoning setting (20 items each) | extraction without reasoning + pointing with it: 85%, same as with reasoning everywhere, a third of the cost; without reasoning anywhere: 80% and one fabricated attribution | $0.009 |
+| `scripts/transcribe_sample.py --seconds 60` | first transcript through OpenRouter, with timestamps | $0.0013 |
+| `eval/run.py --runs 1` (79 items, three systems) | Tabayyun 88.6%, no fabricated attribution; baseline 77.2% | $0.17 ($0.14 of it the baseline) |
 
-Claude Sonnet 5.5 is left out of the second command on purpose: measuring it costs about $0.17, and
-at $2 / $10 per million tokens a verification would cost about 16 times the chosen model's — not a
-price this budget can run in production whatever its accuracy. Add it to the command if that changes.
-
-Audio calls are refused until the balance is at least $0.50.
+Left unmeasured because the answer would not change a decision at this budget (`make models-compare`
+runs them, about $0.11): the other extraction candidates (on the 20 items only one is left that any
+model could still gain — the two leaders already miss only that one and two rows that are artefacts
+of the test set), the dearer image candidates (image input is not exposed yet, and the chosen model
+is already the cheapest and never corrected a verse), and the other audio candidates. Claude
+Sonnet 5.5 is not in that command either: about $0.17 to measure, and at $2 / $10 per million
+tokens it would cost 16 times as much to run.
 
 ### Phase 2 features — cost and flags
 

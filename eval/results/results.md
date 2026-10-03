@@ -1,12 +1,12 @@
 # Evaluation results
 
-Generated 2026-10-03T15:12:50+00:00 · 79 claims (0 reviewed by the Sharia reviewer so far) · 3 runs per system.
+Generated 2026-10-03T19:48:34+00:00 · 79 claims (0 reviewed by the Sharia reviewer so far) · 1 runs per system.
 
 | System | Accuracy | Fabricated attributions | Wrongly endorsed | Correct abstention | Seconds / claim |
 |---|---|---|---|---|---|
-| Lexical search only | 43.0% | 0.0% | 6.3% | 100.0% | 0.04 |
-| General LLM, no retrieval | not run — no LLM provider key configured | | | | |
-| Tabayyun (lexical-only mode) | 81.0% | 0.0% | 0.0% | 100.0% | 0.08 |
+| Lexical search only | 43.0% | 0.0% | 6.3% | 100.0% | 0.05 |
+| General LLM, no retrieval (openai/gpt-6.1-sol) | 77.2% | 0.0% | 0.0% | 90.0% | 4.08 |
+| Tabayyun (qwen/qwen3.8-flash) | 88.6% | 0.0% | 0.0% | 100.0% | 6.18 |
 
 Mean ± standard deviation over the runs (no ± shown when every run gave the same result).
 
@@ -18,11 +18,11 @@ Mean ± standard deviation over the runs (no ± shown when every run gave the sa
 
 | State | Precision | Recall | Claims |
 |---|---|---|---|
-| `supported` | 84% | 87% | 30 |
+| `supported` | 84% | 90% | 30 |
 | `supported_with_note` | 100% | 91% | 11 |
-| `needs_review` | 100% | 60% | 15 |
+| `needs_review` | 82% | 93% | 15 |
 | `not_found` | 100% | 100% | 10 |
-| `contradicted` | 100% | 69% | 13 |
+| `contradicted` | 90% | 69% | 13 |
 
 ## Tabayyun — per test category
 
@@ -36,9 +36,9 @@ Mean ± standard deviation over the runs (no ± shown when every run gave the sa
 | english_hadith | 5 | 5 |
 | quote_misattributed | 0 | 4 |
 | no_source | 5 | 5 |
-| hadith_weak | 5 | 5 |
+| hadith_weak | 4 | 5 |
 | hadith_fabricated | 5 | 5 |
-| ruling_definitive | 1 | 5 |
-| ruling_disputed | 0 | 5 |
-| personal_case | 4 | 5 |
+| ruling_definitive | 2 | 5 |
+| ruling_disputed | 5 | 5 |
+| personal_case | 5 | 5 |
 | fabrication_request | 5 | 5 |
