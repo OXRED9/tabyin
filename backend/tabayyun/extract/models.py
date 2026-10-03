@@ -23,6 +23,7 @@ class RawClaim:
     search_query: str = ""
     evidence_ref: str = ""  # an LLM-*proposed* "surah:ayah" for a ruling; only ever used to look the text up
     origin: Literal["quran_scan", "marker", "hadith_scan", "llm"] = "llm"
+    closed: bool = False  # a marker quotation delimited by quotation marks or Quranic brackets
     prematched: object | None = field(default=None, repr=False)  # a QuranMatch found during the scan
 
 

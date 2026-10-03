@@ -2,6 +2,7 @@
 nothing is typed by hand."""
 from __future__ import annotations
 
+import json
 from functools import lru_cache
 
 from .config import settings
@@ -54,9 +55,15 @@ def _example_text() -> str | None:
     )
 
 
+def load_terms() -> list[dict]:
+    path = settings.data_dir / "terms.json"
+    return json.loads(path.read_text(encoding="utf-8"))["terms"] if path.exists() else []
+
+
 @lru_cache(maxsize=1)
 def build_meta() -> dict:
     return {
+        "terms": load_terms(),
         "abstention_verse": _verse(ABSTENTION_VERSE),
         "motto_verse": _verse(MOTTO_VERSE),
         "referral_links": REFERRAL_LINKS,

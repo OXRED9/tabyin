@@ -11,14 +11,14 @@ import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 
 from .config import settings
-from .extract import RawClaim, merge_claims
+from .extract import RawClaim, absorb_closed_quotes, merge_claims
 from .extract.lexical import extract_by_markers, scan_hadith, scan_hadith_verbatim, scan_quran
 from .extract.llm_extractor import extract_with_llm
 from .ingest.document import Document, IngestError
 from .llm.base import LLMError
 from .llm.router import get_llm
 from .report.messages import error_event
-from .schemas import Card, ClaimStub, EvidenceState, Summary
+from .schemas import Card, ClaimStub, ClaimType, EvidenceState, Summary
 from .sources.dorar import get_dorar
 from .sources.hadith import get_hadith_index
 from .sources.quran import get_quran_index
@@ -118,8 +118,14 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
                 tasks.append(asyncio.create_task(process(c, cid, counter)))
             await put(("claims", {"claims": [s.model_dump(mode="json") for s in stubs]}))
 
+        # Deterministic, model-free claims first: verbatim verses and narrations found by scanning,
+        # and quotations delimited by quotation marks after an explicit marker.
+        markers = extract_by_markers(doc)
+        closed = [c for c in markers if c.closed]
         quick = await asyncio.to_thread(scan_quran, doc, quran)
-        quick = merge_claims(quick, await asyncio.to_thread(scan_hadith_verbatim, doc, hadith, [(c.start, c.end) for c in quick]))
+        quick = absorb_closed_quotes(quick, [c for c in closed if c.type == ClaimType.ayah])
+        scanned = await asyncio.to_thread(scan_hadith_verbatim, doc, hadith, [(c.start, c.end) for c in quick])
+        quick = merge_claims(quick, absorb_closed_quotes(scanned, [c for c in closed if c.type == ClaimType.hadith]))
         if quick:
             await put(stage("match", "start", done=0, total=len(quick)))
             await announce(quick)
@@ -137,7 +143,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         if mode == "lexical_only":
             ctx.llm_enabled = False
             await put(("error", error_event("llm_unavailable", "extract", fatal=False)))
-            rest = extract_by_markers(doc)
+            rest = [c for c in markers if not c.closed]
             merged = merge_claims(quick, rest)
             taken = [(c.start, c.end) for c in merged]
             rest = rest + await asyncio.to_thread(scan_hadith, doc, hadith, taken)

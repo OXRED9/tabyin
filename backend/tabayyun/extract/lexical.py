@@ -68,8 +68,8 @@ _QURAN_BRACKETS = re.compile(r"﴿([^﴾]{3,2000})﴾")
 _SENTENCES = re.compile(r"[^.؟!\n؛]+")
 
 
-def _quote_after(plain: str, pos: int, max_chars: int = 1500, max_words: int = 60) -> tuple[int, int] | None:
-    """Offsets (in ``plain``) of the quotation that starts at ``pos``."""
+def _quote_after(plain: str, pos: int, max_chars: int = 1500, max_words: int = 60) -> tuple[int, int, bool] | None:
+    """(start, end, closed) offsets in ``plain`` of the quotation that starts at ``pos``."""
     while pos < len(plain) and plain[pos] in " \t:،,":
         pos += 1
     if pos >= len(plain):
@@ -78,14 +78,14 @@ def _quote_after(plain: str, pos: int, max_chars: int = 1500, max_words: int = 6
     if closer:
         end = plain.find(closer, pos + 1, pos + max_chars)
         if end > pos + 1:
-            return pos + 1, end
+            return pos + 1, end, True
         pos += 1
     m = _SENTENCE_END.search(plain, pos, pos + max_chars)
     end = m.start() if m else min(len(plain), pos + max_chars)
     words = plain[pos:end].split()
     if len(words) > max_words:
         end = pos + len(" ".join(words[:max_words]))
-    return (pos, end) if end > pos else None
+    return (pos, end, False) if end > pos else None
 
 
 def has_ayah_marker_before(doc_text: str, start: int) -> bool:
@@ -165,12 +165,12 @@ def extract_by_markers(doc: Document) -> list[RawClaim]:
         claims.append(RawClaim(type=kind, quote=quote, start=start, end=start + len(quote), origin="marker", **kw))
 
     for m in _QURAN_BRACKETS.finditer(plain):
-        add(ClaimType.ayah, m.start(1), m.end(1), explicit_attribution=True)
+        add(ClaimType.ayah, m.start(1), m.end(1), explicit_attribution=True, closed=True)
     for marker, kind in ((_AYAH_MARKER, ClaimType.ayah), (_HADITH_MARKER, ClaimType.hadith)):
         for m in marker.finditer(plain):
             span = _quote_after(plain, m.end())
             if span:
-                add(kind, span[0], span[1], explicit_attribution=True)
+                add(kind, span[0], span[1], explicit_attribution=True, closed=span[2])
     for m in _REQUEST.finditer(plain):
         add(ClaimType.request, m.start(), m.end(), content_level=ContentLevel.B)
     for m in _PERSONAL.finditer(plain):
