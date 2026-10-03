@@ -1,0 +1,312 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Fonts are self-hosted from @fontsource packages: the product promises that the browser talks
+ * to nothing but /api, so there is no Google Fonts request. Only the subsets and weights that the
+ * UI uses are declared, which keeps `dist/` small.
+ */
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-400-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-500-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url("../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-600-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-700-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Amiri Quran";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("../node_modules/@fontsource/amiri-quran/files/amiri-quran-arabic-400-normal.woff2") format("woff2");
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: var(--font-ui);
+  --font-heading: var(--font-ui);
+  --font-quran: "Amiri Quran", "Amiri", "Scheherazade New", "Noto Naskh Arabic", "Traditional Arabic", serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Brand */
+  --color-header: var(--header);
+  --color-header-foreground: var(--header-foreground);
+  --color-gold: var(--gold);
+  --color-gold-hover: var(--gold-hover);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-gold-ink: var(--gold-ink);
+  --color-gold-soft: var(--gold-soft);
+
+  /* Evidence states: solid (edge, icon), soft (tinted surface), ink (text on soft or on card) */
+  --color-supported: var(--supported);
+  --color-supported-soft: var(--supported-soft);
+  --color-supported-ink: var(--supported-ink);
+  --color-supported-on: var(--supported-on);
+  --color-noted: var(--noted);
+  --color-noted-soft: var(--noted-soft);
+  --color-noted-ink: var(--noted-ink);
+  --color-review: var(--review);
+  --color-review-soft: var(--review-soft);
+  --color-review-ink: var(--review-ink);
+  --color-missing: var(--missing);
+  --color-missing-soft: var(--missing-soft);
+  --color-missing-ink: var(--missing-ink);
+  --color-contra: var(--contra);
+  --color-contra-soft: var(--contra-soft);
+  --color-contra-ink: var(--contra-ink);
+  --color-contra-solid: var(--contra-solid);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --shadow-card: 0 1px 2px rgb(15 31 27 / 0.04), 0 4px 16px -6px rgb(15 31 27 / 0.08);
+  --shadow-raised: 0 2px 4px rgb(15 31 27 / 0.05), 0 12px 32px -12px rgb(15 31 27 / 0.18);
+
+  --animate-rise: rise 220ms ease-out both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Brand palette from the pitch deck: deep green, gold, warm off-white, near-black green. */
+:root {
+  --font-ui: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --background: #f6f7f5;
+  --foreground: #0f1f1b;
+  --card: #ffffff;
+  --card-foreground: #0f1f1b;
+  --popover: #ffffff;
+  --popover-foreground: #0f1f1b;
+  --primary: #1b6b5e;
+  --primary-foreground: #ffffff;
+  --secondary: #e6eeeb;
+  --secondary-foreground: #14453d;
+  --muted: #eceeeb;
+  --muted-foreground: #4a5b56;
+  --accent: #e3eeea;
+  --accent-foreground: #0f1f1b;
+  --destructive: #a81f1f;
+  --border: #dce2de;
+  --input: #c3cec9;
+  --ring: #1b6b5e;
+  --radius: 0.75rem;
+
+  --header: #1b6b5e;
+  --header-foreground: #ffffff;
+  --gold: #c9a227;
+  --gold-hover: #b8931d;
+  --gold-foreground: #1c1703;
+  --gold-ink: #735800;
+  --gold-soft: #faf3d9;
+
+  --supported: #1a7f4e;
+  --supported-soft: #e2f3e9;
+  --supported-ink: #125c38;
+  --supported-on: #ffffff;
+  --noted: #5c9a2b;
+  --noted-soft: #eaf4de;
+  --noted-ink: #3c6417;
+  --review: #b87a00;
+  --review-soft: #fcf0cf;
+  --review-ink: #734700;
+  --missing: #d94848;
+  --missing-soft: #fceaea;
+  --missing-ink: #a81f1f;
+  --contra: #8e1b1b;
+  --contra-soft: #f6dada;
+  --contra-ink: #7a1414;
+  --contra-solid: #8e1b1b;
+}
+
+html[lang="en"] {
+  --font-ui: "Inter Variable", "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.dark {
+  --background: #0d1715;
+  --foreground: #e9f0ed;
+  --card: #14211e;
+  --card-foreground: #e9f0ed;
+  --popover: #182724;
+  --popover-foreground: #e9f0ed;
+  --primary: #4db6a3;
+  --primary-foreground: #06201b;
+  --secondary: #1d302c;
+  --secondary-foreground: #cfe6e0;
+  --muted: #1b2a27;
+  --muted-foreground: #a3b5af;
+  --accent: #20332f;
+  --accent-foreground: #e9f0ed;
+  --destructive: #f8a9a9;
+  --border: #263733;
+  --input: #3a4e49;
+  --ring: #4db6a3;
+
+  --header: #123f38;
+  --header-foreground: #ffffff;
+  --gold: #d8b33c;
+  --gold-hover: #e3c152;
+  --gold-foreground: #1c1703;
+  --gold-ink: #e6c65e;
+  --gold-soft: #33301c;
+
+  --supported: #3fbf82;
+  --supported-soft: #1b3a2e;
+  --supported-ink: #86e3b4;
+  --supported-on: #06201b;
+  --noted: #9acd66;
+  --noted-soft: #293d2a;
+  --noted-ink: #bde596;
+  --review: #edb63a;
+  --review-soft: #373922;
+  --review-ink: #f5cf75;
+  --missing: #ee7b7b;
+  --missing-soft: #372f2d;
+  --missing-ink: #f8a9a9;
+  --contra: #e5484d;
+  --contra-soft: #3d2424;
+  --contra-ink: #ffb8b8;
+  --contra-solid: #b42323;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px -8px rgb(0 0 0 / 0.5);
+  --shadow-raised: 0 2px 4px rgb(0 0 0 / 0.35), 0 16px 36px -12px rgb(0 0 0 / 0.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 5rem;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* Arabic needs more leading than Latin: ascenders, descenders and diacritics stack up. */
+    line-height: 1.7;
+    font-feature-settings: "tnum" 0;
+  }
+  html[lang="en"] body {
+    line-height: 1.55;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--gold) 40%, transparent);
+  }
+}
+
+@utility quran-text {
+  font-family: var(--font-quran);
+  line-height: 2.3;
+  font-feature-settings: normal;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle motion only; everything collapses to an instant change when the user asks for less. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+}

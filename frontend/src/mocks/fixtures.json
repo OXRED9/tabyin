@@ -1,0 +1,1547 @@
+{
+ "_generated": {
+  "by": "frontend/scripts/build-fixtures.mjs",
+  "note": "Generated file. Religious texts are read from the repository data by number or id; do not edit by hand.",
+  "quran": "Tanzil Project — Uthmani text v1.1 (Madinah Mushaf) and simple-clean text",
+  "hadith": "موسوعة الأحاديث النبوية — HadeethEnc.com",
+  "picks": {
+   "ayahExact": [
+    2,
+    153
+   ],
+   "ayahForRuling": [
+    2,
+    183
+   ],
+   "abstention": [
+    16,
+    43
+   ],
+   "motto": [
+    49,
+    6
+   ],
+   "hadithPartial": "4541",
+   "hadithTwoGrades": [
+    "4197",
+    "6399"
+   ],
+   "hadithMisattributed": "2752",
+   "bookHadith": 427
+  }
+ },
+ "meta": {
+  "abstention_verse": {
+   "text": "فَسْـَٔلُوٓا۟ أَهْلَ ٱلذِّكْرِ إِن كُنتُمْ لَا تَعْلَمُونَ",
+   "ref": "النحل: 43",
+   "ref_en": "An-Nahl 16:43",
+   "url": "https://quranenc.com/ar/browse/arabic_moyassar/16/43"
+  },
+  "motto_verse": {
+   "text": "يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوٓا۟ إِن جَآءَكُمْ فَاسِقٌۢ بِنَبَإٍ فَتَبَيَّنُوٓا۟ أَن تُصِيبُوا۟ قَوْمًۢا بِجَهَٰلَةٍ فَتُصْبِحُوا۟ عَلَىٰ مَا فَعَلْتُمْ نَٰدِمِينَ",
+   "ref": "الحجرات: 6",
+   "ref_en": "Al-Hujuraat 49:6",
+   "url": "https://quranenc.com/ar/browse/arabic_moyassar/49/6"
+  },
+  "referral_links": [
+   {
+    "name_ar": "الإسلام سؤال وجواب",
+    "name_en": "Islam Question & Answer",
+    "url": "https://islamqa.info/ar"
+   },
+   {
+    "name_ar": "الموقع الرسمي للشيخ عبدالعزيز بن باز",
+    "name_en": "Official site of Shaykh Ibn Baz",
+    "url": "https://binbaz.org.sa"
+   }
+  ],
+  "examples": [
+   {
+    "id": "text",
+    "input_type": "text",
+    "label_ar": "نص فيه آية وحديث",
+    "label_en": "Text with a verse and a hadith",
+    "text": "ذكر الخطيب في خطبته فضل الصبر، واستشهد بقول الله تعالى: يا أيها الذين آمنوا استعينوا بالصبر والصلاة إن الله مع الصابرين\nثم ذكر حديث: إن أحب الصيام إلى الله صيام داود\nوختم بقوله: [قول منسوب إلى أحد العلماء كما ورد في المقطع]",
+    "url": null
+   },
+   {
+    "id": "video",
+    "input_type": "video_url",
+    "label_ar": "رابط مقطع يوتيوب",
+    "label_en": "YouTube link",
+    "text": null,
+    "url": "https://www.youtube.com/watch?v=TABAYYUN-MOCK"
+   },
+   {
+    "id": "fabrication",
+    "input_type": "text",
+    "label_ar": "طلب اختلاق حديث",
+    "label_en": "A request to fabricate a hadith",
+    "text": "أعطني حديثاً يثبت أن من أكل التفاح على الريق دخل الجنة.",
+    "url": null
+   }
+  ],
+  "limits": {
+   "max_text_chars": 60000,
+   "max_upload_mb": 50,
+   "max_media_minutes": 30
+  }
+ },
+ "scenarios": {
+  "video": {
+   "source": {
+    "input_type": "video_url",
+    "title": "مقطع تجريبي: الصبر والصيام",
+    "url": "https://www.youtube.com/watch?v=TABAYYUN-MOCK",
+    "duration": 521,
+    "transcript_origin": "captions",
+    "language": "ar"
+   },
+   "segments": [
+    {
+     "id": 0,
+     "text": "أهلاً بكم. نتحدث اليوم عن الصبر والصيام، ونمرّ على نصوص يكثر تداولها.",
+     "start": 0,
+     "end": 134
+    },
+    {
+     "id": 1,
+     "text": "قال تعالى: يا أيها الذين آمنوا استعينوا بالصبر والصلاة إن الله مع الصابرين فالصبر أول ما نبدأ به.",
+     "start": 134,
+     "end": 242
+    },
+    {
+     "id": 2,
+     "text": "وفي الحديث: إن أحب الصيام إلى الله صيام داود إلى آخر الحديث.",
+     "start": 242,
+     "end": 320
+    },
+    {
+     "id": 3,
+     "text": "ومن المعلوم أن صيام رمضان واجب على كل مسلم، وهذا لا يخفى على أحد.",
+     "start": 320,
+     "end": 351
+    },
+    {
+     "id": 4,
+     "text": "وجاء في فضل الصيام: من صام يوما في سبيل الله جعل الله بينه وبين النار خندقا كما بين السماء والأرض",
+     "start": 351,
+     "end": 378
+    },
+    {
+     "id": 5,
+     "text": "ويُروى كذلك: من نام عن الوتر أو نسيه فليصل إذا استيقظ وإذا ذكر",
+     "start": 378,
+     "end": 397
+    },
+    {
+     "id": 6,
+     "text": "وقد قيل: [قول منسوب إلى أحد العلماء كما ورد في المقطع]",
+     "start": 397,
+     "end": 431
+    },
+    {
+     "id": 7,
+     "text": "وأما [حكم في مسألة خلافية كما ورد في المقطع] فهذا ما أراه في المسألة.",
+     "start": 431,
+     "end": 466
+    },
+    {
+     "id": 8,
+     "text": "وقال الله تعالى: رباط يوم وليلة خير من صيام شهر وقيامه",
+     "start": 466,
+     "end": 492
+    },
+    {
+     "id": 9,
+     "text": "ووصلني هذا السؤال: طلّقت زوجتي وأنا غاضب، فهل يقع الطلاق؟",
+     "start": 492,
+     "end": 510
+    },
+    {
+     "id": 10,
+     "text": "نكتفي بهذا القدر، وإلى لقاء قادم.",
+     "start": 510,
+     "end": 521
+    }
+   ],
+   "cards": {
+    "ar": [
+     {
+      "id": "c1",
+      "index": 1,
+      "certainty": "definitive",
+      "attributed_to": "القرآن الكريم",
+      "explicit_attribution": true,
+      "action": "adopt",
+      "similarity": 1,
+      "match_kind": "exact",
+      "source": {
+       "kind": "quran",
+       "source_name": "المصحف الشريف — نص مصحف المدينة النبوية (Tanzil)",
+       "text": "يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ ٱسْتَعِينُوا۟ بِٱلصَّبْرِ وَٱلصَّلَوٰةِ إِنَّ ٱللَّهَ مَعَ ٱلصَّٰبِرِينَ",
+       "ref": "سورة البقرة، الآية 153",
+       "url": "https://quranenc.com/ar/browse/arabic_moyassar/2/153",
+       "attribution": null,
+       "explanation": null,
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "النص مطابق لنص المصحف الشريف.",
+      "note_en": "The text matches the Mushaf verbatim.",
+      "ai_explanation": null,
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 134,
+       "end": null
+      },
+      "span": {
+       "segment_id": 1,
+       "start": 11,
+       "end": 74
+      },
+      "warnings": [],
+      "claim_type": "ayah",
+      "content_level": "A",
+      "text_as_quoted": "يا أيها الذين آمنوا استعينوا بالصبر والصلاة إن الله مع الصابرين",
+      "state": "supported",
+      "rule_id": "ayah.exact",
+      "position": 81
+     },
+     {
+      "id": "c2",
+      "index": 2,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "correct_wording",
+      "similarity": 1,
+      "match_kind": "partial",
+      "source": {
+       "kind": "hadith",
+       "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+       "text": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم : «إن أَحَبَّ الصيام إلى الله صِيَامُ داود، وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا».",
+       "ref": "متفق عليه",
+       "url": "https://hadeethenc.com/ar/browse/hadith/4541",
+       "attribution": "متفق عليه",
+       "explanation": "يخبر عبد الله بن عَمْرِو رضي الله عنهما عن النبي صلى الله عليه وسلم في هذا الحديث، أن أحب الصيام والقيام إلى الله تعالى صيام وقيام نبيه داود -عليه الصلاة والسلام- ،وذلك أنه كان يصوم يوماً ويفطر يوماً؛ لما فيه تحصيل العبادة وإعطاء الجسم راحته، وكان ينام النصف الأول من الليل ليقوم نشيطاً خفيفاً إلى العبادة، فيصلي ثُلُثَهُ ثم ينام سُدُسَهُ الأخير؛ ليكون نشيطا لعبادة أول النهار، وهذه الكيفية هي التي رغب بها النبي صلى الله عليه وسلم .",
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [
+       {
+        "text": "صحيح",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/4541"
+       }
+      ],
+      "grade_unavailable": false,
+      "diff": [
+       {
+        "op": "insert",
+        "quoted": "",
+        "source": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم :"
+       },
+       {
+        "op": "equal",
+        "quoted": "إن أحب الصيام إلى الله صيام داود",
+        "source": "«إن أَحَبَّ الصيام إلى الله صِيَامُ داود،"
+       },
+       {
+        "op": "insert",
+        "quoted": "",
+        "source": "وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا»."
+       }
+      ],
+      "note_ar": "اقتباس مجتزأ: اللفظ المنقول جزء من حديث في مصدر معتمد، وبقية النص مظلَّلة في المقارنة.",
+      "note_en": "Partial quote: the quoted words are part of a narration in an approved source. The rest of the text is highlighted in the comparison.",
+      "ai_explanation": "ذكر المتحدث مطلع الحديث فقط. النص في المصدر أطول، والجزء الذي لم يُذكر مظلَّل في المقارنة أعلاه.",
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 242,
+       "end": null
+      },
+      "span": {
+       "segment_id": 2,
+       "start": 12,
+       "end": 44
+      },
+      "warnings": [],
+      "claim_type": "hadith",
+      "content_level": "A",
+      "text_as_quoted": "إن أحب الصيام إلى الله صيام داود",
+      "state": "supported_with_note",
+      "rule_id": "hadith.accepted_partial",
+      "position": 180
+     },
+     {
+      "id": "c3",
+      "index": 3,
+      "certainty": "definitive",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "adopt",
+      "similarity": null,
+      "match_kind": "topic",
+      "source": {
+       "kind": "quran",
+       "source_name": "المصحف الشريف — نص مصحف المدينة النبوية (Tanzil)",
+       "text": "يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ كُتِبَ عَلَيْكُمُ ٱلصِّيَامُ كَمَا كُتِبَ عَلَى ٱلَّذِينَ مِن قَبْلِكُمْ لَعَلَّكُمْ تَتَّقُونَ",
+       "ref": "سورة البقرة، الآية 183",
+       "url": "https://quranenc.com/ar/browse/arabic_moyassar/2/183",
+       "attribution": null,
+       "explanation": null,
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "حكم من الأصول المستقرة، والدليل المعروض آية مسترجَعة من المصحف.",
+      "note_en": "A stable foundational ruling. The evidence shown is a verse retrieved from the Mushaf.",
+      "ai_explanation": null,
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 320,
+       "end": null
+      },
+      "span": {
+       "segment_id": 3,
+       "start": 15,
+       "end": 42
+      },
+      "warnings": [],
+      "claim_type": "ruling",
+      "content_level": "A",
+      "text_as_quoted": "صيام رمضان واجب على كل مسلم",
+      "state": "supported",
+      "rule_id": "ruling.foundational_with_source",
+      "position": 244
+     },
+     {
+      "id": "c4",
+      "index": 4,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "adopt",
+      "similarity": 1,
+      "match_kind": "exact",
+      "source": {
+       "kind": "hadith",
+       "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+       "text": "عن أبي أمامة رضي الله عنه مرفوعاً: «من صام يوماً في سبيل الله جعل الله بينه وبين النار خَنْدَقًا كما بين السماء والأرض».",
+       "ref": "رواه الترمذي",
+       "url": "https://hadeethenc.com/ar/browse/hadith/6399",
+       "attribution": "رواه الترمذي",
+       "explanation": "في هذا الحديث بيان فضل من صام يوما ًخالصاً لوجه الله، حيث ينجيه الله من النار ويبعده عنها كبعد السماء عن الأرض.",
+       "translation": null
+      },
+      "other_sources": [
+       {
+        "kind": "hadith",
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "text": "عن أبي أمامة رضي الله عنه مرفوعاً: «مَنْ صام يومًا في سَبِيل الله جَعل الله بينه وبَيْن النِّار خَنْدَقًا كما بين السماء والأرض».",
+        "ref": "رواه الترمذي",
+        "url": "https://hadeethenc.com/ar/browse/hadith/4197",
+        "attribution": "رواه الترمذي",
+        "explanation": "من صام يومًا في سبيل الله، يُريد بذلك ثواب الله تعالى \"جَعل الله بينه وبَيْن النِّار خَنْدَقًا\" أي حجابًا شديدًا ومانعًا بعيدًا بمسافة مَدِيدَة، قَدْرُها: \"كما بَيْنَ السماء والأرض\" أي مسافة خمسمائة سنة، كما في حديث العباس بن عبد المطلب رضي الله عنه ، قال: \"كنا عند النبي صلى الله عليه وسلم فقال: \" أتدرون كم بين السماء والأرض\"؟ قلنا: الله أعلم ورسوله، قال: \"بينهما مسيرة خمسمائة سنة\".",
+        "translation": null
+       }
+      ],
+      "grades": [
+       {
+        "text": "صحيح",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/4197"
+       },
+       {
+        "text": "حسن",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/6399"
+       }
+      ],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "النص مطابق لحديث في مصدر معتمد. ورد له في المصدر حكمان، ويُعرضان كما هما دون ترجيح.",
+      "note_en": "The text matches a narration in an approved source. The source carries two gradings for it; both are shown as they are, with no preference.",
+      "ai_explanation": null,
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 351,
+       "end": null
+      },
+      "span": {
+       "segment_id": 4,
+       "start": 20,
+       "end": 97
+      },
+      "warnings": [],
+      "claim_type": "hadith",
+      "content_level": "A",
+      "text_as_quoted": "من صام يوما في سبيل الله جعل الله بينه وبين النار خندقا كما بين السماء والأرض",
+      "state": "supported",
+      "rule_id": "hadith.accepted_exact",
+      "position": 315
+     },
+     {
+      "id": "c5",
+      "index": 5,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "refer_to_scholars",
+      "similarity": 0.82,
+      "match_kind": "near",
+      "source": {
+       "kind": "hadith",
+       "source_name": "كتب السنة — بيانات Open-Hadith-Data",
+       "text": "حدثنا محمود بن غيلان حدثنا وكيع حدثنا عبد الرحمن بن زيد بن أسلم عن أبيه عن عطاء بن يسار عن أبي سعيد الخدري قال قال رسول الله صلى الله عليه وسلم من نام عن الوتر أو نسيه فليصل إذا ذكر وإذا استيقظ",
+       "ref": "جامع الترمذي، رقم 427 (ترقيم Open-Hadith-Data)",
+       "url": "https://dorar.net/hadith/search?q=%D9%85%D9%86%20%D9%86%D8%A7%D9%85%20%D8%B9%D9%86%20%D8%A7%D9%84%D9%88%D8%AA%D8%B1%20%D8%A3%D9%88%20%D9%86%D8%B3%D9%8A%D9%87%20%D9%81%D9%84%D9%8A%D8%B5%D9%84",
+       "attribution": null,
+       "explanation": null,
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": true,
+      "diff": [
+       {
+        "op": "equal",
+        "quoted": "من نام عن الوتر أو نسيه فليصل إذا",
+        "source": "من نام عن الوتر أو نسيه فليصل إذا"
+       },
+       {
+        "op": "replace",
+        "quoted": "استيقظ",
+        "source": "ذكر"
+       },
+       {
+        "op": "equal",
+        "quoted": "وإذا",
+        "source": "وإذا"
+       },
+       {
+        "op": "replace",
+        "quoted": "ذكر",
+        "source": "استيقظ"
+       }
+      ],
+      "note_ar": "لفظ قريب من حديث في كتب السنة مع اختلاف في موضعين. لا يتوفر حكم على الحديث من المصدر.",
+      "note_en": "The wording is close to a narration in the hadith collections, with two differences. The source provides no grading for it.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 378,
+       "end": null
+      },
+      "span": {
+       "segment_id": 5,
+       "start": 13,
+       "end": 62
+      },
+      "warnings": [],
+      "claim_type": "hadith",
+      "content_level": "A",
+      "text_as_quoted": "من نام عن الوتر أو نسيه فليصل إذا استيقظ وإذا ذكر",
+      "state": "needs_review",
+      "rule_id": "hadith.near_no_grade",
+      "position": 406
+     },
+     {
+      "id": "c6",
+      "index": 6,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "remove_or_request_source",
+      "similarity": null,
+      "match_kind": "none",
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "لم يُعثر على هذا القول في المصادر المعتمدة، ولا يولّد تبيّن بديلاً عنه.",
+      "note_en": "This saying was not found in the approved sources, and Tabayyun generates no substitute for it.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 397,
+       "end": null
+      },
+      "span": {
+       "segment_id": 6,
+       "start": 9,
+       "end": 54
+      },
+      "warnings": [],
+      "claim_type": "attributed_quote",
+      "content_level": "B",
+      "text_as_quoted": "[قول منسوب إلى أحد العلماء كما ورد في المقطع]",
+      "state": "not_found",
+      "rule_id": "quote.no_source",
+      "position": 465
+     },
+     {
+      "id": "c7",
+      "index": 7,
+      "certainty": "ijtihadi",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "refer_to_scholars",
+      "similarity": null,
+      "match_kind": "none",
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "مسألة اجتهادية وقع فيها خلاف بين أهل العلم. لا يرجّح تبيّن قولاً على قول.",
+      "note_en": "An ijtihadi matter on which scholars differ. Tabayyun prefers no opinion over another.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": true,
+      "timestamp": {
+       "start": 431,
+       "end": null
+      },
+      "span": {
+       "segment_id": 7,
+       "start": 5,
+       "end": 44
+      },
+      "warnings": [],
+      "claim_type": "ruling",
+      "content_level": "C",
+      "text_as_quoted": "[حكم في مسألة خلافية كما ورد في المقطع]",
+      "state": "needs_review",
+      "rule_id": "level_c.cap_needs_review",
+      "position": 516
+     },
+     {
+      "id": "c8",
+      "index": 8,
+      "certainty": "definitive",
+      "attributed_to": "القرآن الكريم",
+      "explicit_attribution": true,
+      "action": "remove_and_warn",
+      "similarity": 1,
+      "match_kind": "none",
+      "source": {
+       "kind": "hadith",
+       "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+       "text": "عن سلمان الفارسي رضي الله عنه مرفوعاً: «رباط يوم وليلة خير من صيام شهر وقيامه، وإن مات جرى عليه عمله الذي كان يعمل، وأُجْرِيَ عليه رزقه، وأَمِنَ الفَتَّانَ».",
+       "ref": "رواه مسلم",
+       "url": "https://hadeethenc.com/ar/browse/hadith/2752",
+       "attribution": "رواه مسلم",
+       "explanation": "حراسة يوم وليلة في سبيل الله لحماية المسلمين خير من صيام شهر وقيام ليله، وإذا مات المجاهد بقي أجر عمله مستمراً لا ينقطع، و كذلك يرزق من الجنة ؛لأنه حي عند ربه في الجنة، وتحصل له كرامة بأن لا يأتيه الملكان ليسألاه، وذلك لأنه مات مرابطاً في سبيل الله تعالى ، مع العلم أن الرباط من الجهاد في سبيل الله، لأنه ملازمة أماكن الحدود لحماية المسلمين من الكفار.",
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [
+       {
+        "text": "صحيح",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/2752"
+       }
+      ],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "نُسب هذا النص في المقطع إلى القرآن الكريم، ولم يُعثر عليه في المصحف. وُجد نصُّه حديثاً في مصدر معتمد.",
+      "note_en": "The clip attributes this text to the Quran, but it is not in the Mushaf. The same wording was found as a hadith in an approved source.",
+      "ai_explanation": null,
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 466,
+       "end": null
+      },
+      "span": {
+       "segment_id": 8,
+       "start": 17,
+       "end": 54
+      },
+      "warnings": [],
+      "claim_type": "ayah",
+      "content_level": "A",
+      "text_as_quoted": "رباط يوم وليلة خير من صيام شهر وقيامه",
+      "state": "contradicted",
+      "rule_id": "ayah.not_in_mushaf_found_as_hadith",
+      "position": 598
+     },
+     {
+      "id": "c9",
+      "index": 9,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "refer_to_scholars",
+      "similarity": null,
+      "match_kind": "none",
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "حالة شخصية: لا يصدر تبيّن فيها حكماً ولا يتحقق منها.",
+      "note_en": "A personal case: Tabayyun issues no ruling on it and does not verify it.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": true,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 492,
+       "end": null
+      },
+      "span": {
+       "segment_id": 9,
+       "start": 19,
+       "end": 57
+      },
+      "warnings": [],
+      "claim_type": "ruling",
+      "content_level": "D",
+      "text_as_quoted": "طلّقت زوجتي وأنا غاضب، فهل يقع الطلاق؟",
+      "state": "needs_review",
+      "rule_id": "level_d.personal_case",
+      "position": 655
+     }
+    ],
+    "en": [
+     {
+      "id": "c1",
+      "index": 1,
+      "certainty": "definitive",
+      "attributed_to": "The Quran",
+      "explicit_attribution": true,
+      "action": "adopt",
+      "similarity": 1,
+      "match_kind": "exact",
+      "source": {
+       "kind": "quran",
+       "source_name": "The Mushaf — Madinah Mushaf text (Tanzil)",
+       "text": "يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ ٱسْتَعِينُوا۟ بِٱلصَّبْرِ وَٱلصَّلَوٰةِ إِنَّ ٱللَّهَ مَعَ ٱلصَّٰبِرِينَ",
+       "ref": "Surah Al-Baqara 2:153",
+       "url": "https://quranenc.com/en/browse/english_saheeh/2/153",
+       "attribution": null,
+       "explanation": null,
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "النص مطابق لنص المصحف الشريف.",
+      "note_en": "The text matches the Mushaf verbatim.",
+      "ai_explanation": null,
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 134,
+       "end": null
+      },
+      "span": {
+       "segment_id": 1,
+       "start": 11,
+       "end": 74
+      },
+      "warnings": [],
+      "claim_type": "ayah",
+      "content_level": "A",
+      "text_as_quoted": "يا أيها الذين آمنوا استعينوا بالصبر والصلاة إن الله مع الصابرين",
+      "state": "supported",
+      "rule_id": "ayah.exact",
+      "position": 81
+     },
+     {
+      "id": "c2",
+      "index": 2,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "correct_wording",
+      "similarity": 1,
+      "match_kind": "partial",
+      "source": {
+       "kind": "hadith",
+       "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+       "text": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم : «إن أَحَبَّ الصيام إلى الله صِيَامُ داود، وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا».",
+       "ref": "متفق عليه",
+       "url": "https://hadeethenc.com/ar/browse/hadith/4541",
+       "attribution": "متفق عليه",
+       "explanation": "يخبر عبد الله بن عَمْرِو رضي الله عنهما عن النبي صلى الله عليه وسلم في هذا الحديث، أن أحب الصيام والقيام إلى الله تعالى صيام وقيام نبيه داود -عليه الصلاة والسلام- ،وذلك أنه كان يصوم يوماً ويفطر يوماً؛ لما فيه تحصيل العبادة وإعطاء الجسم راحته، وكان ينام النصف الأول من الليل ليقوم نشيطاً خفيفاً إلى العبادة، فيصلي ثُلُثَهُ ثم ينام سُدُسَهُ الأخير؛ ليكون نشيطا لعبادة أول النهار، وهذه الكيفية هي التي رغب بها النبي صلى الله عليه وسلم .",
+       "translation": {
+        "lang": "en",
+        "text": "‘Abdullāh ibn ‘Amr ibn al-‘Ās (may Allah be pleased with him) reported: The Messenger of Allah (may Allah's peace and blessings be upon him) said: \"The best (voluntary) fast in the sight of Allah is the fast of Dawūd, and the best (voluntary) prayer in the sight of Allah is the prayer of Dawūd. He used to sleep half of the night, stand to pray one third of it, and then sleep one sixth of it, and he used to fast every other day.\"",
+        "source_name": "Encyclopedia of Translated Prophetic Hadiths (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/en/browse/hadith/4541"
+       }
+      },
+      "other_sources": [],
+      "grades": [
+       {
+        "text": "صحيح",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/4541"
+       }
+      ],
+      "grade_unavailable": false,
+      "diff": [
+       {
+        "op": "insert",
+        "quoted": "",
+        "source": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم :"
+       },
+       {
+        "op": "equal",
+        "quoted": "إن أحب الصيام إلى الله صيام داود",
+        "source": "«إن أَحَبَّ الصيام إلى الله صِيَامُ داود،"
+       },
+       {
+        "op": "insert",
+        "quoted": "",
+        "source": "وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا»."
+       }
+      ],
+      "note_ar": "اقتباس مجتزأ: اللفظ المنقول جزء من حديث في مصدر معتمد، وبقية النص مظلَّلة في المقارنة.",
+      "note_en": "Partial quote: the quoted words are part of a narration in an approved source. The rest of the text is highlighted in the comparison.",
+      "ai_explanation": "The speaker quoted only the opening of the hadith. The source text is longer, and the part that was left out is highlighted in the comparison above.",
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 242,
+       "end": null
+      },
+      "span": {
+       "segment_id": 2,
+       "start": 12,
+       "end": 44
+      },
+      "warnings": [],
+      "claim_type": "hadith",
+      "content_level": "A",
+      "text_as_quoted": "إن أحب الصيام إلى الله صيام داود",
+      "state": "supported_with_note",
+      "rule_id": "hadith.accepted_partial",
+      "position": 180
+     },
+     {
+      "id": "c3",
+      "index": 3,
+      "certainty": "definitive",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "adopt",
+      "similarity": null,
+      "match_kind": "topic",
+      "source": {
+       "kind": "quran",
+       "source_name": "The Mushaf — Madinah Mushaf text (Tanzil)",
+       "text": "يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ كُتِبَ عَلَيْكُمُ ٱلصِّيَامُ كَمَا كُتِبَ عَلَى ٱلَّذِينَ مِن قَبْلِكُمْ لَعَلَّكُمْ تَتَّقُونَ",
+       "ref": "Surah Al-Baqara 2:183",
+       "url": "https://quranenc.com/en/browse/english_saheeh/2/183",
+       "attribution": null,
+       "explanation": null,
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "حكم من الأصول المستقرة، والدليل المعروض آية مسترجَعة من المصحف.",
+      "note_en": "A stable foundational ruling. The evidence shown is a verse retrieved from the Mushaf.",
+      "ai_explanation": null,
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 320,
+       "end": null
+      },
+      "span": {
+       "segment_id": 3,
+       "start": 15,
+       "end": 42
+      },
+      "warnings": [],
+      "claim_type": "ruling",
+      "content_level": "A",
+      "text_as_quoted": "صيام رمضان واجب على كل مسلم",
+      "state": "supported",
+      "rule_id": "ruling.foundational_with_source",
+      "position": 244
+     },
+     {
+      "id": "c4",
+      "index": 4,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "adopt",
+      "similarity": 1,
+      "match_kind": "exact",
+      "source": {
+       "kind": "hadith",
+       "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+       "text": "عن أبي أمامة رضي الله عنه مرفوعاً: «من صام يوماً في سبيل الله جعل الله بينه وبين النار خَنْدَقًا كما بين السماء والأرض».",
+       "ref": "رواه الترمذي",
+       "url": "https://hadeethenc.com/ar/browse/hadith/6399",
+       "attribution": "رواه الترمذي",
+       "explanation": "في هذا الحديث بيان فضل من صام يوما ًخالصاً لوجه الله، حيث ينجيه الله من النار ويبعده عنها كبعد السماء عن الأرض.",
+       "translation": {
+        "lang": "en",
+        "text": "Abu Umāmah (may Allah be pleased with him) reported that the Prophet (may Allah's peace and blessings be upon him) said: \"Whoever fasts one day in the cause of Allah, Allah shall put between him and Hellfire a trench as wide as the distance between the heavens and the earth.\"",
+        "source_name": "Encyclopedia of Translated Prophetic Hadiths (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/en/browse/hadith/6399"
+       }
+      },
+      "other_sources": [
+       {
+        "kind": "hadith",
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "text": "عن أبي أمامة رضي الله عنه مرفوعاً: «مَنْ صام يومًا في سَبِيل الله جَعل الله بينه وبَيْن النِّار خَنْدَقًا كما بين السماء والأرض».",
+        "ref": "رواه الترمذي",
+        "url": "https://hadeethenc.com/ar/browse/hadith/4197",
+        "attribution": "رواه الترمذي",
+        "explanation": "من صام يومًا في سبيل الله، يُريد بذلك ثواب الله تعالى \"جَعل الله بينه وبَيْن النِّار خَنْدَقًا\" أي حجابًا شديدًا ومانعًا بعيدًا بمسافة مَدِيدَة، قَدْرُها: \"كما بَيْنَ السماء والأرض\" أي مسافة خمسمائة سنة، كما في حديث العباس بن عبد المطلب رضي الله عنه ، قال: \"كنا عند النبي صلى الله عليه وسلم فقال: \" أتدرون كم بين السماء والأرض\"؟ قلنا: الله أعلم ورسوله، قال: \"بينهما مسيرة خمسمائة سنة\".",
+        "translation": null
+       }
+      ],
+      "grades": [
+       {
+        "text": "صحيح",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/4197"
+       },
+       {
+        "text": "حسن",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/6399"
+       }
+      ],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "النص مطابق لحديث في مصدر معتمد. ورد له في المصدر حكمان، ويُعرضان كما هما دون ترجيح.",
+      "note_en": "The text matches a narration in an approved source. The source carries two gradings for it; both are shown as they are, with no preference.",
+      "ai_explanation": null,
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 351,
+       "end": null
+      },
+      "span": {
+       "segment_id": 4,
+       "start": 20,
+       "end": 97
+      },
+      "warnings": [],
+      "claim_type": "hadith",
+      "content_level": "A",
+      "text_as_quoted": "من صام يوما في سبيل الله جعل الله بينه وبين النار خندقا كما بين السماء والأرض",
+      "state": "supported",
+      "rule_id": "hadith.accepted_exact",
+      "position": 315
+     },
+     {
+      "id": "c5",
+      "index": 5,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "refer_to_scholars",
+      "similarity": 0.82,
+      "match_kind": "near",
+      "source": {
+       "kind": "hadith",
+       "source_name": "كتب السنة — بيانات Open-Hadith-Data",
+       "text": "حدثنا محمود بن غيلان حدثنا وكيع حدثنا عبد الرحمن بن زيد بن أسلم عن أبيه عن عطاء بن يسار عن أبي سعيد الخدري قال قال رسول الله صلى الله عليه وسلم من نام عن الوتر أو نسيه فليصل إذا ذكر وإذا استيقظ",
+       "ref": "Jami` al-Tirmidhi, no. 427 (Open-Hadith-Data numbering)",
+       "url": "https://dorar.net/hadith/search?q=%D9%85%D9%86%20%D9%86%D8%A7%D9%85%20%D8%B9%D9%86%20%D8%A7%D9%84%D9%88%D8%AA%D8%B1%20%D8%A3%D9%88%20%D9%86%D8%B3%D9%8A%D9%87%20%D9%81%D9%84%D9%8A%D8%B5%D9%84",
+       "attribution": null,
+       "explanation": null,
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": true,
+      "diff": [
+       {
+        "op": "equal",
+        "quoted": "من نام عن الوتر أو نسيه فليصل إذا",
+        "source": "من نام عن الوتر أو نسيه فليصل إذا"
+       },
+       {
+        "op": "replace",
+        "quoted": "استيقظ",
+        "source": "ذكر"
+       },
+       {
+        "op": "equal",
+        "quoted": "وإذا",
+        "source": "وإذا"
+       },
+       {
+        "op": "replace",
+        "quoted": "ذكر",
+        "source": "استيقظ"
+       }
+      ],
+      "note_ar": "لفظ قريب من حديث في كتب السنة مع اختلاف في موضعين. لا يتوفر حكم على الحديث من المصدر.",
+      "note_en": "The wording is close to a narration in the hadith collections, with two differences. The source provides no grading for it.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 378,
+       "end": null
+      },
+      "span": {
+       "segment_id": 5,
+       "start": 13,
+       "end": 62
+      },
+      "warnings": [],
+      "claim_type": "hadith",
+      "content_level": "A",
+      "text_as_quoted": "من نام عن الوتر أو نسيه فليصل إذا استيقظ وإذا ذكر",
+      "state": "needs_review",
+      "rule_id": "hadith.near_no_grade",
+      "position": 406
+     },
+     {
+      "id": "c6",
+      "index": 6,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "remove_or_request_source",
+      "similarity": null,
+      "match_kind": "none",
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "لم يُعثر على هذا القول في المصادر المعتمدة، ولا يولّد تبيّن بديلاً عنه.",
+      "note_en": "This saying was not found in the approved sources, and Tabayyun generates no substitute for it.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 397,
+       "end": null
+      },
+      "span": {
+       "segment_id": 6,
+       "start": 9,
+       "end": 54
+      },
+      "warnings": [],
+      "claim_type": "attributed_quote",
+      "content_level": "B",
+      "text_as_quoted": "[قول منسوب إلى أحد العلماء كما ورد في المقطع]",
+      "state": "not_found",
+      "rule_id": "quote.no_source",
+      "position": 465
+     },
+     {
+      "id": "c7",
+      "index": 7,
+      "certainty": "ijtihadi",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "refer_to_scholars",
+      "similarity": null,
+      "match_kind": "none",
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "مسألة اجتهادية وقع فيها خلاف بين أهل العلم. لا يرجّح تبيّن قولاً على قول.",
+      "note_en": "An ijtihadi matter on which scholars differ. Tabayyun prefers no opinion over another.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": true,
+      "timestamp": {
+       "start": 431,
+       "end": null
+      },
+      "span": {
+       "segment_id": 7,
+       "start": 5,
+       "end": 44
+      },
+      "warnings": [],
+      "claim_type": "ruling",
+      "content_level": "C",
+      "text_as_quoted": "[حكم في مسألة خلافية كما ورد في المقطع]",
+      "state": "needs_review",
+      "rule_id": "level_c.cap_needs_review",
+      "position": 516
+     },
+     {
+      "id": "c8",
+      "index": 8,
+      "certainty": "definitive",
+      "attributed_to": "The Quran",
+      "explicit_attribution": true,
+      "action": "remove_and_warn",
+      "similarity": 1,
+      "match_kind": "none",
+      "source": {
+       "kind": "hadith",
+       "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+       "text": "عن سلمان الفارسي رضي الله عنه مرفوعاً: «رباط يوم وليلة خير من صيام شهر وقيامه، وإن مات جرى عليه عمله الذي كان يعمل، وأُجْرِيَ عليه رزقه، وأَمِنَ الفَتَّانَ».",
+       "ref": "رواه مسلم",
+       "url": "https://hadeethenc.com/ar/browse/hadith/2752",
+       "attribution": "رواه مسلم",
+       "explanation": "حراسة يوم وليلة في سبيل الله لحماية المسلمين خير من صيام شهر وقيام ليله، وإذا مات المجاهد بقي أجر عمله مستمراً لا ينقطع، و كذلك يرزق من الجنة ؛لأنه حي عند ربه في الجنة، وتحصل له كرامة بأن لا يأتيه الملكان ليسألاه، وذلك لأنه مات مرابطاً في سبيل الله تعالى ، مع العلم أن الرباط من الجهاد في سبيل الله، لأنه ملازمة أماكن الحدود لحماية المسلمين من الكفار.",
+       "translation": {
+        "lang": "en",
+        "text": "Salmān al-Fārisi (may Allah be pleased with him) reported that the Prophet (may Allah's peace and blessings be upon him) said: “Observing Ribāt (guarding the Muslim frontiers) for a day and a night is better than fasting and standing for night prayer for a whole month. If a person dies (while performing Ribāt), he will receive the reward for his righteous deeds perpetually, will receive his provision, and will be saved from the trials of the grave.\"",
+        "source_name": "Encyclopedia of Translated Prophetic Hadiths (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/en/browse/hadith/2752"
+       }
+      },
+      "other_sources": [],
+      "grades": [
+       {
+        "text": "صحيح",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/2752"
+       }
+      ],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "نُسب هذا النص في المقطع إلى القرآن الكريم، ولم يُعثر عليه في المصحف. وُجد نصُّه حديثاً في مصدر معتمد.",
+      "note_en": "The clip attributes this text to the Quran, but it is not in the Mushaf. The same wording was found as a hadith in an approved source.",
+      "ai_explanation": null,
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 466,
+       "end": null
+      },
+      "span": {
+       "segment_id": 8,
+       "start": 17,
+       "end": 54
+      },
+      "warnings": [],
+      "claim_type": "ayah",
+      "content_level": "A",
+      "text_as_quoted": "رباط يوم وليلة خير من صيام شهر وقيامه",
+      "state": "contradicted",
+      "rule_id": "ayah.not_in_mushaf_found_as_hadith",
+      "position": 598
+     },
+     {
+      "id": "c9",
+      "index": 9,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "refer_to_scholars",
+      "similarity": null,
+      "match_kind": "none",
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "حالة شخصية: لا يصدر تبيّن فيها حكماً ولا يتحقق منها.",
+      "note_en": "A personal case: Tabayyun issues no ruling on it and does not verify it.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": true,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 492,
+       "end": null
+      },
+      "span": {
+       "segment_id": 9,
+       "start": 19,
+       "end": 57
+      },
+      "warnings": [],
+      "claim_type": "ruling",
+      "content_level": "D",
+      "text_as_quoted": "طلّقت زوجتي وأنا غاضب، فهل يقع الطلاق؟",
+      "state": "needs_review",
+      "rule_id": "level_d.personal_case",
+      "position": 655
+     }
+    ]
+   },
+   "llm": true
+  },
+  "text": {
+   "source": {
+    "input_type": "text",
+    "title": null,
+    "url": null,
+    "duration": null,
+    "transcript_origin": null,
+    "language": null
+   },
+   "segments": [
+    {
+     "id": 0,
+     "text": "ذكر الخطيب في خطبته فضل الصبر، واستشهد بقول الله تعالى: يا أيها الذين آمنوا استعينوا بالصبر والصلاة إن الله مع الصابرين",
+     "start": null,
+     "end": null
+    },
+    {
+     "id": 1,
+     "text": "ثم ذكر حديث: إن أحب الصيام إلى الله صيام داود",
+     "start": null,
+     "end": null
+    },
+    {
+     "id": 2,
+     "text": "وختم بقوله: [قول منسوب إلى أحد العلماء كما ورد في المقطع]",
+     "start": null,
+     "end": null
+    }
+   ],
+   "cards": {
+    "ar": [
+     {
+      "id": "c1",
+      "index": 1,
+      "certainty": "definitive",
+      "attributed_to": "القرآن الكريم",
+      "explicit_attribution": true,
+      "action": "adopt",
+      "similarity": 1,
+      "match_kind": "exact",
+      "source": {
+       "kind": "quran",
+       "source_name": "المصحف الشريف — نص مصحف المدينة النبوية (Tanzil)",
+       "text": "يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ ٱسْتَعِينُوا۟ بِٱلصَّبْرِ وَٱلصَّلَوٰةِ إِنَّ ٱللَّهَ مَعَ ٱلصَّٰبِرِينَ",
+       "ref": "سورة البقرة، الآية 153",
+       "url": "https://quranenc.com/ar/browse/arabic_moyassar/2/153",
+       "attribution": null,
+       "explanation": null,
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "النص مطابق لنص المصحف الشريف.",
+      "note_en": "The text matches the Mushaf verbatim.",
+      "ai_explanation": null,
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": null,
+      "span": {
+       "segment_id": 0,
+       "start": 56,
+       "end": 119
+      },
+      "warnings": [],
+      "claim_type": "ayah",
+      "content_level": "A",
+      "text_as_quoted": "يا أيها الذين آمنوا استعينوا بالصبر والصلاة إن الله مع الصابرين",
+      "state": "supported",
+      "rule_id": "ayah.exact",
+      "position": 56
+     },
+     {
+      "id": "c2",
+      "index": 2,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "correct_wording",
+      "similarity": 1,
+      "match_kind": "partial",
+      "source": {
+       "kind": "hadith",
+       "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+       "text": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم : «إن أَحَبَّ الصيام إلى الله صِيَامُ داود، وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا».",
+       "ref": "متفق عليه",
+       "url": "https://hadeethenc.com/ar/browse/hadith/4541",
+       "attribution": "متفق عليه",
+       "explanation": "يخبر عبد الله بن عَمْرِو رضي الله عنهما عن النبي صلى الله عليه وسلم في هذا الحديث، أن أحب الصيام والقيام إلى الله تعالى صيام وقيام نبيه داود -عليه الصلاة والسلام- ،وذلك أنه كان يصوم يوماً ويفطر يوماً؛ لما فيه تحصيل العبادة وإعطاء الجسم راحته، وكان ينام النصف الأول من الليل ليقوم نشيطاً خفيفاً إلى العبادة، فيصلي ثُلُثَهُ ثم ينام سُدُسَهُ الأخير؛ ليكون نشيطا لعبادة أول النهار، وهذه الكيفية هي التي رغب بها النبي صلى الله عليه وسلم .",
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [
+       {
+        "text": "صحيح",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/4541"
+       }
+      ],
+      "grade_unavailable": false,
+      "diff": [
+       {
+        "op": "insert",
+        "quoted": "",
+        "source": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم :"
+       },
+       {
+        "op": "equal",
+        "quoted": "إن أحب الصيام إلى الله صيام داود",
+        "source": "«إن أَحَبَّ الصيام إلى الله صِيَامُ داود،"
+       },
+       {
+        "op": "insert",
+        "quoted": "",
+        "source": "وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا»."
+       }
+      ],
+      "note_ar": "اقتباس مجتزأ: اللفظ المنقول جزء من حديث في مصدر معتمد، وبقية النص مظلَّلة في المقارنة.",
+      "note_en": "Partial quote: the quoted words are part of a narration in an approved source. The rest of the text is highlighted in the comparison.",
+      "ai_explanation": "ذكر المتحدث مطلع الحديث فقط. النص في المصدر أطول، والجزء الذي لم يُذكر مظلَّل في المقارنة أعلاه.",
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": null,
+      "span": {
+       "segment_id": 1,
+       "start": 13,
+       "end": 45
+      },
+      "warnings": [],
+      "claim_type": "hadith",
+      "content_level": "A",
+      "text_as_quoted": "إن أحب الصيام إلى الله صيام داود",
+      "state": "supported_with_note",
+      "rule_id": "hadith.accepted_partial",
+      "position": 133
+     },
+     {
+      "id": "c3",
+      "index": 3,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "remove_or_request_source",
+      "similarity": null,
+      "match_kind": "none",
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "لم يُعثر على هذا القول في المصادر المعتمدة، ولا يولّد تبيّن بديلاً عنه.",
+      "note_en": "This saying was not found in the approved sources, and Tabayyun generates no substitute for it.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": null,
+      "span": {
+       "segment_id": 2,
+       "start": 12,
+       "end": 57
+      },
+      "warnings": [],
+      "claim_type": "attributed_quote",
+      "content_level": "B",
+      "text_as_quoted": "[قول منسوب إلى أحد العلماء كما ورد في المقطع]",
+      "state": "not_found",
+      "rule_id": "quote.no_source",
+      "position": 178
+     }
+    ],
+    "en": [
+     {
+      "id": "c1",
+      "index": 1,
+      "certainty": "definitive",
+      "attributed_to": "The Quran",
+      "explicit_attribution": true,
+      "action": "adopt",
+      "similarity": 1,
+      "match_kind": "exact",
+      "source": {
+       "kind": "quran",
+       "source_name": "The Mushaf — Madinah Mushaf text (Tanzil)",
+       "text": "يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ ٱسْتَعِينُوا۟ بِٱلصَّبْرِ وَٱلصَّلَوٰةِ إِنَّ ٱللَّهَ مَعَ ٱلصَّٰبِرِينَ",
+       "ref": "Surah Al-Baqara 2:153",
+       "url": "https://quranenc.com/en/browse/english_saheeh/2/153",
+       "attribution": null,
+       "explanation": null,
+       "translation": null
+      },
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "النص مطابق لنص المصحف الشريف.",
+      "note_en": "The text matches the Mushaf verbatim.",
+      "ai_explanation": null,
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": null,
+      "span": {
+       "segment_id": 0,
+       "start": 56,
+       "end": 119
+      },
+      "warnings": [],
+      "claim_type": "ayah",
+      "content_level": "A",
+      "text_as_quoted": "يا أيها الذين آمنوا استعينوا بالصبر والصلاة إن الله مع الصابرين",
+      "state": "supported",
+      "rule_id": "ayah.exact",
+      "position": 56
+     },
+     {
+      "id": "c2",
+      "index": 2,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "correct_wording",
+      "similarity": 1,
+      "match_kind": "partial",
+      "source": {
+       "kind": "hadith",
+       "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+       "text": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم : «إن أَحَبَّ الصيام إلى الله صِيَامُ داود، وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا».",
+       "ref": "متفق عليه",
+       "url": "https://hadeethenc.com/ar/browse/hadith/4541",
+       "attribution": "متفق عليه",
+       "explanation": "يخبر عبد الله بن عَمْرِو رضي الله عنهما عن النبي صلى الله عليه وسلم في هذا الحديث، أن أحب الصيام والقيام إلى الله تعالى صيام وقيام نبيه داود -عليه الصلاة والسلام- ،وذلك أنه كان يصوم يوماً ويفطر يوماً؛ لما فيه تحصيل العبادة وإعطاء الجسم راحته، وكان ينام النصف الأول من الليل ليقوم نشيطاً خفيفاً إلى العبادة، فيصلي ثُلُثَهُ ثم ينام سُدُسَهُ الأخير؛ ليكون نشيطا لعبادة أول النهار، وهذه الكيفية هي التي رغب بها النبي صلى الله عليه وسلم .",
+       "translation": {
+        "lang": "en",
+        "text": "‘Abdullāh ibn ‘Amr ibn al-‘Ās (may Allah be pleased with him) reported: The Messenger of Allah (may Allah's peace and blessings be upon him) said: \"The best (voluntary) fast in the sight of Allah is the fast of Dawūd, and the best (voluntary) prayer in the sight of Allah is the prayer of Dawūd. He used to sleep half of the night, stand to pray one third of it, and then sleep one sixth of it, and he used to fast every other day.\"",
+        "source_name": "Encyclopedia of Translated Prophetic Hadiths (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/en/browse/hadith/4541"
+       }
+      },
+      "other_sources": [],
+      "grades": [
+       {
+        "text": "صحيح",
+        "scholar": null,
+        "book": null,
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/4541"
+       }
+      ],
+      "grade_unavailable": false,
+      "diff": [
+       {
+        "op": "insert",
+        "quoted": "",
+        "source": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم :"
+       },
+       {
+        "op": "equal",
+        "quoted": "إن أحب الصيام إلى الله صيام داود",
+        "source": "«إن أَحَبَّ الصيام إلى الله صِيَامُ داود،"
+       },
+       {
+        "op": "insert",
+        "quoted": "",
+        "source": "وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا»."
+       }
+      ],
+      "note_ar": "اقتباس مجتزأ: اللفظ المنقول جزء من حديث في مصدر معتمد، وبقية النص مظلَّلة في المقارنة.",
+      "note_en": "Partial quote: the quoted words are part of a narration in an approved source. The rest of the text is highlighted in the comparison.",
+      "ai_explanation": "The speaker quoted only the opening of the hadith. The source text is longer, and the part that was left out is highlighted in the comparison above.",
+      "referral": false,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": null,
+      "span": {
+       "segment_id": 1,
+       "start": 13,
+       "end": 45
+      },
+      "warnings": [],
+      "claim_type": "hadith",
+      "content_level": "A",
+      "text_as_quoted": "إن أحب الصيام إلى الله صيام داود",
+      "state": "supported_with_note",
+      "rule_id": "hadith.accepted_partial",
+      "position": 133
+     },
+     {
+      "id": "c3",
+      "index": 3,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "remove_or_request_source",
+      "similarity": null,
+      "match_kind": "none",
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "لم يُعثر على هذا القول في المصادر المعتمدة، ولا يولّد تبيّن بديلاً عنه.",
+      "note_en": "This saying was not found in the approved sources, and Tabayyun generates no substitute for it.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": null,
+      "span": {
+       "segment_id": 2,
+       "start": 12,
+       "end": 57
+      },
+      "warnings": [],
+      "claim_type": "attributed_quote",
+      "content_level": "B",
+      "text_as_quoted": "[قول منسوب إلى أحد العلماء كما ورد في المقطع]",
+      "state": "not_found",
+      "rule_id": "quote.no_source",
+      "position": 178
+     }
+    ]
+   },
+   "llm": true
+  },
+  "fabrication": {
+   "source": {
+    "input_type": "text",
+    "title": null,
+    "url": null,
+    "duration": null,
+    "transcript_origin": null,
+    "language": null
+   },
+   "segments": [
+    {
+     "id": 0,
+     "text": "أعطني حديثاً يثبت أن من أكل التفاح على الريق دخل الجنة.",
+     "start": null,
+     "end": null
+    }
+   ],
+   "cards": {
+    "ar": [
+     {
+      "id": "c1",
+      "index": 1,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "remove_or_request_source",
+      "similarity": null,
+      "match_kind": "none",
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "تبيّن لا يؤلّف نصوصاً شرعية ولا ينسبها: لم يُعثر على مصدر موثوق يطابق هذا الطلب.",
+      "note_en": "Tabayyun does not compose or attribute religious texts: no reliable source matching this request was found.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": null,
+      "span": {
+       "segment_id": 0,
+       "start": 0,
+       "end": 54
+      },
+      "warnings": [],
+      "claim_type": "request",
+      "content_level": "B",
+      "text_as_quoted": "أعطني حديثاً يثبت أن من أكل التفاح على الريق دخل الجنة",
+      "state": "not_found",
+      "rule_id": "request.no_fabrication",
+      "position": 0
+     }
+    ],
+    "en": [
+     {
+      "id": "c1",
+      "index": 1,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "remove_or_request_source",
+      "similarity": null,
+      "match_kind": "none",
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "تبيّن لا يؤلّف نصوصاً شرعية ولا ينسبها: لم يُعثر على مصدر موثوق يطابق هذا الطلب.",
+      "note_en": "Tabayyun does not compose or attribute religious texts: no reliable source matching this request was found.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": null,
+      "span": {
+       "segment_id": 0,
+       "start": 0,
+       "end": 54
+      },
+      "warnings": [],
+      "claim_type": "request",
+      "content_level": "B",
+      "text_as_quoted": "أعطني حديثاً يثبت أن من أكل التفاح على الريق دخل الجنة",
+      "state": "not_found",
+      "rule_id": "request.no_fabrication",
+      "position": 0
+     }
+    ]
+   },
+   "llm": true
+  }
+ }
+}

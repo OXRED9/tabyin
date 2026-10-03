@@ -109,7 +109,9 @@ interface ClaimStub {
 interface DiffOp { op: "equal" | "replace" | "delete" | "insert"; quoted: string; source: string }
 
 interface Grade {            // copied verbatim from the source — never generated
-  text: string; scholar: string | null; book: string | null;
+  text: string; scholar: string | null;
+  book: string | null;       // book and page/number, verbatim
+  narrator: string | null;   // narrating Companion of the graded chain, verbatim
   source_name: string; source_url: string;
 }
 

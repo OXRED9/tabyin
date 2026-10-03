@@ -73,7 +73,8 @@ def parse_result_html(html: str, query: str) -> list[DorarHit]:
                 if getattr(sib, "get", None) and "info-subtitle" in (sib.get("class") or []):
                     break
                 parts.append(sib.get_text(" ", strip=True) if hasattr(sib, "get_text") else str(sib))
-            fields[key] = re.sub(r"\s+", " ", " ".join(parts)).strip(" :") or ""
+            value = re.sub(r"\s+", " ", " ".join(parts)).strip(" :")
+            fields[key] = "" if value in ("-", "—", "–") else value  # Dorar prints "-" for "not stated"
         hits.append(
             DorarHit(
                 text=text,

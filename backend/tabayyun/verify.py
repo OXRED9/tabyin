@@ -335,10 +335,9 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
     for _score, hit, _diff in (same_chain or dorar_strong)[:6]:
         if hit.grade:
             book = " — ".join(p for p in (hit.book, hit.number) if p) or None
-            if hit.narrator:
-                book = f"الراوي: {hit.narrator}" + (f" · {book}" if book else "")
-            g = Grade(text=hit.grade, scholar=hit.scholar, book=book, source_name=DORAR_NAME_EN if ctx.ui_lang == "en" else DORAR_NAME, source_url=hit.url)
-            if all((g.text, g.scholar, g.book) != (x.text, x.scholar, x.book) for x in grades):
+            g = Grade(text=hit.grade, scholar=hit.scholar, book=book, narrator=hit.narrator, source_name=DORAR_NAME_EN if ctx.ui_lang == "en" else DORAR_NAME, source_url=hit.url)
+            # the same scholar's same wording in several of his books is one grading, shown once
+            if all((g.text, g.scholar) != (x.text, x.scholar) for x in grades):
                 grades.append(g)
     grades = grades[:6]
 

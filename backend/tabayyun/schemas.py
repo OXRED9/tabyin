@@ -68,7 +68,8 @@ class Grade(BaseModel):
 
     text: str  # verbatim wording of the grading, e.g. as returned by the source
     scholar: str | None = None  # the muhaddith, verbatim, when the source names one
-    book: str | None = None  # the book the grading comes from, verbatim
+    book: str | None = None  # the book (and page or number) the grading comes from, verbatim
+    narrator: str | None = None  # the narrating Companion of the graded chain, verbatim
     source_name: str
     source_url: str
 

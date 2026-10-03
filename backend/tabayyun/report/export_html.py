@@ -62,7 +62,7 @@ def _card_html(card: Card, override: dict | None, en: bool) -> str:
             rows.append(f'<div class="row"><span class="label">{L("الترجمة", "Translation")} — {escape(s.translation.source_name)}</span><div dir="ltr">{escape(s.translation.text)}</div></div>')
         rows.append(f'<div class="row"><span class="label">{L("المرجع", "Reference")}</span>{escape(s.ref)} — {escape(s.source_name)}<br><a href="{escape(s.url, quote=True)}">{escape(s.url)}</a></div>')
     for g in card.grades:
-        who = " — ".join(x for x in (g.scholar, g.book) if x)
+        who = " — ".join(x for x in (g.scholar, g.book, (L("الراوي: ", "Narrator: ") + g.narrator) if g.narrator else None) if x)
         rows.append(
             f'<div class="row"><span class="label">{L("الحكم (منقول حرفياً)", "Grading (verbatim)")}</span>{escape(g.text)}'
             f'{(" — " + escape(who)) if who else ""}<br><span class="muted">{escape(g.source_name)} · <a href="{escape(g.source_url, quote=True)}">{escape(g.source_url)}</a></span></div>'
