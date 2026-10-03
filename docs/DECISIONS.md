@@ -166,3 +166,22 @@ plainly below, with the command that finishes the job in `OPERATIONS.md`.
 48. **Image input is not exposed.** `ingest/image.py` and `MODEL_VISION` are tested by the scripts
     only; the upload endpoint does not accept images until F1 is built.
 
+## Design rebuild (v2)
+
+49. **⚑ Verses stay in Amiri Quran; the King Fahd Complex font needs the Complex's text too.** The v2
+    brief asks for the Complex's Uthmanic font for verses. Tested: our Mushaf text (Tanzil Uthmani)
+    and the Complex's digital text encode the same Mushaf with different code points (6,158 of 6,236
+    verses differ), and our text set in the Complex's Hafs font renders with wrong marks — stray
+    filled circles where the silent-letter mark stands (`screenshots/v2/font-test-kfgqpc-vs-amiri.png`).
+    Showing a verse with wrong marks is worse than showing it in another typeface. To use the
+    Complex's font, the *displayed* verse text has to come from the Complex's dataset
+    (`kfgqpc_hafs_v30`, in the approved package) while matching keeps its current streams: a change
+    to which source's text is shown and copied, so it waits for the team and the Sharia reviewer.
+    The Complex's licence (in the font files) allows free use, copying and distribution, unmodified.
+50. **Features named in the v2 brief that do not exist yet** — image input (F1), authentic alternatives
+    (F2), PWA (F6) — were not built inside the visual rebuild, which the brief limits to design. The
+    composer carries the «صورة» action behind `features.image`, off until F1 ships.
+51. **The development server listens on the local network** (`--host 0.0.0.0`) so the UI can be opened
+    from a phone on the same Wi-Fi; it is started with the OpenRouter key blanked, so that session
+    cannot spend credit.
+
