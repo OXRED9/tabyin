@@ -57,7 +57,8 @@ _REQUEST = re.compile(
     re.IGNORECASE,
 )
 _PERSONAL = re.compile(
-    r"(?:هل\s+(?:يجوز|يحل|يصح|يحق|يلزمني|علي)\s+لي|هل\s+علي\b|ما\s+حكم[^.؟!\n]{0,80}?(?:\sلي\b|زوجتي|زوجي|طلاقي|صلاتي|صيامي|عقدي|ابي|امي|اخي)"
+    r"(?<![\u0621-\u064a])(?:هل\s+(?:يجوز|يحل|يصح|يحق)\s+لي|هل\s+يلزمني|(?:هل|ماذا)\s+علي\s+(?:شي|كفاره|اثم|قضاء|ذنب|ان)"
+    r"|ما\s+حكم[^.؟!\n]{0,80}?(?:\sلي(?![\u0621-\u064a])|زوجتي|زوجي|طلاقي|صلاتي|صيامي|عقدي|ابي|امي|اخي)"
     r"|انا\s+[^.؟!\n]{0,120}?هل\s+(?:يجوز|يحل|يصح)|(?:طلقت|حلفت|نذرت)\s+[^.؟!\n]{0,160}?(?:فما|هل|ماذا)"
     r"|is\s+it\s+(?:permissible|allowed|halal|haram)\s+for\s+me|in\s+my\s+(?:case|marriage|situation))[^.؟!\n]*",
     re.IGNORECASE,
@@ -103,8 +104,11 @@ def scan_quran(doc: Document, quran: QuranIndex) -> list[RawClaim]:
     norm = [w[3] for w in words]
     orig = [w[2] for w in words]
     claims: list[RawClaim] = []
+    basmala = normalize_ar(quran.ayahs[0][3])
     for w_start, w_end, match in quran.find_quotes_in(orig, norm):
         start, end = words[w_start][0], words[w_end - 1][1]
+        if " ".join(norm[w_start:w_end]) == basmala and not has_ayah_marker_before(text, start):
+            continue  # an opening basmala is a formula, not a citation to verify
         claims.append(
             RawClaim(
                 type=ClaimType.ayah,

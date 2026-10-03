@@ -215,3 +215,12 @@ def test_uploaded_recitation_is_transcribed_and_matched(offline, tmp_path):
     report = asyncio.run(pipeline.collect(ingest))
     assert report["source"]["input_type"] == "file" and report["segments"]
     assert report["segments"][0]["start"] is not None
+
+
+# ------------------------------------------------------------------ extraction precision
+def test_opening_basmala_and_ordinary_prose_are_not_claims(verify_text, ayah):
+    basmala = ayah(1, 1)[1]
+    report = verify_text(f"{basmala}\nتسهل هذه الخدمة على المستخدم التحكم بتنسيق العرض بما يناسب موقعه.\nوهل على الزائر أن يسجل قبل البحث؟")
+    assert report["cards"] == []
+    report = verify_text(f"قال الله تعالى: ﴿{basmala}﴾")
+    assert len(report["cards"]) == 1 and report["cards"][0]["state"] == "supported"

@@ -1,12 +1,12 @@
 # Evaluation results
 
-Generated 2026-10-03T14:46:25+00:00 · 79 claims (0 reviewed by the Sharia reviewer so far) · 3 runs per system.
+Generated 2026-10-03T14:56:32+00:00 · 79 claims (0 reviewed by the Sharia reviewer so far) · 3 runs per system.
 
 | System | Accuracy | Fabricated attributions | Wrongly endorsed | Correct abstention | Seconds / claim |
 |---|---|---|---|---|---|
 | Lexical search only | 43.0% | 0.0% | 6.3% | 100.0% | 0.04 |
 | General LLM, no retrieval | not run — no LLM provider key configured | | | | |
-| Tabayyun (lexical-only mode) | 81.0% | 0.0% | 0.0% | 100.0% | 0.09 |
+| Tabayyun (lexical-only mode) | 81.0% | 0.0% | 0.0% | 100.0% | 0.08 |
 
 Mean ± standard deviation over the runs (no ± shown when every run gave the same result).
 

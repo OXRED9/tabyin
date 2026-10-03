@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-03T14:46:25+00:00",
+  "generated_at": "2026-10-03T14:56:32+00:00",
   "testset": {
     "path": "eval/testset/claims.jsonl",
     "claims": 79,
@@ -33,8 +33,8 @@
         "std": 0.0
       },
       "seconds_per_claim": {
-        "mean": 0.0403,
-        "std": 0.0075
+        "mean": 0.0397,
+        "std": 0.0073
       },
       "last_run": {
         "accuracy": 0.4304,
@@ -50,7 +50,7 @@
         ],
         "correct_abstention_rate": 1.0,
         "no_output": 0,
-        "seconds_per_claim": 0.035,
+        "seconds_per_claim": 0.034,
         "per_state": {
           "supported": {
             "precision": 0.5455,
@@ -167,7 +167,7 @@
           "state": "supported",
           "ref": "quran:52:48",
           "has_source": true,
-          "seconds": 0.029,
+          "seconds": 0.028,
           "detail": "containment 0.64"
         },
         {
@@ -176,7 +176,7 @@
           "state": "supported",
           "ref": "quran:7:163",
           "has_source": true,
-          "seconds": 0.045,
+          "seconds": 0.044,
           "detail": "containment 1.00"
         },
         {
@@ -185,7 +185,7 @@
           "state": "supported",
           "ref": "quran:59:17",
           "has_source": true,
-          "seconds": 0.035,
+          "seconds": 0.034,
           "detail": "containment 0.64"
         },
         {
@@ -203,7 +203,7 @@
           "state": "supported",
           "ref": "quran:2:215",
           "has_source": true,
-          "seconds": 0.046,
+          "seconds": 0.045,
           "detail": "containment 0.81"
         },
         {
@@ -212,7 +212,7 @@
           "state": "supported",
           "ref": "quran:36:33",
           "has_source": true,
-          "seconds": 0.035,
+          "seconds": 0.034,
           "detail": "containment 1.00"
         },
         {
@@ -221,7 +221,7 @@
           "state": "supported",
           "ref": "quran:10:2",
           "has_source": true,
-          "seconds": 0.06,
+          "seconds": 0.058,
           "detail": "containment 0.84"
         },
         {
@@ -248,7 +248,7 @@
           "state": "supported",
           "ref": "quran:20:85",
           "has_source": true,
-          "seconds": 0.026,
+          "seconds": 0.025,
           "detail": "containment 0.86"
         },
         {
@@ -257,7 +257,7 @@
           "state": "supported",
           "ref": "quran:4:52",
           "has_source": true,
-          "seconds": 0.031,
+          "seconds": 0.03,
           "detail": "containment 0.89"
         },
         {
@@ -266,7 +266,7 @@
           "state": "supported",
           "ref": "quran:41:41",
           "has_source": true,
-          "seconds": 0.026,
+          "seconds": 0.025,
           "detail": "containment 0.88"
         },
         {
@@ -284,7 +284,7 @@
           "state": "supported",
           "ref": "quran:2:101",
           "has_source": true,
-          "seconds": 0.043,
+          "seconds": 0.042,
           "detail": "containment 0.94"
         },
         {
@@ -293,7 +293,7 @@
           "state": "supported",
           "ref": "quran:8:16",
           "has_source": true,
-          "seconds": 0.055,
+          "seconds": 0.054,
           "detail": "containment 0.68"
         },
         {
@@ -302,7 +302,7 @@
           "state": "supported",
           "ref": "quran:59:15",
           "has_source": true,
-          "seconds": 0.031,
+          "seconds": 0.03,
           "detail": "containment 0.70"
         },
         {
@@ -329,7 +329,7 @@
           "state": "supported",
           "ref": "hadeethenc:66521",
           "has_source": true,
-          "seconds": 0.042,
+          "seconds": 0.041,
           "detail": "containment 1.00"
         },
         {
@@ -338,7 +338,7 @@
           "state": "supported",
           "ref": "hadeethenc:65059",
           "has_source": true,
-          "seconds": 0.037,
+          "seconds": 0.036,
           "detail": "containment 1.00"
         },
         {
@@ -347,7 +347,7 @@
           "state": "supported",
           "ref": "hadeethenc:4193",
           "has_source": true,
-          "seconds": 0.048,
+          "seconds": 0.047,
           "detail": "containment 1.00"
         },
         {
@@ -365,7 +365,7 @@
           "state": "supported",
           "ref": "hadeethenc:4196",
           "has_source": true,
-          "seconds": 0.019,
+          "seconds": 0.018,
           "detail": "containment 1.00"
         },
         {
@@ -383,7 +383,7 @@
           "state": "supported",
           "ref": "hadeethenc:8895",
           "has_source": true,
-          "seconds": 0.04,
+          "seconds": 0.039,
           "detail": "containment 1.00"
         },
         {
@@ -392,7 +392,7 @@
           "state": "supported",
           "ref": "hadeethenc:66324",
           "has_source": true,
-          "seconds": 0.051,
+          "seconds": 0.05,
           "detail": "containment 1.00"
         },
         {
@@ -428,7 +428,7 @@
           "state": "supported",
           "ref": "hadeethenc:10878",
           "has_source": true,
-          "seconds": 0.051,
+          "seconds": 0.05,
           "detail": "containment 1.00"
         },
         {
@@ -437,7 +437,7 @@
           "state": "supported",
           "ref": "hadeethenc:3071",
           "has_source": true,
-          "seconds": 0.023,
+          "seconds": 0.022,
           "detail": "containment 1.00"
         },
         {
@@ -455,7 +455,7 @@
           "state": "supported",
           "ref": "hadeethenc:3437",
           "has_source": true,
-          "seconds": 0.029,
+          "seconds": 0.028,
           "detail": "containment 1.00"
         },
         {
@@ -464,7 +464,7 @@
           "state": "supported",
           "ref": "hadeethenc:10113",
           "has_source": true,
-          "seconds": 0.04,
+          "seconds": 0.039,
           "detail": "containment 1.00"
         },
         {
@@ -482,7 +482,7 @@
           "state": "supported",
           "ref": "hadeethenc:4181",
           "has_source": true,
-          "seconds": 0.025,
+          "seconds": 0.024,
           "detail": "containment 0.95"
         },
         {
@@ -509,7 +509,7 @@
           "state": "supported",
           "ref": "hadeethenc:66294",
           "has_source": true,
-          "seconds": 0.042,
+          "seconds": 0.041,
           "detail": "containment 0.97"
         },
         {
@@ -518,7 +518,7 @@
           "state": "supported",
           "ref": "hadeethenc:5356",
           "has_source": true,
-          "seconds": 0.059,
+          "seconds": 0.058,
           "detail": "containment 0.83"
         },
         {
@@ -536,7 +536,7 @@
           "state": "supported",
           "ref": "hadeethenc:3853",
           "has_source": true,
-          "seconds": 0.053,
+          "seconds": 0.052,
           "detail": "containment 0.84"
         },
         {
@@ -545,7 +545,7 @@
           "state": "supported",
           "ref": "hadeethenc:5372",
           "has_source": true,
-          "seconds": 0.027,
+          "seconds": 0.026,
           "detail": "containment 0.67"
         },
         {
@@ -572,7 +572,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.026,
+          "seconds": 0.025,
           "detail": "containment 0.50"
         },
         {
@@ -599,7 +599,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.033,
+          "seconds": 0.032,
           "detail": "containment 0.21"
         },
         {
@@ -608,7 +608,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.061,
+          "seconds": 0.06,
           "detail": "containment 0.44"
         },
         {
@@ -617,7 +617,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.049,
+          "seconds": 0.048,
           "detail": "containment 0.43"
         },
         {
@@ -635,7 +635,7 @@
           "state": "supported",
           "ref": "books:ibnmajah:1735",
           "has_source": true,
-          "seconds": 0.043,
+          "seconds": 0.042,
           "detail": "containment 0.67"
         },
         {
@@ -653,7 +653,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.025,
+          "seconds": 0.024,
           "detail": "containment 0.33"
         },
         {
@@ -662,7 +662,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.041,
+          "seconds": 0.04,
           "detail": "containment 0.57"
         },
         {
@@ -671,7 +671,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.028,
+          "seconds": 0.027,
           "detail": "containment 0.17"
         },
         {
@@ -680,7 +680,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.044,
+          "seconds": 0.043,
           "detail": "containment 0.20"
         },
         {
@@ -689,7 +689,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.025,
+          "seconds": 0.024,
           "detail": "containment 0.33"
         },
         {
@@ -707,7 +707,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.021,
+          "seconds": 0.02,
           "detail": "containment 0.40"
         },
         {
@@ -734,7 +734,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.026,
+          "seconds": 0.025,
           "detail": "containment 0.33"
         },
         {
@@ -761,7 +761,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.019,
+          "seconds": 0.018,
           "detail": "containment 0.40"
         },
         {
@@ -788,7 +788,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.031,
+          "seconds": 0.03,
           "detail": "containment 0.33"
         },
         {
@@ -797,7 +797,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.025,
+          "seconds": 0.024,
           "detail": "containment 0.50"
         },
         {
@@ -833,7 +833,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.026,
+          "seconds": 0.025,
           "detail": "containment 0.33"
         },
         {
@@ -842,7 +842,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.026,
+          "seconds": 0.025,
           "detail": "containment 0.29"
         },
         {
@@ -860,7 +860,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.023,
+          "seconds": 0.022,
           "detail": "containment 0.25"
         }
       ]
@@ -891,8 +891,8 @@
         "std": 0.0
       },
       "seconds_per_claim": {
-        "mean": 0.094,
-        "std": 0.0219
+        "mean": 0.0777,
+        "std": 0.0005
       },
       "last_run": {
         "accuracy": 0.8101,
@@ -902,7 +902,7 @@
         "wrongly_endorsed_ids": [],
         "correct_abstention_rate": 1.0,
         "no_output": 10,
-        "seconds_per_claim": 0.078,
+        "seconds_per_claim": 0.077,
         "per_state": {
           "supported": {
             "precision": 0.8387,
@@ -1046,7 +1046,7 @@
           "state": "supported",
           "ref": "quran:33:29",
           "has_source": true,
-          "seconds": 0.001,
+          "seconds": 0.002,
           "detail": "ayah/ayah.exact/lexical_only"
         },
         {
@@ -1055,7 +1055,7 @@
           "state": "supported",
           "ref": "quran:2:215",
           "has_source": true,
-          "seconds": 0.001,
+          "seconds": 0.002,
           "detail": "ayah/ayah.exact/lexical_only"
         },
         {
@@ -1064,7 +1064,7 @@
           "state": "supported",
           "ref": "quran:36:33",
           "has_source": true,
-          "seconds": 0.001,
+          "seconds": 0.002,
           "detail": "ayah/ayah.exact/lexical_only"
         },
         {
@@ -1073,7 +1073,7 @@
           "state": "supported",
           "ref": "quran:10:2",
           "has_source": true,
-          "seconds": 0.001,
+          "seconds": 0.002,
           "detail": "ayah/ayah.exact/lexical_only"
         },
         {
@@ -1082,7 +1082,7 @@
           "state": "supported",
           "ref": "quran:28:36",
           "has_source": true,
-          "seconds": 0.006,
+          "seconds": 0.007,
           "detail": "ayah/ayah.exact/lexical_only"
         },
         {
@@ -1091,7 +1091,7 @@
           "state": "supported",
           "ref": "quran:61:2",
           "has_source": true,
-          "seconds": 0.006,
+          "seconds": 0.007,
           "detail": "ayah/ayah.exact/lexical_only"
         },
         {
@@ -1100,7 +1100,7 @@
           "state": "supported_with_note",
           "ref": "quran:20:85",
           "has_source": true,
-          "seconds": 0.006,
+          "seconds": 0.007,
           "detail": "ayah/ayah.near/lexical_only"
         },
         {
@@ -1109,7 +1109,7 @@
           "state": "supported_with_note",
           "ref": "quran:4:52",
           "has_source": true,
-          "seconds": 0.006,
+          "seconds": 0.007,
           "detail": "ayah/ayah.near/lexical_only"
         },
         {
@@ -1118,7 +1118,7 @@
           "state": "supported_with_note",
           "ref": "quran:41:41",
           "has_source": true,
-          "seconds": 0.027,
+          "seconds": 0.03,
           "detail": "ayah/ayah.near/lexical_only"
         },
         {
@@ -1127,7 +1127,7 @@
           "state": "supported_with_note",
           "ref": "quran:17:76",
           "has_source": true,
-          "seconds": 0.027,
+          "seconds": 0.03,
           "detail": "ayah/ayah.near/lexical_only"
         },
         {
@@ -1136,7 +1136,7 @@
           "state": "supported_with_note",
           "ref": "quran:2:101",
           "has_source": true,
-          "seconds": 0.029,
+          "seconds": 0.03,
           "detail": "ayah/ayah.near/lexical_only"
         },
         {
@@ -1145,7 +1145,7 @@
           "state": "contradicted",
           "ref": "quran:8:16",
           "has_source": true,
-          "seconds": 0.029,
+          "seconds": 0.03,
           "detail": "ayah/ayah.altered/lexical_only"
         },
         {
@@ -1154,7 +1154,7 @@
           "state": "contradicted",
           "ref": "quran:59:15",
           "has_source": true,
-          "seconds": 0.011,
+          "seconds": 0.017,
           "detail": "ayah/ayah.altered/lexical_only"
         },
         {
@@ -1163,7 +1163,7 @@
           "state": "contradicted",
           "ref": "quran:5:65",
           "has_source": true,
-          "seconds": 0.011,
+          "seconds": 0.018,
           "detail": "ayah/ayah.altered/lexical_only"
         },
         {
@@ -1181,7 +1181,7 @@
           "state": "supported",
           "ref": "hadeethenc:66521",
           "has_source": true,
-          "seconds": 0.062,
+          "seconds": 0.061,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1190,7 +1190,7 @@
           "state": "supported",
           "ref": "hadeethenc:65059",
           "has_source": true,
-          "seconds": 0.086,
+          "seconds": 0.075,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1199,7 +1199,7 @@
           "state": "supported",
           "ref": "hadeethenc:4193",
           "has_source": true,
-          "seconds": 0.128,
+          "seconds": 0.117,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1208,7 +1208,7 @@
           "state": "supported",
           "ref": "hadeethenc:65516",
           "has_source": true,
-          "seconds": 0.166,
+          "seconds": 0.164,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1217,7 +1217,7 @@
           "state": "supported",
           "ref": "hadeethenc:4196",
           "has_source": true,
-          "seconds": 0.142,
+          "seconds": 0.139,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1226,7 +1226,7 @@
           "state": "supported",
           "ref": "hadeethenc:65000",
           "has_source": true,
-          "seconds": 0.167,
+          "seconds": 0.168,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1235,7 +1235,7 @@
           "state": "supported",
           "ref": "hadeethenc:8895",
           "has_source": true,
-          "seconds": 0.165,
+          "seconds": 0.171,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1244,7 +1244,7 @@
           "state": "supported",
           "ref": "hadeethenc:66324",
           "has_source": true,
-          "seconds": 0.169,
+          "seconds": 0.173,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1253,7 +1253,7 @@
           "state": "supported",
           "ref": "hadeethenc:65890",
           "has_source": true,
-          "seconds": 0.19,
+          "seconds": 0.191,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1262,7 +1262,7 @@
           "state": "supported",
           "ref": "hadeethenc:5274",
           "has_source": true,
-          "seconds": 0.187,
+          "seconds": 0.188,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1271,7 +1271,7 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:5436",
           "has_source": true,
-          "seconds": 0.177,
+          "seconds": 0.168,
           "detail": "hadith/hadith.accepted_near/lexical_only"
         },
         {
@@ -1280,7 +1280,7 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:10878",
           "has_source": true,
-          "seconds": 0.174,
+          "seconds": 0.172,
           "detail": "hadith/hadith.accepted_near/lexical_only"
         },
         {
@@ -1289,7 +1289,7 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:3071",
           "has_source": true,
-          "seconds": 0.158,
+          "seconds": 0.159,
           "detail": "hadith/hadith.accepted_near/lexical_only"
         },
         {
@@ -1307,7 +1307,7 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:3437",
           "has_source": true,
-          "seconds": 0.129,
+          "seconds": 0.126,
           "detail": "hadith/hadith.accepted_near/lexical_only"
         },
         {
@@ -1316,7 +1316,7 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:10113",
           "has_source": true,
-          "seconds": 0.142,
+          "seconds": 0.14,
           "detail": "hadith/hadith.accepted_near/lexical_only"
         },
         {
@@ -1325,7 +1325,7 @@
           "state": "supported",
           "ref": "hadeethenc:3000",
           "has_source": true,
-          "seconds": 0.105,
+          "seconds": 0.098,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1334,7 +1334,7 @@
           "state": "supported",
           "ref": "hadeethenc:4181",
           "has_source": true,
-          "seconds": 0.098,
+          "seconds": 0.094,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1343,7 +1343,7 @@
           "state": "supported",
           "ref": "hadeethenc:65013",
           "has_source": true,
-          "seconds": 0.099,
+          "seconds": 0.1,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1352,7 +1352,7 @@
           "state": "supported",
           "ref": "hadeethenc:6366",
           "has_source": true,
-          "seconds": 0.067,
+          "seconds": 0.069,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1361,7 +1361,7 @@
           "state": "supported",
           "ref": "hadeethenc:66294",
           "has_source": true,
-          "seconds": 0.08,
+          "seconds": 0.083,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1370,7 +1370,7 @@
           "state": "supported",
           "ref": "hadeethenc:5356",
           "has_source": true,
-          "seconds": 0.117,
+          "seconds": 0.119,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1379,7 +1379,7 @@
           "state": "supported",
           "ref": "hadeethenc:5462",
           "has_source": true,
-          "seconds": 0.142,
+          "seconds": 0.14,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1388,7 +1388,7 @@
           "state": "supported",
           "ref": "hadeethenc:3853",
           "has_source": true,
-          "seconds": 0.186,
+          "seconds": 0.183,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1397,7 +1397,7 @@
           "state": "supported",
           "ref": "hadeethenc:5372",
           "has_source": true,
-          "seconds": 0.182,
+          "seconds": 0.179,
           "detail": "hadith/hadith.accepted_exact/lexical_only"
         },
         {
@@ -1406,7 +1406,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.156,
+          "seconds": 0.152,
           "detail": "hadith/hadith.none/lexical_only"
         },
         {
@@ -1415,7 +1415,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.131,
+          "seconds": 0.126,
           "detail": "hadith/hadith.none/lexical_only"
         },
         {
@@ -1424,7 +1424,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.105,
+          "seconds": 0.102,
           "detail": "hadith/hadith.none/lexical_only"
         },
         {
@@ -1433,7 +1433,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.112,
+          "seconds": 0.108,
           "detail": "hadith/hadith.none/lexical_only"
         },
         {
@@ -1442,7 +1442,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.115,
+          "seconds": 0.11,
           "detail": "hadith/hadith.none/lexical_only"
         },
         {
@@ -1451,7 +1451,7 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.121,
+          "seconds": 0.115,
           "detail": "hadith/hadith.weak/lexical_only"
         },
         {
@@ -1460,7 +1460,7 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.154,
+          "seconds": 0.147,
           "detail": "hadith/hadith.weak/lexical_only"
         },
         {
@@ -1469,7 +1469,7 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.177,
+          "seconds": 0.169,
           "detail": "hadith/hadith.weak/lexical_only"
         },
         {
@@ -1478,7 +1478,7 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.162,
+          "seconds": 0.157,
           "detail": "hadith/hadith.weak/lexical_only"
         },
         {
@@ -1487,7 +1487,7 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.17,
+          "seconds": 0.166,
           "detail": "hadith/hadith.weak/lexical_only"
         },
         {
@@ -1496,7 +1496,7 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.133,
+          "seconds": 0.13,
           "detail": "hadith/hadith.fabricated/lexical_only"
         },
         {
@@ -1505,7 +1505,7 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.109,
+          "seconds": 0.106,
           "detail": "hadith/hadith.fabricated/lexical_only"
         },
         {
@@ -1514,7 +1514,7 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.13,
+          "seconds": 0.125,
           "detail": "hadith/hadith.fabricated/lexical_only"
         },
         {
@@ -1523,7 +1523,7 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.116,
+          "seconds": 0.111,
           "detail": "hadith/hadith.fabricated/lexical_only"
         },
         {
@@ -1532,7 +1532,7 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 0.137,
+          "seconds": 0.129,
           "detail": "hadith/hadith.fabricated/lexical_only"
         },
         {
@@ -1541,7 +1541,7 @@
           "state": "no_output",
           "ref": null,
           "has_source": false,
-          "seconds": 0.137,
+          "seconds": 0.128,
           "detail": "llm_unavailable;no_claims"
         },
         {
@@ -1550,7 +1550,7 @@
           "state": "no_output",
           "ref": null,
           "has_source": false,
-          "seconds": 0.12,
+          "seconds": 0.112,
           "detail": "llm_unavailable;no_claims"
         },
         {
@@ -1559,7 +1559,7 @@
           "state": "no_output",
           "ref": null,
           "has_source": false,
-          "seconds": 0.113,
+          "seconds": 0.106,
           "detail": "llm_unavailable;no_claims"
         },
         {
@@ -1568,7 +1568,7 @@
           "state": "supported",
           "ref": "quran:3:97",
           "has_source": true,
-          "seconds": 0.001,
+          "seconds": 0.0,
           "detail": "ayah/ayah.exact/lexical_only"
         },
         {
@@ -1586,7 +1586,7 @@
           "state": "no_output",
           "ref": null,
           "has_source": false,
-          "seconds": 0.094,
+          "seconds": 0.09,
           "detail": "llm_unavailable;no_claims"
         },
         {
@@ -1595,7 +1595,7 @@
           "state": "no_output",
           "ref": null,
           "has_source": false,
-          "seconds": 0.091,
+          "seconds": 0.088,
           "detail": "llm_unavailable;no_claims"
         },
         {
@@ -1622,7 +1622,7 @@
           "state": "no_output",
           "ref": null,
           "has_source": false,
-          "seconds": 0.0,
+          "seconds": 0.001,
           "detail": "llm_unavailable;no_claims"
         },
         {
@@ -1631,7 +1631,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.0,
+          "seconds": 0.02,
           "detail": "ruling/ruling.personal_case/lexical_only"
         },
         {
@@ -1640,7 +1640,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.0,
+          "seconds": 0.001,
           "detail": "ruling/ruling.personal_case/lexical_only"
         },
         {
@@ -1649,7 +1649,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.0,
+          "seconds": 0.001,
           "detail": "ruling/ruling.personal_case/lexical_only"
         },
         {
@@ -1658,7 +1658,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 0.0,
+          "seconds": 0.001,
           "detail": "ruling/ruling.personal_case/lexical_only"
         },
         {
@@ -1667,7 +1667,7 @@
           "state": "no_output",
           "ref": null,
           "has_source": false,
-          "seconds": 0.09,
+          "seconds": 0.067,
           "detail": "llm_unavailable;no_claims"
         },
         {
@@ -1685,7 +1685,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
+          "seconds": 0.0,
           "detail": "request/request.no_fabrication/lexical_only"
         },
         {
@@ -1694,7 +1694,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
+          "seconds": 0.0,
           "detail": "request/request.no_fabrication/lexical_only"
         },
         {
@@ -1712,7 +1712,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 0.001,
+          "seconds": 0.0,
           "detail": "request/request.no_fabrication/lexical_only"
         }
       ]
