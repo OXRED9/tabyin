@@ -68,6 +68,13 @@ Thresholds live in `evidence_rules/thresholds.py`; final values are documented i
 2. A decision touching religious behaviour.
 3. Unexpected cloud cost.
 
+## Phase 2 (daily-life features) — gated
+
+`docs/PHASE2_BRIEF.md` is the product owner's brief for the next features (OCR tab, authentic
+alternatives, verdict card, copy, explainability, PWA, public API/MCP, document mode, results page,
+enriched cards). **Do not start it until every item of the original Definition of Done is green and
+the public URL works.** Each feature sits behind a `FEATURES_*` flag and is disabled if not finished.
+
 ## Layout and commands
 
 ```
