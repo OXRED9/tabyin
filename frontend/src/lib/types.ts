@@ -152,6 +152,12 @@ export interface Card {
   rule_id: string
   similarity: number | null
   match_kind: MatchKind
+  /**
+   * F2 «الثابت في الباب»: up to three accepted narrations on the same subject, for a hadith with
+   * no reference or a weak or rejected one. Retrieved, never generated. Absent on a report saved
+   * before the feature.
+   */
+  alternatives?: Alternative[]
   source: SourceRef | null
   other_sources: SourceRef[]
   grades: Grade[]
@@ -255,6 +261,17 @@ export interface MetaExample {
   url?: string | null
 }
 
+/** F2: an accepted narration on the same subject, verbatim from the source, with its grading. */
+export interface Alternative {
+  text: string
+  ref: string
+  source_name: string
+  source_url: string
+  grade_text: string
+  grade_source_name: string
+  grade_source_url: string
+}
+
 export interface Meta {
   abstention_verse: VerseRef | null
   motto_verse: VerseRef | null
@@ -266,6 +283,11 @@ export interface Meta {
   /** PUBLIC_URL; null → the UI uses window.location.origin */
   app_url?: string | null
   data_version?: string
+  /**
+   * Where a reader's "report an error" message is addressed. The message is composed in the
+   * browser and sent by the reader's own mail or WhatsApp: no endpoint of ours receives it.
+   */
+  feedback?: { email: string | null; whatsapp: string | null }
 }
 
 export interface Features {
@@ -274,6 +296,8 @@ export interface Features {
   explain: boolean
   /** F1 (image input, `POST /api/ocr`): off unless the backend says `true`. */
   image: boolean
+  /** F2 («الثابت في الباب»): off unless the backend says `true`. */
+  alternatives: boolean
 }
 
 /**

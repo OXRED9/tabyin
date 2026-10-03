@@ -178,6 +178,17 @@ function hadithSource(h, lang) {
   }
 }
 
+/** F2 «الثابت في الباب»: an accepted narration offered beside a hadith with no reference. */
+const alternativeOf = (h) => ({
+  text: h.hadeeth,
+  ref: h.attribution,
+  source_name: HADEETHENC_NAME.ar,
+  source_url: h.url,
+  grade_text: h.grade,
+  grade_source_name: HADEETHENC_NAME.ar,
+  grade_source_url: h.url,
+})
+
 const hadithGrade = (h) => ({
   text: h.grade,
   scholar: null,
@@ -305,6 +316,7 @@ function card(partial) {
     action: ACTION[partial.state],
     similarity: null,
     match_kind: 'none',
+    alternatives: [],
     source: null,
     other_sources: [],
     grades: [],
@@ -330,6 +342,7 @@ const STAND_IN = {
   attributed: '[قول منسوب إلى أحد العلماء كما ورد في المقطع]',
   disputed: '[حكم في مسألة خلافية كما ورد في المقطع]',
   referenced: '[حكم في مسألة خلافية استُدلّ له بحديث كما ورد في المقطع]',
+  hadithNotFound: '[حديث متداول في فضل الصيام لا أصل له في المصادر كما ورد في المقطع]',
 }
 // Not religious texts: a pillar named in the pitch deck's own mock, a personal question, a request.
 const PLAIN = {
@@ -499,6 +512,21 @@ function buildCards(lang) {
       note_ar: 'هذه حالة شخصية تستوجب فتوى من جهة مؤهلة',
       note_en: 'This is a personal case that requires a fatwa from a qualified body.',
     }),
+    // A hadith in circulation that the sources do not carry. The backend offers accepted
+    // narrations on the same subject beside it (F2, `Card.alternatives`): here, two the fixtures
+    // already use. The note is the backend's sentence for `hadith.none`.
+    hadithNotFound: card({
+      claim_type: 'hadith',
+      content_level: 'A',
+      text_as_quoted: STAND_IN.hadithNotFound,
+      explicit_attribution: true,
+      state: 'not_found',
+      rule_id: 'hadith.none',
+      referral: true,
+      alternatives: [alternativeOf(hPartial), alternativeOf(hB)],
+      note_ar: 'لم يُعثر على هذا الحديث في المصادر المعتمدة المتاحة.',
+      note_en: 'This hadith was not found in the approved sources available.',
+    }),
     request: card({
       claim_type: 'request',
       content_level: 'B',
@@ -647,6 +675,17 @@ function buildCards(lang) {
     level: ['قول منسوب إلى عالم: شرح واستدلال.', 'A saying attributed to a scholar: explanation and argumentation.'],
     origin: 'model',
     ms: 431,
+  })
+
+  cards.hadithNotFound.explain = explain(cards.hadithNotFound, {
+    rule: [
+      'لم يُعثر على أي حديث فوق حد المطابقة في المصادر المعتمدة. القاعدة عند غياب المصدر: الامتناع. الأحاديث المعروضة تحت «الثابت في الباب» مسترجَعة في الموضوع نفسه، وليست هذا النص.',
+      'No narration above the match threshold was found in the approved sources. The rule when there is no source: abstain. The narrations under “Reliably reported on the same subject” were retrieved on the same subject; they are not this text.',
+    ],
+    limits: [HADITH_LIMITS.ar, HADITH_LIMITS.en],
+    threshold: ACCEPT,
+    level: ['حديث منسوب صراحةً إلى النبي ﷺ: من الأصول المستقرة.', 'A hadith explicitly attributed to the Prophet: stable, foundational content.'],
+    ms: 262,
   })
 
   cards.disputed.explain = explain(cards.disputed, {
@@ -825,6 +864,7 @@ const video = scenario({
     { at: 448, card: 'referenced', before: 'وكذلك ', after: '، ودليله عندهم الحديث الذي مرّ في فضل الصيام.' },
     { at: 466, card: 'misattributed', before: 'وقال الله تعالى: ', after: '' },
     { at: 492, card: 'personal', before: 'ووصلني هذا السؤال: ', after: '' },
+    { at: 502, card: 'hadithNotFound', before: 'ويتداول الناس: ', after: '' },
     { at: 510, text: 'نكتفي بهذا القدر، وإلى لقاء قادم.' },
   ],
 })
@@ -903,7 +943,7 @@ const meta = {
   ],
   limits: { max_text_chars: 60000, max_upload_mb: 50, max_media_minutes: 30 },
   // Phase 2. app_url is null on purpose: the UI then uses window.location.origin.
-  features: { share_card: true, copy: true, explain: true },
+  features: { share_card: true, copy: true, explain: true, alternatives: true },
   app_url: null,
   data_version: DATA_VERSION,
 }

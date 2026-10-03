@@ -154,7 +154,13 @@ export async function mockMeta(): Promise<Meta> {
       copy: !off.has('copy'),
       explain: !off.has('explain'),
       image,
+      alternatives: !off.has('alternatives'),
     },
+    // Where "report an error" is addressed. None by default, as on a server that has not set one;
+    // `?feedback=1` gives placeholder addresses so both buttons can be seen.
+    feedback: params().has('feedback')
+      ? { email: 'feedback@tabayyun.example', whatsapp: '+966 50 000 0000' }
+      : { email: null, whatsapp: null },
   }
 }
 

@@ -89,7 +89,8 @@
   "features": {
    "share_card": true,
    "copy": true,
-   "explain": true
+   "explain": true,
+   "alternatives": true
   },
   "app_url": null,
   "data_version": "2026.10.03 · quran 6236 (Tanzil Uthmani 1.1) · hadeethenc 3574 · books 58802"
@@ -169,10 +170,16 @@
      "id": 10,
      "text": "ووصلني هذا السؤال: طلّقت زوجتي وأنا غاضب، فهل يقع الطلاق؟",
      "start": 492,
-     "end": 510
+     "end": 502
     },
     {
      "id": 11,
+     "text": "ويتداول الناس: [حديث متداول في فضل الصيام لا أصل له في المصادر كما ورد في المقطع]",
+     "start": 502,
+     "end": 510
+    },
+    {
+     "id": 12,
      "text": "نكتفي بهذا القدر، وإلى لقاء قادم.",
      "start": 510,
      "end": 521
@@ -189,6 +196,7 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "alternatives": [],
       "source": {
        "kind": "quran",
        "source_name": "المصحف الشريف — نص مصحف المدينة النبوية (Tanzil)",
@@ -301,6 +309,7 @@
       "action": "correct_wording",
       "similarity": 1,
       "match_kind": "partial",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
@@ -437,6 +446,7 @@
       "action": "adopt",
       "similarity": null,
       "match_kind": "topic",
+      "alternatives": [],
       "source": {
        "kind": "quran",
        "source_name": "المصحف الشريف — نص مصحف المدينة النبوية (Tanzil)",
@@ -529,6 +539,7 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
@@ -667,6 +678,7 @@
       "action": "refer_to_scholars",
       "similarity": 0.82,
       "match_kind": "near",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "كتب السنة — بيانات Open-Hadith-Data",
@@ -800,6 +812,7 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "alternatives": [],
       "source": null,
       "other_sources": [],
       "grades": [],
@@ -852,6 +865,7 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "none",
+      "alternatives": [],
       "source": null,
       "other_sources": [],
       "grades": [],
@@ -904,6 +918,7 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "referenced",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
@@ -984,6 +999,7 @@
       "action": "remove_and_warn",
       "similarity": 1,
       "match_kind": "none",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
@@ -1104,6 +1120,7 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "none",
+      "alternatives": [],
       "source": null,
       "other_sources": [],
       "grades": [],
@@ -1146,6 +1163,78 @@
       "state": "needs_review",
       "rule_id": "level_d.personal_case",
       "position": 763
+     },
+     {
+      "id": "c11",
+      "index": 11,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "remove_or_request_source",
+      "similarity": null,
+      "match_kind": "none",
+      "alternatives": [
+       {
+        "text": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم : «إن أَحَبَّ الصيام إلى الله صِيَامُ داود، وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا».",
+        "ref": "متفق عليه",
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/4541",
+        "grade_text": "صحيح",
+        "grade_source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "grade_source_url": "https://hadeethenc.com/ar/browse/hadith/4541"
+       },
+       {
+        "text": "عن أبي أمامة رضي الله عنه مرفوعاً: «من صام يوماً في سبيل الله جعل الله بينه وبين النار خَنْدَقًا كما بين السماء والأرض».",
+        "ref": "رواه الترمذي",
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/6399",
+        "grade_text": "حسن",
+        "grade_source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "grade_source_url": "https://hadeethenc.com/ar/browse/hadith/6399"
+       }
+      ],
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "لم يُعثر على هذا الحديث في المصادر المعتمدة المتاحة.",
+      "note_en": "This hadith was not found in the approved sources available.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 502,
+       "end": null
+      },
+      "span": {
+       "segment_id": 11,
+       "start": 15,
+       "end": 81
+      },
+      "warnings": [],
+      "copy_text": null,
+      "explain": {
+       "rule_ar": "لم يُعثر على أي حديث فوق حد المطابقة في المصادر المعتمدة. القاعدة عند غياب المصدر: الامتناع. الأحاديث المعروضة تحت «الثابت في الباب» مسترجَعة في الموضوع نفسه، وليست هذا النص.",
+       "rule_en": "No narration above the match threshold was found in the approved sources. The rule when there is no source: abstain. The narrations under “Reliably reported on the same subject” were retrieved on the same subject; they are not this text.",
+       "limits_ar": "لم نبحث خارج المصادر المعتمدة؛ قد يوجد الحديث بلفظ آخر في كتب أخرى.",
+       "limits_en": "Nothing outside the approved sources was searched; the hadith may exist with other wording in other books.",
+       "similarity": null,
+       "threshold": 0.85,
+       "candidates": [],
+       "level_reason_ar": "حديث منسوب صراحةً إلى النبي ﷺ: من الأصول المستقرة.",
+       "level_reason_en": "A hadith explicitly attributed to the Prophet: stable, foundational content.",
+       "level_reason_origin": "rule",
+       "match_ms": 262,
+       "data_version": "2026.10.03 · quran 6236 (Tanzil Uthmani 1.1) · hadeethenc 3574 · books 58802"
+      },
+      "claim_type": "hadith",
+      "content_level": "A",
+      "text_as_quoted": "[حديث متداول في فضل الصيام لا أصل له في المصادر كما ورد في المقطع]",
+      "state": "not_found",
+      "rule_id": "hadith.none",
+      "position": 817
      }
     ],
     "en": [
@@ -1158,6 +1247,7 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "alternatives": [],
       "source": {
        "kind": "quran",
        "source_name": "The Mushaf — Madinah Mushaf text (Tanzil)",
@@ -1270,6 +1360,7 @@
       "action": "correct_wording",
       "similarity": 1,
       "match_kind": "partial",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
@@ -1411,6 +1502,7 @@
       "action": "adopt",
       "similarity": null,
       "match_kind": "topic",
+      "alternatives": [],
       "source": {
        "kind": "quran",
        "source_name": "The Mushaf — Madinah Mushaf text (Tanzil)",
@@ -1503,6 +1595,7 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
@@ -1646,6 +1739,7 @@
       "action": "refer_to_scholars",
       "similarity": 0.82,
       "match_kind": "near",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "كتب السنة — بيانات Open-Hadith-Data",
@@ -1779,6 +1873,7 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "alternatives": [],
       "source": null,
       "other_sources": [],
       "grades": [],
@@ -1831,6 +1926,7 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "none",
+      "alternatives": [],
       "source": null,
       "other_sources": [],
       "grades": [],
@@ -1883,6 +1979,7 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "referenced",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
@@ -1968,6 +2065,7 @@
       "action": "remove_and_warn",
       "similarity": 1,
       "match_kind": "none",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
@@ -2093,6 +2191,7 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "none",
+      "alternatives": [],
       "source": null,
       "other_sources": [],
       "grades": [],
@@ -2135,6 +2234,78 @@
       "state": "needs_review",
       "rule_id": "level_d.personal_case",
       "position": 763
+     },
+     {
+      "id": "c11",
+      "index": 11,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": true,
+      "action": "remove_or_request_source",
+      "similarity": null,
+      "match_kind": "none",
+      "alternatives": [
+       {
+        "text": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم : «إن أَحَبَّ الصيام إلى الله صِيَامُ داود، وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا».",
+        "ref": "متفق عليه",
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/4541",
+        "grade_text": "صحيح",
+        "grade_source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "grade_source_url": "https://hadeethenc.com/ar/browse/hadith/4541"
+       },
+       {
+        "text": "عن أبي أمامة رضي الله عنه مرفوعاً: «من صام يوماً في سبيل الله جعل الله بينه وبين النار خَنْدَقًا كما بين السماء والأرض».",
+        "ref": "رواه الترمذي",
+        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "source_url": "https://hadeethenc.com/ar/browse/hadith/6399",
+        "grade_text": "حسن",
+        "grade_source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
+        "grade_source_url": "https://hadeethenc.com/ar/browse/hadith/6399"
+       }
+      ],
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "لم يُعثر على هذا الحديث في المصادر المعتمدة المتاحة.",
+      "note_en": "This hadith was not found in the approved sources available.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": {
+       "start": 502,
+       "end": null
+      },
+      "span": {
+       "segment_id": 11,
+       "start": 15,
+       "end": 81
+      },
+      "warnings": [],
+      "copy_text": null,
+      "explain": {
+       "rule_ar": "لم يُعثر على أي حديث فوق حد المطابقة في المصادر المعتمدة. القاعدة عند غياب المصدر: الامتناع. الأحاديث المعروضة تحت «الثابت في الباب» مسترجَعة في الموضوع نفسه، وليست هذا النص.",
+       "rule_en": "No narration above the match threshold was found in the approved sources. The rule when there is no source: abstain. The narrations under “Reliably reported on the same subject” were retrieved on the same subject; they are not this text.",
+       "limits_ar": "لم نبحث خارج المصادر المعتمدة؛ قد يوجد الحديث بلفظ آخر في كتب أخرى.",
+       "limits_en": "Nothing outside the approved sources was searched; the hadith may exist with other wording in other books.",
+       "similarity": null,
+       "threshold": 0.85,
+       "candidates": [],
+       "level_reason_ar": "حديث منسوب صراحةً إلى النبي ﷺ: من الأصول المستقرة.",
+       "level_reason_en": "A hadith explicitly attributed to the Prophet: stable, foundational content.",
+       "level_reason_origin": "rule",
+       "match_ms": 262,
+       "data_version": "2026.10.03 · quran 6236 (Tanzil Uthmani 1.1) · hadeethenc 3574 · books 58802"
+      },
+      "claim_type": "hadith",
+      "content_level": "A",
+      "text_as_quoted": "[حديث متداول في فضل الصيام لا أصل له في المصادر كما ورد في المقطع]",
+      "state": "not_found",
+      "rule_id": "hadith.none",
+      "position": 817
      }
     ]
    },
@@ -2180,6 +2351,7 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "alternatives": [],
       "source": {
        "kind": "quran",
        "source_name": "المصحف الشريف — نص مصحف المدينة النبوية (Tanzil)",
@@ -2289,6 +2461,7 @@
       "action": "correct_wording",
       "similarity": 1,
       "match_kind": "partial",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
@@ -2422,6 +2595,7 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "alternatives": [],
       "source": null,
       "other_sources": [],
       "grades": [],
@@ -2473,6 +2647,7 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "alternatives": [],
       "source": {
        "kind": "quran",
        "source_name": "The Mushaf — Madinah Mushaf text (Tanzil)",
@@ -2582,6 +2757,7 @@
       "action": "correct_wording",
       "similarity": 1,
       "match_kind": "partial",
+      "alternatives": [],
       "source": {
        "kind": "hadith",
        "source_name": "موسوعة الأحاديث النبوية (HadeethEnc.com)",
@@ -2720,6 +2896,7 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "alternatives": [],
       "source": null,
       "other_sources": [],
       "grades": [],
@@ -2792,6 +2969,7 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "alternatives": [],
       "source": null,
       "other_sources": [],
       "grades": [],
@@ -2874,6 +3052,7 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "alternatives": [],
       "source": null,
       "other_sources": [],
       "grades": [],

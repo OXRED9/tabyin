@@ -1,5 +1,5 @@
 import { ChevronDown, GraduationCap, LocateFixed, Share2 } from 'lucide-react'
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { CopySourceButton } from '@/components/report/copy-source-button'
@@ -11,8 +11,10 @@ import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { diffCoversSource, hasDifferences, hasUnquoted } from '@/lib/diff'
 import { formatClock, formatPercent, safeHref } from '@/lib/format'
+import { distinctGradings } from '@/lib/grades'
 import { useI18n } from '@/lib/i18n'
 import type {
+  Alternative,
   Card,
   EvidenceState,
   Features,
@@ -177,7 +179,7 @@ function Grades({ grades, unavailable }: { grades: Grade[]; unavailable: boolean
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   if (grades.length === 0 && !unavailable) return null
-  const wordings = [...new Set(grades.map((grade) => grade.text.replace(/\s+/g, ' ').trim()))]
+  const wordings = distinctGradings(grades)
   return (
     <div className="space-y-1">
       <p className="text-sm text-quiet">
@@ -218,6 +220,72 @@ function Grades({ grades, unavailable }: { grades: Grade[]; unavailable: boolean
   )
 }
 
+/** A narration cut to three lines until asked for in full. Whether it is cut is measured. */
+function ClampedText({ text }: { text: string }) {
+  const { t } = useI18n()
+  const [open, setOpen] = useState(false)
+  const [cut, setCut] = useState(false)
+  const words = useRef<HTMLParagraphElement | null>(null)
+  useLayoutEffect(() => {
+    const element = words.current
+    if (element && !open && element.scrollHeight > element.clientHeight + 1) {
+      setCut(true)
+    }
+  }, [text, open])
+  return (
+    <>
+      <p ref={words} lang="ar" dir="rtl" className={cn('naskh-quote whitespace-pre-line', !open && 'line-clamp-3')}>
+        {text}
+      </p>
+      {cut ? (
+        <Button type="button" variant="link" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+          {open ? t.card.showLess : t.card.showMore}
+        </Button>
+      ) : null}
+    </>
+  )
+}
+
+/**
+ * F2 «الثابت في الباب»: accepted narrations on the same subject, retrieved from the source, beside
+ * a hadith that has no reference or a weak or rejected one. They are not a corrected version of
+ * the text in circulation, and the section says so. Each comes as its source words it, with its
+ * reference, its grading and a way to copy it.
+ */
+function Alternatives({ items }: { items: Alternative[] }) {
+  const { t } = useI18n()
+  return (
+    <section data-testid="alternatives" className="space-y-3 border-t pt-3">
+      <div>
+        <h4 className="text-base font-semibold text-ink">{t.alternatives.title}</h4>
+        <p className="text-sm text-quiet">{t.alternatives.hint}</p>
+      </div>
+      <ul className="space-y-4">
+        {items.map((item, i) => (
+          <li key={i} className="space-y-1">
+            <ClampedText text={item.text} />
+            <p className="text-sm">
+              <SourceLink href={item.source_url}>{item.ref}</SourceLink>
+            </p>
+            <p className="text-sm text-quiet">
+              <span lang="ar" dir="rtl" className="font-naskh text-lg text-ink">
+                {item.grade_text}
+              </span>
+              {' — '}
+              <SourceLink href={item.grade_source_url}>{item.grade_source_name}</SourceLink>
+            </p>
+            <CopySourceButton
+              quiet
+              kind="hadith"
+              text={`${item.text}\n${item.ref} — ${item.grade_text} (${item.grade_source_name})\n${item.source_url}`}
+            />
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 /** Another source of the same text: its words, then its takhrij. */
 function OtherSource({ source, state }: { source: SourceRef; state: EvidenceState }) {
   return (
@@ -249,6 +317,8 @@ export interface NoteBodyProps {
   onShare: (cardId: string) => void
   /** "Show in the text", where the note is not already beside its words. */
   onLocate?: (cardId: string) => void
+  /** «أبلغ عن خطأ»: the reader's own message about this verdict. */
+  onReportError: (cardId: string) => void
 }
 
 /**
@@ -266,6 +336,7 @@ export default function NoteBody({
   onReferral,
   onShare,
   onLocate,
+  onReportError,
 }: NoteBodyProps) {
   const { t, lang, pick } = useI18n()
   const state = card.state
@@ -377,6 +448,10 @@ export default function NoteBody({
         ) : null}
       </div>
 
+      {features.alternatives && card.alternatives && card.alternatives.length > 0 ? (
+        <Alternatives items={card.alternatives} />
+      ) : null}
+
       {card.ai_explanation ? (
         <section className="border-t border-dashed border-rule-strong pt-3 text-sm">
           {/* Words only: the label says what this is, and no stock "AI" mark stands in for it. */}
@@ -462,6 +537,17 @@ export default function NoteBody({
           </Disclosure>
         )}
       </div>
+
+      <Button
+        type="button"
+        variant="link"
+        data-testid="report-error"
+        aria-haspopup="dialog"
+        className="text-sm text-quiet decoration-rule-strong"
+        onClick={() => onReportError(card.id)}
+      >
+        {t.feedback.action}
+      </Button>
     </div>
   )
 }

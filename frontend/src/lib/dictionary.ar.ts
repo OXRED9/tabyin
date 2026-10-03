@@ -233,6 +233,39 @@ export const ar = {
     notDone: 'تبيّن لا يفتي ولا يرجّح بين أقوال أهل العلم ولا يحكم في حالة شخصية؛ يعرض ما في المصادر كما هو.',
   },
 
+  // F2 «الثابت في الباب». TODO-SULAIMAN-REVIEW (the title and the sentence under it).
+  alternatives: {
+    title: 'الثابت في الباب',
+    hint: 'أحاديث مقبولة في الموضوع نفسه، مسترجَعة من موسوعة الأحاديث النبوية — ليست تصحيحاً للنص المتداول',
+  },
+
+  // «أبلغ عن خطأ»: the message is composed here and sent by the reader's own mail or WhatsApp.
+  feedback: {
+    action: 'أبلغ عن خطأ',
+    missedAction: 'فات تبيّن استشهاداً؟ أبلغ عن خطأ',
+    title: 'أبلغ عن خطأ في هذا الحكم',
+    titleMissed: 'أبلغ عن استشهاد لم يلتقطه تبيّن',
+    privacy: 'لا يُرسَل شيء إلى خادم تبيّن: أنت من يرسل هذه الرسالة، بالوسيلة التي تختارها.',
+    report: 'نص البلاغ',
+    what: 'ما الخطأ؟',
+    whatPlaceholder: 'اكتب ما تراه خطأً، وما الصواب إن عرفته',
+    mail: 'إرسال بالبريد',
+    whatsapp: 'إرسال بواتساب',
+    copy: 'نسخ البلاغ',
+    copied: 'نُسخ البلاغ ✓',
+    share: 'مشاركة',
+    subject: 'بلاغ عن خطأ في حكم — تبيّن',
+    subjectMissed: 'بلاغ عن استشهاد لم يُلتقط — تبيّن',
+    lineQuoted: 'النص',
+    lineState: 'الحالة',
+    lineRule: 'القاعدة',
+    lineReference: 'المرجع',
+    lineChecked: 'المحتوى المفحوص',
+    lineData: 'إصدار البيانات',
+    lineAddress: 'العنوان',
+    lineWhat: 'الخطأ',
+  },
+
   actions: {
     adopt: 'نقله مع ذكر مرجعه',
     correct_wording: 'تصحيح اللفظ',
@@ -361,6 +394,9 @@ export const ar = {
     // not something it quotes, and showing it raises no state.
     referencedSource: 'الدليل المشار إليه في المصادر',
     referencedShort: 'الدليل المشار إليه',
+    // Beside the state of a hadith that has gradings and is not «له مرجعية»: the sources' own
+    // words, every distinct one, so that «مخالف للمصدر» is read with what the sources say.
+    gradedAs: (wordings: string[]) => `حكمه في المصادر: ${wordings.map((w) => `«${w}»`).join('، ')}`,
     // Travels with the verdict card and the shared text of such a claim: a disputed ruling beside
     // a narration, with no caveat, would read as an argument for one opinion.
     referencedCaveat: 'عرض هذا النص لا يعني ترجيحاً ولا حكماً من تبيّن.',

@@ -12,7 +12,16 @@ import type { SourceRef } from '@/lib/types'
  * F4: one click copies `card.copy_text` exactly as the API built it: the source's wording with
  * its reference (and grading), never the wording as quoted by the content.
  */
-export function CopySourceButton({ text, kind }: { text: string; kind: SourceRef['kind'] | null }) {
+export function CopySourceButton({
+  text,
+  kind,
+  quiet = false,
+}: {
+  text: string
+  kind: SourceRef['kind'] | null
+  /** A smaller, borderless button: one of several in a list. */
+  quiet?: boolean
+}) {
   const { t } = useI18n()
   const [copied, setCopied] = useState(false)
   const timer = useRef<number | null>(null)
@@ -41,7 +50,13 @@ export function CopySourceButton({ text, kind }: { text: string; kind: SourceRef
     <TooltipProvider delayDuration={300}>
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button type="button" variant="outline" size="touch" data-testid="copy-source" onClick={() => void copy()}>
+        <Button
+          type="button"
+          variant={quiet ? 'quiet' : 'outline'}
+          size={quiet ? 'sm' : 'touch'}
+          data-testid="copy-source"
+          onClick={() => void copy()}
+        >
           {copied ? <Check aria-hidden="true" className="text-green" /> : <Copy aria-hidden="true" />}
           {label}
         </Button>

@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { prefersReducedMotion, useMediaQuery } from '@/hooks/use-media-query'
 import type { VerifyState } from '@/hooks/use-verify'
 import { featuresOf } from '@/lib/features'
+import type { ErrorTarget } from '@/lib/feedback'
 import { formatSeconds, safeHref } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import { lazyWithPreload } from '@/lib/lazy'
@@ -48,6 +49,7 @@ const NONE: ReadonlySet<string> = new Set()
 const InlineNote = lazyWithPreload(() => import('@/components/report/inline-note'))
 const NoteSheet = lazy(() => import('@/components/report/note-sheet'))
 const ReferralDialog = lazy(() => import('@/components/report/referral-dialog'))
+const ReportErrorDialog = lazy(() => import('@/components/report/report-error-dialog'))
 const ShareCardDialog = lazy(() => import('@/components/share/share-card-dialog'))
 /** How long after a report completes its on-demand parts are warmed up. */
 const WARM_UP_MS = 2500
@@ -98,6 +100,7 @@ export function ReportView({
   // The dialog stays mounted once it has been opened, so it can close with its transition.
   const [referralSeen, setReferralSeen] = useState(false)
   const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null)
+  const [errorTarget, setErrorTarget] = useState<ErrorTarget | null>(null)
   const [glide, setGlide] = useState(false)
   const [notesBelow, setNotesBelow] = useState(false)
   // False only between the end of a live run and the end of its orchestrated moment.
@@ -289,6 +292,15 @@ export function ReportView({
     [cards],
   )
 
+  // «أبلغ عن خطأ»: on one verdict, or (from the colophon) on a citation the tool missed.
+  const reportError = useCallback(
+    (cardId: string) => {
+      const card = cards[cardId]
+      if (card) setErrorTarget({ kind: 'claim', card })
+    },
+    [cards],
+  )
+
   const lexicalNotice = state.notices.find((n) => n.code === 'llm_unavailable')
   const noClaimsNotice = state.notices.find((n) => n.code === 'no_claims')
   const lexical = summary?.mode === 'lexical_only' || !!lexicalNotice
@@ -314,6 +326,20 @@ export function ReportView({
       </div>
     ) : null
 
+  // The tool may have missed a citation: the reader can say so, in a message of their own.
+  const missedLink = (
+    <Button
+      type="button"
+      variant="link"
+      data-testid="report-missed"
+      aria-haspopup="dialog"
+      className="text-sm text-quiet decoration-rule-strong"
+      onClick={() => setErrorTarget({ kind: 'missed' })}
+    >
+      {t.feedback.missedAction}
+    </Button>
+  )
+
   const bodyProps = {
     source,
     meta,
@@ -321,6 +347,7 @@ export function ReportView({
     stageSeconds: summary?.stage_seconds,
     onReferral: openReferral,
     onShare: shareClaim,
+    onReportError: reportError,
   }
 
   // Phone only: the list can put the notes that matter most first.
@@ -360,6 +387,7 @@ export function ReportView({
             <RotateCcw aria-hidden="true" />
             {t.report.another}
           </Button>
+          {missedLink}
         </div>
       ) : (
         <div className="flex items-start gap-x-6 border-b pb-5">
@@ -574,6 +602,7 @@ export function ReportView({
               {t.report.another}
             </Button>
           </div>
+          {missedLink}
         </div>
       ) : null}
       </Suspense>
@@ -590,6 +619,15 @@ export function ReportView({
         ) : null}
         {referralSeen ? <ReferralDialog open={referralOpen} onOpenChange={setReferralOpen} meta={meta} /> : null}
         {shareTarget ? <ShareCardDialog target={shareTarget} meta={meta} onClose={() => setShareTarget(null)} /> : null}
+        {errorTarget ? (
+          <ReportErrorDialog
+            key={errorTarget.kind === 'claim' ? errorTarget.card.id : 'missed'}
+            target={errorTarget}
+            meta={meta}
+            source={source}
+            onClose={() => setErrorTarget(null)}
+          />
+        ) : null}
       </Suspense>
     </section>
   )
