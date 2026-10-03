@@ -36,7 +36,7 @@ async def translation(surah: int, ayah_start: int, ayah_end: int, lang: str = "e
                     cache.set(ck, text)
                 parts.append(text)
     except Exception as e:
-        log.warning("QuranEnc translation unavailable: %s", e)
+        log.warning("QuranEnc translation unavailable: %s", type(e).__name__)
         return None
     return Translation(
         lang=lang,

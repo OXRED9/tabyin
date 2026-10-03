@@ -92,3 +92,18 @@ def test_rate_limit_returns_a_readable_error(client, monkeypatch):
     assert all("rate_limited" not in client.post("/api/verify", json=body).text for _ in range(2))
     events = sse(client.post("/api/verify", json=body))
     assert events[0][1]["code"] == "rate_limited" and events[0][1]["hint_ar"] and events[-1][0] == "done"
+
+
+def test_user_text_never_reaches_the_logs(client, caplog, ayah, matn):
+    """Request URLs to sources contain the user's words; nothing of the input may be logged."""
+    import logging
+
+    for name in ("httpx", "httpcore"):
+        assert logging.getLogger(name).getEffectiveLevel() >= logging.WARNING
+    secret = "عبارةفريدةللاختبار"
+    text = f"{secret} قال رسول الله صلى الله عليه وسلم: «{matn('4560')}» ثم {ayah(49, 6)[1]}"
+    with caplog.at_level(logging.DEBUG):
+        r = client.post("/api/verify", json={"input_type": "text", "text": text})
+    assert any(n == "card" for n, _ in sse(r))
+    logged = "\n".join(rec.getMessage() for rec in caplog.records if rec.name.startswith("tabayyun"))
+    assert secret not in logged and matn("4560")[:20] not in logged

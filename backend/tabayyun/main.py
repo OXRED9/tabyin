@@ -35,6 +35,10 @@ from .sources.hadith import get_hadith_index
 from .sources.quran import get_quran_index
 
 logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+# Privacy: HTTP client libraries log request URLs at INFO, and those URLs carry the user's words
+# (a Dorar search query, a video link). Keep them out of the logs.
+for _noisy in ("httpx", "httpcore", "openai", "anthropic", "urllib3", "trafilatura"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
 log = logging.getLogger("tabayyun")
 SSE_HEADERS = {"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no", "Connection": "keep-alive"}
 AUDIO_VIDEO_EXT = {".mp3", ".m4a", ".wav", ".ogg", ".oga", ".opus", ".flac", ".aac", ".mp4", ".webm", ".mov", ".mkv", ".m4v", ".3gp"}

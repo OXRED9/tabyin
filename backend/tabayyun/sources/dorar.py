@@ -117,7 +117,8 @@ class DorarClient:
                 raise httpx.HTTPStatusError(f"HTTP {r.status_code}", request=r.request, response=r)
             html = r.json()["ahadith"]["result"]
         except Exception as e:  # network, block page, unexpected shape: all mean "unreachable"
-            log.warning("Dorar unreachable (%s); gradings will be reported as unavailable", e)
+            # Only the error type is logged: the exception text contains the request URL, i.e. the user's words.
+            log.warning("Dorar unreachable (%s); gradings will be reported as unavailable", type(e).__name__)
             self.status = "unreachable"
             self._down_until = time.monotonic() + _COOLDOWN
             return None

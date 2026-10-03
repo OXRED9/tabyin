@@ -106,7 +106,7 @@ async def transcribe(path: str) -> tuple[list[Segment], str]:
                 if segments:
                     return segments, "cloud-stt"
             except Exception as e:
-                log.warning("cloud transcription failed, trying local: %s", e)
+                log.warning("cloud transcription failed, trying local: %s", type(e).__name__)
         if local_available():
             segments = await asyncio.to_thread(_local, audio)
             if segments:

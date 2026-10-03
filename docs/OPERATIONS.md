@@ -69,7 +69,7 @@ Quran matching, hadith retrieval, the rules and the report need no network at al
 
 ## Resource use (measured on the development machine, 3 Oct 2026)
 
-- Memory: about 320 MB resident with every index loaded and after serving requests. Local Whisper
+- Memory: about 320 MB resident on the host (281 MiB inside the container) with every index loaded and after serving requests. Local Whisper
   (`small`) adds more than 1 GB and is for development machines only.
 - Disk: image data ≈ 110 MB (hadith books index 85 MB, HadeethEnc 17 MB, Quran 2 MB).
 - Startup: indexes build in about 1 second.
@@ -109,6 +109,8 @@ they are decided before any model is called.
   provider; a quoted narration (its first words) is sent to Dorar's search; audio is sent to the
   speech-to-text provider when cloud transcription is used; a video URL is requested from its
   platform. The container runs with `--no-access-log`.
+- Logs carry no user text: HTTP client loggers that print request URLs are silenced, and errors are
+  logged by type and code location only (a test enforces this).
 
 ## Maintenance
 

@@ -48,4 +48,5 @@ class OpenAIProvider:
         try:
             return model_cls.model_validate_json(choice.message.content or "")
         except ValidationError as e:
-            raise LLMError(f"openai: response failed validation: {e}") from e
+            # count only: the validation message quotes the model's output, which quotes the user's text
+            raise LLMError(f"openai: response failed validation ({e.error_count()} errors)") from e

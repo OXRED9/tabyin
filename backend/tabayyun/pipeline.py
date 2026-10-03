@@ -8,7 +8,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+import traceback
 from collections.abc import AsyncIterator, Awaitable, Callable
+from pathlib import Path
 
 from .config import settings
 from .extract import RawClaim, absorb_closed_quotes, merge_claims
@@ -42,6 +44,13 @@ STAGE_EN = {
     "report": "Verification report",
 }
 _MATCH_PARALLEL = 6
+
+
+def _where(exc: BaseException) -> str:
+    """Exception type and code locations only. The message is left out on purpose: validation
+    errors and the like quote their input, and the input is the user's text."""
+    frames = traceback.extract_tb(exc.__traceback__)[-4:]
+    return f"{type(exc).__name__} at " + " < ".join(f"{Path(f.filename).name}:{f.lineno}" for f in reversed(frames))
 
 
 def stage(name: str, status: str, **extra) -> Event:
@@ -96,8 +105,8 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
             async with sem:
                 try:
                     card = await verify_claim(claim, cid, index, ctx)
-                except Exception:
-                    log.exception("verification failed for one claim")
+                except Exception as e:
+                    log.error("verification failed for one claim: %s", _where(e))
                     await put(("error", error_event("internal", "match", fatal=False)))
                     return
             cards.append(card)
@@ -184,8 +193,8 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         await put(stage("report", "done"))
     except asyncio.CancelledError:
         raise
-    except Exception:
-        log.exception("pipeline failed")
+    except Exception as e:
+        log.error("pipeline failed: %s", _where(e))
         await put(("error", error_event("internal", current)))
     finally:
         await put(("done", {}))

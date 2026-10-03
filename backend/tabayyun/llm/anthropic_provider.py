@@ -83,7 +83,8 @@ class AnthropicProvider:
         try:
             return model_cls.model_validate_json(text)
         except ValidationError as e:
-            raise LLMError(f"anthropic: response failed validation: {e}") from e
+            # count only: the validation message quotes the model's output, which quotes the user's text
+            raise LLMError(f"anthropic: response failed validation ({e.error_count()} errors)") from e
 
     async def _create(self, kwargs: dict, use_fallback: bool):
         assert self._client is not None

@@ -14,7 +14,7 @@ and unresolved as of 3 October 2026.
 - **No row of the test set has been reviewed by the Sharia reviewer.** Expected states come from how
   each row was constructed.
 - **Cloud speech-to-text has not been run**; only YouTube captions and local faster-whisper were.
-- **The Docker image has not been built and the app is not deployed.**
+- **The app is not deployed.** The backend image builds and runs locally (health check, a verification and Dorar access were tested inside the container); the full image including the frontend stage and a public deployment are still to do.
 
 ## Coverage
 

@@ -111,7 +111,7 @@ async def ingest_video(url: str | None) -> Document:
                 source.transcript_origin = picked[1]
                 return Document(source=source, segments=segments)
         except Exception as e:
-            log.warning("caption download failed, falling back to audio: %s", e)
+            log.warning("caption download failed, falling back to audio: %s", type(e).__name__)
 
     if not cloud_available() and not local_available():
         raise IngestError("transcription_unavailable")
