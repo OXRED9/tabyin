@@ -190,7 +190,7 @@ the address the request came to.
   `localStorage` and can be cleared there.
 - No analytics, no third-party scripts, self-hosted fonts.
 - No religious or personal attribute of the user is inferred or stored.
-- Verdict cards carry no date, time, reviewer name or video link. The server-side card endpoint
+- Verdict cards carry no date, time, name or video link. The server-side card endpoint
   receives the card to draw, returns the image with `Cache-Control: no-store`, and keeps nothing.
 - Disclosed data flows to third parties: the text being verified is sent to OpenRouter, which
   forwards it to the provider of the configured model; a quoted narration (its first words) is sent
@@ -207,5 +207,3 @@ the address the request came to.
 - **Data refresh**: rebuild the image to pull the current HadeethEnc collection; the Quran text
   changes only with a Tanzil release (`scripts/build_quran.py`).
 - **Threshold changes** go through `eval/run.py` and are recorded in `METHODOLOGY.md`.
-- **Reviewer mode** in the UI records a human decision next to the automatic one in the exported
-  report; that is the operational path for correcting the tool.

@@ -125,7 +125,7 @@ Diagrams are drawn right-to-left, as the Arabic UI is (the start side is the rig
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ ع | EN   ◐   وضع المراجِع ○                                            تبيّن │  thin bar, hairline under it
+│ ع | EN   ◐                                                       ▣ تبيّن │  thin bar: logo mark + logotype, hairline under it
 └──────────────────────────────────────────────────────────────────────────────┘
               ┌────────────────────────────────────────────────┐
               │                                                │   the sheet, 720px
@@ -173,7 +173,7 @@ Diagrams are drawn right-to-left, as the Arabic UI is (the start side is the rig
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
-│ ع | EN   ◐   وضع المراجِع ○   تصدير ⤓                                                    تبيّن │
+│ ع | EN   ◐   تصدير ⤓                                                                    ▣ تبيّن │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
    ┌────────────────────────────────────────────────────────────────────────────────────────┐
    │  [ تحقّق من نص آخر ]        أربعة استشهادات: اثنان مؤيَّدان، واحد مع ملاحظة، وواحد بلا مصدر │
@@ -208,7 +208,7 @@ and reference only).
 
 ```
 ┌──────────────────────────────┐
-│ ع|EN  ◐  ⋯               تبيّن │   reviewer mode and export move into ⋯
+│ ع|EN  ◐  ⤓             ▣ تبيّن │   export stays one tap away
 ├──────────────────────────────┤
 │ أربعة استشهادات: اثنان مؤيَّدان، │
 │ واحد مع ملاحظة، وواحد بلا مصدر  │
@@ -238,7 +238,7 @@ Nothing is dropped; every part of the first UI is rebuilt on the tokens above.
 
 | Part | Becomes |
 |---|---|
-| Header | a 48px bar in `paper` with a hairline under it: the logotype (Amiri 700), language, theme, reviewer switch, export (only when there is a report). On phones the last two fold into one menu. No green slab, no blur. |
+| Header | a 48px bar in `paper` with a hairline under it: the logo mark and the logotype, language, theme, export (only when there is a report). No green slab, no blur. |
 | Input tabs | **one composer** (addendum): the purpose line as the field's visible label; a placeholder that names the inputs; labelled attach actions (رابط / صورة / ملف / صوت); a link is recognised as typed and confirmed by a tag («مقطع يوتيوب — سيُفرَّغ ويُتحقق منه», «رابط مقال — سيُقرأ نصه ويُتحقق منه»); a chosen file shows as a row with its name, size and a remove button; a wide «تحقّق» button. After a report there is no field — only «تحقّق من نص آخر». |
 | Examples | three chips from `/api/meta` (never typed here): a forwarded-message text with a narration, a clip link, a request to fabricate. |
 | History menu | a side panel that opens from «آخر ما تحققتَ منه»; local to the browser, with «مسح السجل». |
@@ -248,7 +248,7 @@ Nothing is dropped; every part of the first UI is rebuilt on the tokens above.
 | Claim card | **a margin note**: state glyph and word, claim type, one line of reference. Open, it shows in order: the source's words (Amiri Quran for a verse, Amiri for a narration) between two hairlines; the takhrij line (book, number, link; the grading in the source's words with its scholar and link, or «الحكم غير متاح من المصدر»); the collation («في النص / في المصدر», differing words underlined); the recommended action as a sentence; the actions (نسخ النص الصحيح، بطاقة مشاركة، لماذا هذا الحكم؟); the referral for unanswered and personal cases. |
 | Summary line | a sentence with number words and agreement: «أربعة استشهادات: اثنان مؤيَّدان، واحد مع ملاحظة، وواحد بلا مصدر». Each clause filters the notes when pressed. |
 | Sort toggle | removed from the desktop margin (notes are in the order of the text by construction); on phones the list keeps «حسب الترتيب / الأهم أولاً». |
-| Reviewer mode | each open note gains the reviewer's line: confirm, change the state, add a remark; a changed note shows both the tool's state and the reviewer's, as before. |
+| Reviewer mode | **removed** on 4 October 2026 by the team's decision (see §9). |
 | Why this verdict / copy / share card | same content and behaviour, re-set in the new type; the share card's gold is confined to the verified ring. |
 | Reduced-coverage and source notices | sentences at the top of the margin, in `quiet`, with the state's glyph — not banners. |
 | Errors | inside the sheet, where the result would have been: what happened, then what to do, with the action as a button. |
@@ -480,8 +480,6 @@ It is drawn twice from one content table — in the browser (`verdict-card.tsx`)
   middle of the quoted span**: if the whole verse does not fit at the smallest size, the card shows
   the part of the verse that corresponds to the quotation, with «…» on each side that was cut, and
   always its reference (for the Sharia reviewer to confirm).
-- **Reviewed by a person**: when the state was changed by a reviewer, «حالة معدَّلة بمراجعة بشرية»
-  follows the state word; no name is drawn.
 - **The summary card** (`kind = "summary"`) uses the same frame and footer: the summary sentence
   («تسعة استشهادات: ثلاثة مؤيَّدة، …») in Plex 600 / 44 with each clause in its state's ink and its
   ring glyph, then the title of what was checked when the report has one.
@@ -514,7 +512,7 @@ were checked" and nothing about them. It now lists them:
   has a reference — and the text's order inside each group.
 - Rows: as many as fit above the footer (about six on the portrait, four on the square); the rest
   are counted in one closing line. A row is never cut in half.
-- The request carries the list: `cards` (reviewer changes applied) and `title` in `ShareCardRequest`.
+- The request carries the list: `cards` and `title` in `ShareCardRequest`.
 
 ### 8.2 State words (4 October 2026)
 
@@ -536,3 +534,20 @@ address (a web page cannot hand an image to a named app; only the share sheet ca
 to post it from the app; then **«حفظ الصورة»** and **«نسخ الصورة»**. The text that is shared is
 built from the card's own fields — state, quoted words, reference, grading word, address — never
 written by a model.
+
+## 9. Changes asked for by the team after using the build (4 October 2026)
+
+- **The logo mark is back in the header**, beside the logotype. It is the brand's own mark, so its
+  gold is the one exception to principle 3; everywhere else gold is still only the verified ring.
+- **The human-review feature is removed** — the switch, the reviewer's line in a note, the changed
+  state shown beside the tool's, the mark on cards, the reviewer fields in exports. The switch's
+  label read as "references mode", and the team does not want a mode at all: references are always
+  shown and the tool's state is the only state. The critiques above that mention reviewer mode
+  describe the build as it was then.
+- **State words** speak about the source, not about the text (§8.2).
+- **The summary card lists the citations** (§8.1) and **the share dialog names its targets** (§8.3).
+- **Image input, answer-first on phones, one-tap paste, the installable app and its share target**
+  were added (flows in `API.md` and `PHASE2_BRIEF.md` F1 and F6): a picture is read first and its
+  text shown for correction before anything is verified; a report with a single citation opens its
+  note without a tap; an empty field offers «لصق».
+

@@ -320,3 +320,11 @@ touch how a religious text is shown and wait for Sulaiman.
     whole quotation). A Dorar hit now links to a search for the first seven words of Dorar's own text
     (reliable); a narration from the hadith books links to a search for its last five words (found in
     9 of 12 sampled cases — Dorar's wording sometimes differs from the books' text).
+77. **The human-review feature was removed** (the team's decision, 4 October 2026). The original brief
+    asked for a reviewer mode in which a qualified person could change a state and have both states
+    exported; in use, its switch read as "references mode" and the team decided against any mode.
+    The switch, the reviewer's line, `override_state` / `human_reviewed` on cards and the reviewer
+    section of the exports are gone. The Sharia reviewer's work on the sources, the rules and the test
+    set is unaffected — that review happens on the data, not in the UI.
+78. **State and action words** — «له مرجعية» for «مؤيَّد», «نقله مع ذكر مرجعه» for «اعتماد» — are the
+    team's wording (`report/labels.py`, `DESIGN.md` §8.2). The identifiers and the rules did not change.

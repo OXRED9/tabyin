@@ -86,13 +86,11 @@ and unresolved as of 3 October 2026.
 - **No screen-reader pass.** Automated checks (axe-core, plus a contrast pass over Arabic text nodes)
   report no WCAG A/AA violations; that is not the same as testing with a screen reader.
 - **Mock-mode screenshots.** Screenshots `01`–`15` show demo data replayed by the UI's mock mode, so
-  that all five states, reviewer mode and error states can be shown; only `real-*.png` come from the
+  that all five states and error states can be shown; only `real-*.png` come from the
   backend.
 - **PDF export** is the browser's print-to-PDF of the exported HTML page; no PDF file is generated.
 - **Switching to English after an Arabic run** changes the interface and the notes, but source
   translations and English references are only fetched when the run itself was started in English.
-- **Reviewer overrides are local**: they live in the browser and in the exported file, not on a
-  server, so two reviewers cannot see each other's decisions.
 
 ## Phase 2 features (F3, F4, F5)
 
