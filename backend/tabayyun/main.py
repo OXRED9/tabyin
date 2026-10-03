@@ -18,7 +18,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__, pipeline
@@ -29,7 +29,7 @@ from .llm.router import get_llm
 from .meta import build_meta
 from .report.export_html import render_report_html
 from .report.messages import error_event
-from .schemas import Report, VerifyRequest
+from .schemas import ContentLevel, EvidenceState, Report, ShareCardRequest, VerifyRequest
 from .sources.dorar import get_dorar
 from .sources.hadith import get_hadith_index
 from .sources.quran import get_quran_index
@@ -200,6 +200,40 @@ async def verify_file(request: Request, file: UploadFile = File(...), ui_lang: s
 @app.post("/api/export/html", response_class=HTMLResponse)
 async def export_html(report: Report, lang: str = "ar") -> HTMLResponse:
     return HTMLResponse(render_report_html(report, lang="en" if lang == "en" else "ar"))
+
+
+@app.post("/api/share-card")
+async def share_card(req: ShareCardRequest, request: Request) -> Response:
+    """F3 fallback: draw the verdict card on the server when the browser cannot. Stateless."""
+    if not settings.features_share_card:
+        raise HTTPException(status_code=404, detail="feature disabled")
+    if _rate_limited(request):
+        raise HTTPException(status_code=429, detail="rate limited")
+    from .report.share_card import render_claim_card, render_summary_card
+
+    app_url = (settings.public_url or str(request.base_url)).rstrip("/")
+    if req.kind == "summary":
+        png = await asyncio.to_thread(render_summary_card, req.summary, size=req.size, theme=req.theme, lang=req.lang, app_url=app_url)
+    else:
+        allowed = _reviewer_states(req.card)
+        override = req.override_state if req.override_state in allowed else None
+        png = await asyncio.to_thread(
+            render_claim_card, req.card, size=req.size, theme=req.theme, lang=req.lang, app_url=app_url,
+            abstention_verse=build_meta()["abstention_verse"], override_state=override,
+        )  # fmt: skip
+    return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-store"})
+
+
+def _reviewer_states(card) -> set:
+    """States a human review may give a card — the same ceilings the engine obeys."""
+    if card.content_level == ContentLevel.D:
+        return set()
+    if card.content_level == ContentLevel.C:
+        return {EvidenceState.needs_review, EvidenceState.not_found}
+    states = {EvidenceState.needs_review, EvidenceState.not_found, EvidenceState.contradicted}
+    if card.source is not None:
+        states |= {EvidenceState.supported, EvidenceState.supported_with_note}
+    return states
 
 
 # ---- static frontend (built by `npm run build` into frontend/dist) ----

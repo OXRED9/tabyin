@@ -232,3 +232,21 @@ class Report(BaseModel):
     tool: str = "Tabayyun"
     disclaimer_ar: str = "تبيّن أداة مدعومة بالذكاء الاصطناعي، لا تغني عن الرجوع إلى أهل العلم"
     reviewer_overrides: list[dict] = Field(default_factory=list)
+
+
+class ShareCardRequest(BaseModel):
+    """F3 server-side fallback: everything needed to draw one verdict card. Nothing is stored."""
+
+    kind: Literal["claim", "summary"] = "claim"
+    size: Literal["portrait", "square"] = "portrait"
+    theme: Literal["light", "dark"] = "light"
+    lang: Literal["ar", "en"] = "ar"
+    card: Card | None = None
+    override_state: EvidenceState | None = None
+    summary: Summary | None = None
+
+    @model_validator(mode="after")
+    def _has_payload(self) -> "ShareCardRequest":
+        if (self.kind == "claim" and self.card is None) or (self.kind == "summary" and self.summary is None):
+            raise ValueError("card is required for kind=claim, summary for kind=summary")
+        return self

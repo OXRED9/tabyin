@@ -19,6 +19,8 @@ dependencies = [
   "lxml>=5.2",
   "yt-dlp>=2025.1.1",
   "imageio-ffmpeg>=0.5",
+  "pillow>=11.0",
+  "segno>=1.6",
   "anthropic>=0.40",
   "openai>=1.50",
 ]
