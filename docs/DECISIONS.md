@@ -160,6 +160,9 @@ plainly below, with the command that finishes the job in `OPERATIONS.md`.
     line of the narration («عن … مرفوعاً»), so every system that reads the passage reports an authentic
     hadith and the row counts as a miss. Changing expected results after seeing outputs would be
     worse than reporting it.
-47. **Image input is not exposed.** `ingest/image.py` and `MODEL_VISION` are tested by the scripts
+47. **Budget rules the defaults.** The project's OpenRouter budget is about 100 SAR. The daily guard
+    is 1 USD (the brief's template said 10); Claude Sonnet 5.5 is not measured because its price
+    rules it out before accuracy can; paid checks are run once, by hand, on small inputs.
+48. **Image input is not exposed.** `ingest/image.py` and `MODEL_VISION` are tested by the scripts
     only; the upload endpoint does not accept images until F1 is built.
 

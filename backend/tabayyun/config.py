@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     model_baseline_llm: str = ""  # the "general LLM without retrieval" baseline in eval/run.py
     llm_reasoning_effort: str = "low"  # for models that reason before answering; "" leaves the default
     llm_timeout_seconds: float = 60.0
-    daily_spend_limit_usd: float = 10.0  # beyond this, every call uses MODEL_FALLBACK until midnight UTC
+    daily_spend_limit_usd: float = 1.0  # beyond this, every call uses MODEL_FALLBACK until midnight UTC
 
     # --- Embeddings (local, never via OpenRouter; used by the "authentic alternatives" feature) ---
     embedding_provider: str = "local"

@@ -19,7 +19,7 @@ primary_region = "fra"
   MODEL_CHEAP = "deepseek/deepseek-v4-flash"
   MODEL_FALLBACK = "nvidia/nemotron-3-super-120b-a12b:free"
   LLM_REASONING_EFFORT = "low"
-  DAILY_SPEND_LIMIT_USD = "10"
+  DAILY_SPEND_LIMIT_USD = "1"
   TRANSCRIPTION_PROVIDER = "auto"
 
 [http_service]

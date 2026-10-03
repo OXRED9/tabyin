@@ -53,8 +53,8 @@ models-verify:   ## the measurements still owed, cheapest first (about $0.25 in 
 	$(PY) scripts/transcribe_sample.py --seconds 60
 	$(PY) eval/run.py --runs 1 --concurrency 2
 
-models-bakeoff-rest:  ## the bake-off candidates that were refused for lack of credit (about $0.26; Sonnet 5.5 is $0.17 of it)
-	$(PY) eval/bakeoff_extract.py --concurrency 2 --models "google/gemini-3.8-flash,qwen/qwen3.7-plus,deepseek/deepseek-v4-pro-0813,anthropic/claude-sonnet-5.5"
+models-bakeoff-rest:  ## optional: bake-off candidates that were refused for lack of credit (about $0.09; Sonnet 5.5 is left out — $0.17 to measure, 16x the price to run)
+	$(PY) eval/bakeoff_extract.py --concurrency 2 --models "google/gemini-3.8-flash,qwen/qwen3.7-plus,deepseek/deepseek-v4-pro-0813"
 
 audio-scripts:   ## 20 reading scripts for the audio test
 	$(PY) eval/make_audio_scripts.py

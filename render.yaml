@@ -30,7 +30,7 @@ services:
       - key: MODEL_FALLBACK
         value: nvidia/nemotron-3-super-120b-a12b:free
       - key: DAILY_SPEND_LIMIT_USD
-        value: "10"
+        value: "1"
       - key: TRANSCRIPTION_PROVIDER
         value: auto
       - key: EXAMPLE_VIDEO_URL

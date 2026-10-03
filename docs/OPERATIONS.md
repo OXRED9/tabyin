@@ -41,7 +41,7 @@ Model checks: `make models-check` (one tiny test per configured model), `make mo
 | `MODEL_FALLBACK` | `nvidia/nemotron-3-super-120b-a12b:free` | used after the primary fails twice, or past the daily limit |
 | `MODEL_BASELINE_LLM` | `openai/gpt-6.1-sol` | the "general chatbot" baseline in `eval/run.py` only |
 | `LLM_REASONING_EFFORT` | `low` | `none`/`minimal`/`low`/`medium`/`high` for models that reason first |
-| `DAILY_SPEND_LIMIT_USD` | `10` | past it, every call uses `MODEL_FALLBACK` until midnight UTC |
+| `DAILY_SPEND_LIMIT_USD` | `1` | past it, every call uses `MODEL_FALLBACK` until midnight UTC (about 800 verifications a day at measured prices) |
 | `EMBEDDING_PROVIDER` / `EMBEDDING_MODEL` | `local` / `intfloat/multilingual-e5-small` | local only, never through OpenRouter (not used by a shipped feature yet) |
 | `TRANSCRIPTION_PROVIDER` | `auto` | captions → `MODEL_AUDIO` → local faster-whisper (if installed) |
 | `AUDIO_CHUNK_SECONDS` | `600` | longer recordings are split and their timestamps offset |
@@ -99,7 +99,7 @@ Quran matching, hadith retrieval, the rules and the report need no network at al
 
 IDs and list prices were read from the live catalog (`GET /api/v1/models`) on 3 October 2026; costs
 marked "measured" are what the API reported for the calls made that day. Reasons for each choice,
-and what is still unmeasured, are in `DECISIONS.md` (items 33–47).
+and what is still unmeasured, are in `DECISIONS.md` (items 33–48).
 
 | Task | Model (`.env`) | List price per million tokens (in / out) | Cost | Latency |
 |---|---|---|---|---|
@@ -117,6 +117,14 @@ a cent. Verbatim verses and narrations cost nothing: they are decided before any
 
 ### Cost control
 
+The whole project has a small OpenRouter budget (about 100 SAR, roughly 27 USD). The defaults are
+set for that: a 1 USD daily guard, cheap per-task models, free tests, and paid measurements that are
+run once, on purpose, with small inputs.
+
+- **Nothing spends by itself.** Model calls happen only when a verification is submitted or when a
+  `models-*` / `test-llm` / `eval` target is run by hand. `pytest` and the screenshots (mock mode)
+  make no model call.
+
 - **Usage log**: every model call is written to `data/cache/usage.sqlite` — time, task, model, token
   counts, cost as reported by the API, latency, success, whether it was the fallback, and the error
   *type*. No prompt, no answer, no user text.
@@ -125,7 +133,8 @@ a cent. Verbatim verses and narrations cost nothing: they are decided before any
 - **Daily guard**: once the day's logged cost reaches `DAILY_SPEND_LIMIT_USD`, every call goes to
   `MODEL_FALLBACK` until midnight UTC, a warning is logged once, and reports carry the reduced-coverage
   notice. The log is a file: on a host without a persistent volume it restarts with the machine, so
-  also set a credit limit on the OpenRouter key itself (the key used here is capped at $50).
+  also set a credit limit on the OpenRouter key itself — the key used here is capped at $50, which is
+  more than the budget: lower it in the OpenRouter dashboard to the amount you are willing to spend.
 - **Output budgets** per task (`MAX_TOKENS` in `llm/openrouter.py`): extract 8000, pointing 2500,
   image 4000, audio 12000, cheap 800, baseline 1200. Reasoning tokens count against them.
 - **No loops**: a request makes one extraction call, at most one pointing call per paraphrased
@@ -141,10 +150,14 @@ Paid calls were refused (HTTP 402) part-way through the first session because th
 had no credit. After adding credit, run in this order (cheapest first):
 
 ```bash
-make models-verify        # ≈ $0.25: model check, audio candidates, reasoning-off bake-off row,
-                          #          OCR re-run, one 60-second transcription, eval/run.py once
-make models-bakeoff-rest  # ≈ $0.26: Gemini 3.8 Flash, Qwen 3.7 Plus, DeepSeek V4 Pro 0813, Claude Sonnet 5.5
+make models-verify        # ≈ $0.25, once: model check, audio candidates, reasoning-off bake-off row,
+                          #   OCR re-run, one 60-second transcription, eval/run.py once
+make models-bakeoff-rest  # ≈ $0.09, optional: Gemini 3.8 Flash, Qwen 3.7 Plus, DeepSeek V4 Pro 0813
 ```
+
+Claude Sonnet 5.5 is left out of the second command on purpose: measuring it costs about $0.17, and
+at $2 / $10 per million tokens a verification would cost about 16 times the chosen model's — not a
+price this budget can run in production whatever its accuracy. Add it to the command if that changes.
 
 Audio calls are refused until the balance is at least $0.50.
 
