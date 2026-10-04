@@ -133,7 +133,7 @@ export async function fetchExampleImage(url: string, signal?: AbortSignal): Prom
   return new File([blob], url.split('/').pop() || 'example.png', { type: blob.type || 'image/png' })
 }
 
-const KNOWN_EVENTS = new Set(['stage', 'source', 'segments', 'claims', 'card', 'summary', 'error', 'done'])
+const KNOWN_EVENTS = new Set(['stage', 'trace', 'source', 'segments', 'claims', 'card', 'summary', 'error', 'done'])
 
 /**
  * POST the input and feed each SSE event to `onEvent` as it arrives. Resolves when the stream
