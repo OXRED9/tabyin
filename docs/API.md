@@ -40,6 +40,9 @@ this API has no endpoint that receives it.
 `{ quran_verses, graded_narrations, book_narrations, models: { extract, vision, audio }, live_gradings }`
 (model ids are `null` when no key is configured).
 
+A claim stub and its card carry `spans: Span[]` — one `{segment_id, start, end}` per segment the
+quotation covers, in order; `span` remains the first of them.
+
 ### `trace` events (what was done, in numbers)
 
 Sent on the verification stream between the other events. Counts, timings and model names only —

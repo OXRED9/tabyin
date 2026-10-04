@@ -629,3 +629,35 @@ where it departs from the plan, and the two critique rounds are appended there.
 136. **Lighthouse on the built report page** (mock, `?scenario=video&autorun=1&speed=8`): phone 92 /
      accessibility 100 / best practices 100 (FCP 0.8 s, LCP 3.4 s, TBT 0, CLS 0.004); desktop 100 / 100
      / 100 (LCP 0.7 s, CLS 0.014). `npm run a11y`: 66 audits, no violation, lowest contrast 5.05:1.
+
+## After the team's test on the phone (4 October 2026, evening)
+
+137. **A report by meaning is an attribution, and is tied to what the content itself recites.** The team:
+    "the clip says the Prophet ﷺ gave an example … and Tabayyun did not mark it — what is the use?"
+    A statement that reports what the Prophet ﷺ or the Quran says in the speaker's words (a
+    deterministic marker, `extract/lexical.attributes_to_revelation`; a biographical remark is not one)
+    is never treated as "the speaker's own words": it always gets a note. The verses and narrations the
+    same content quotes verbatim are offered to the pointer first, and **only one of those (or a
+    verse) can give such a statement a reference** («له مرجعية», with the note «منقول بالمعنى لا باللفظ»
+    and the source's own wording shown). With nothing recited beside it, the pointed text is shown as
+    referenced evidence and the state is not raised — a report by meaning standing alone is where a
+    model's pointer was seen to endorse a text with no source. ⚑ Sulaiman: the marker's verb list and
+    the note's wording. Evaluation after the change: 91.1%, no fabricated attribution, no wrong
+    endorsement, every abstention correct.
+138. **A measured backup for extraction and pointing.** Every report on the phone said «تغطية مخفّضة»:
+    the primary model has one provider, whose shared pool answered 429 for minutes, so each request
+    fell to the free model. `MODEL_EXTRACT_BACKUP=deepseek/deepseek-v4-pro` (many providers) was run
+    through the same 20-item bake-off with the production settings — 85% like the primary, no fabricated
+    attribution, 7.4 s and $0.00046 per item — and now answers at once when the primary is limited; its
+    answers count as the primary's. A limited model is left alone for 60 s. The free fallback stays the
+    last resort and is still flagged. No measured stand-in exists for reading images (the only complete
+    alternative "corrected" altered verses), so that task has none.
+139. **`spans`**: a claim and its card carry one span per segment the quotation covers (`span` stays the
+    first). A narration recited over two caption lines was marked only in the first.
+140. **The running stage is an instrument, and a step is held 420 ms.** The node map read as static. The
+    stage is a dial with the engines on its orbit, a core that counts the working engine's real figure,
+    a narrator line, the steps with the server's figures and times, and the citations as chips; a band
+    of light reads down the text. Seven steps add at most about 2.9 s to an instant request (item 135
+    said 1.4 s): the team asked for the work to be felt. Nothing shown is invented, and no model id is
+    shown anywhere — roles only, at the team's request.
+
