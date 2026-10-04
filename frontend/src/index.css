@@ -243,24 +243,24 @@
   --font-ui: "IBM Plex Sans Arabic", "IBM Plex Sans", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
   --radius: 10px;
 
-  /* Light, the first theme (v3.1): bright warm paper, green ink, gold used with confidence. Depth
-     comes from soft layered shadows; a panel's edge is barely there. */
-  --desk: #fbf7ee;
-  --paper: #fffdf8;
-  --raised: #f6f0e2;
+  /* Light, the first theme: white (the team: "white gives more trust" — 4 Oct 2026), green ink,
+     gold used with confidence. Panels are white on white, set apart by a hairline and soft shadow. */
+  --desk: #ffffff;
+  --paper: #ffffff;
+  --raised: #f4f7f6;
   --ink: #12261f;
   --quiet: #4f5c53;
   --green: #17685a;
   --green-fill: #1b6b5e;
   --on-fill: #ffffff;
-  --rule: #e6ddc9;
-  --rule-strong: #827f6c;
+  --rule: #e2e8e5;
+  --rule-strong: #7a8580;
   --gold: #c9a227;
   /* A key figure: gold's ink, dark enough to read on a panel. */
   --figure: #7a5c00;
-  --grid-dot: rgb(160 124 20 / 0.2);
+  --grid-dot: rgb(27 107 94 / 0.12);
   /* A panel's edge: a breath of warm shadow rather than a grey line. */
-  --panel-edge: rgb(88 66 14 / 0.1);
+  --panel-edge: rgb(18 38 31 / 0.09);
   /* The mark's tile is the brand's own green in both themes. */
   --logo-tile: #1b6b5e;
 
@@ -280,9 +280,9 @@
   --contra-ink: #73130f;
   --contra-soft: #f2d9d6;
 
-  --panel-shadow: 0 1px 1px rgb(74 54 8 / 0.04), 0 3px 8px -2px rgb(74 54 8 / 0.07), 0 18px 34px -20px rgb(74 54 8 / 0.24);
+  --panel-shadow: 0 1px 1px rgb(18 38 31 / 0.05), 0 3px 8px -2px rgb(18 38 31 / 0.07), 0 18px 34px -20px rgb(18 38 31 / 0.2);
   --glow: 0 0 0 1px rgb(27 107 94 / 0.5), 0 0 0 5px rgb(201 162 39 / 0.16), 0 18px 36px -20px rgb(27 107 94 / 0.45);
-  --overlay-shadow: 0 1px 2px rgb(74 54 8 / 0.08), 0 14px 34px -8px rgb(74 54 8 / 0.26);
+  --overlay-shadow: 0 1px 2px rgb(18 38 31 / 0.08), 0 14px 34px -8px rgb(18 38 31 / 0.22);
 }
 
 html[lang="en"] {

@@ -64,7 +64,7 @@
   inset: 8%;
   border-radius: 999px;
   background: radial-gradient(circle, color-mix(in oklab, var(--green) 20%, transparent) 0%, transparent 68%);
-  animation: orb-halo 2.6s ease-in-out infinite;
+  animation: orb-halo 1.4s ease-in-out infinite;
   z-index: -1;
 }
 .orb[data-finished] .orb-halo {
@@ -75,13 +75,13 @@
 .orb-ticks {
   stroke: var(--rule-strong);
   transform-origin: 0 0;
-  animation: orb-spin 60s linear infinite;
+  animation: orb-spin 18s linear infinite;
 }
 .orb-ticks-major {
   stroke: var(--green);
   opacity: 0.55;
   transform-origin: 0 0;
-  animation: orb-spin 60s linear infinite;
+  animation: orb-spin 18s linear infinite;
 }
 .orb-orbit {
   stroke: var(--rule);
@@ -90,7 +90,7 @@
   stroke: var(--rule);
   stroke-dasharray: 1 3.2;
   transform-origin: 0 0;
-  animation: orb-spin 28s linear infinite reverse;
+  animation: orb-spin 9s linear infinite reverse;
 }
 
 /* The search: a wedge of light that turns over the orbit while the work runs. */
@@ -106,7 +106,7 @@
     transparent 100%
   );
   mask: radial-gradient(circle, transparent 0 41%, #000 42% 100%);
-  animation: orb-spin 2.8s linear infinite;
+  animation: orb-spin 1.1s linear infinite;
   transition: opacity 500ms ease;
 }
 .orb[data-finished] .orb-sweep {
@@ -121,8 +121,8 @@
   stroke-linecap: round;
   stroke-dasharray: 26 74;
   transform-origin: 0 0;
-  animation: orb-spin 1.5s linear infinite;
-  transition: stroke-dasharray 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: orb-spin 0.75s linear infinite;
+  transition: stroke-dasharray 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .orb-arc-track {
   fill: none;
@@ -140,8 +140,8 @@
   stroke-width: 0.7;
   opacity: 0.55;
   transition:
-    stroke 300ms ease,
-    opacity 300ms ease;
+    stroke 160ms ease,
+    opacity 160ms ease;
 }
 .beam[data-status='done'] {
   stroke: var(--green);
@@ -161,7 +161,7 @@
   stroke-linecap: round;
   stroke-dasharray: 2.5 5.5;
   opacity: 1;
-  animation: beam-flow 520ms linear infinite;
+  animation: beam-flow 280ms linear infinite;
 }
 
 /* The engines, on the orbit. */
@@ -193,11 +193,11 @@
   border: 1.5px solid var(--rule-strong);
   color: var(--quiet);
   transition:
-    border-color 300ms ease,
-    color 300ms ease,
-    box-shadow 300ms ease,
-    opacity 300ms ease,
-    scale 320ms cubic-bezier(0.2, 1.3, 0.4, 1);
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease,
+    scale 200ms cubic-bezier(0.2, 1.3, 0.4, 1);
 }
 .sat-face svg {
   width: 46%;
@@ -210,7 +210,7 @@
   box-shadow:
     0 0 0 4px color-mix(in oklab, var(--gold) 20%, transparent),
     0 8px 22px -8px color-mix(in oklab, var(--gold) 70%, transparent);
-  animation: sat-breathe 1.1s ease-in-out infinite;
+  animation: sat-breathe 0.7s ease-in-out infinite;
 }
 .sat[data-status='done'] .sat-face {
   border-color: var(--green);
@@ -236,7 +236,7 @@
   border-radius: 999px;
   background: var(--green-fill);
   color: var(--on-fill);
-  animation: tick-pop 360ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  animation: tick-pop 240ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
 }
 .sat-tick svg {
   width: 0.625rem;
@@ -264,7 +264,7 @@
   gap: 0.0625rem;
   padding-inline: 0.25rem;
   min-width: 0;
-  animation: core-in 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: core-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .orb-core-inner > svg {
   width: clamp(1.125rem, 9cqi, 1.625rem);
@@ -296,7 +296,7 @@
   border-radius: 999px;
   border: 2px solid var(--gold);
   color: var(--green);
-  animation: seal-in 520ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  animation: seal-in 360ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
 }
 .core-seal svg {
   width: 58%;
@@ -310,7 +310,7 @@
   border-radius: 999px;
   border: 2px solid var(--gold);
   pointer-events: none;
-  animation: orb-burst 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: orb-burst 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .dots {
@@ -324,13 +324,13 @@
   height: 0.34em;
   border-radius: 999px;
   background: var(--gold);
-  animation: dot 900ms ease-in-out infinite;
+  animation: dot 560ms ease-in-out infinite;
 }
 .dots i:nth-child(2) {
-  animation-delay: 150ms;
+  animation-delay: 90ms;
 }
 .dots i:nth-child(3) {
-  animation-delay: 300ms;
+  animation-delay: 180ms;
 }
 
 /* ── The narrator, the steps, the finds ───────────────────────────────── */
@@ -341,7 +341,7 @@
 }
 .narrator-line {
   min-height: 3.25rem;
-  animation: line-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: line-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 @media (min-width: 768px) {
   .narrator-line {
@@ -361,7 +361,7 @@
   inset-inline-start: 0;
   border-radius: inherit;
   background: linear-gradient(to left, var(--gold), var(--green));
-  transition: width 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: width 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 :where([dir='ltr']) .stage-progress > span {
   background: linear-gradient(to right, var(--gold), var(--green));
@@ -372,7 +372,7 @@
   inset: 0;
   background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.65) 50%, transparent 80%);
   background-size: 200% 100%;
-  animation: shimmer 1.2s linear infinite;
+  animation: shimmer 0.75s linear infinite;
 }
 
 .steps {
@@ -394,8 +394,8 @@
   font-size: 0.875rem;
   overflow: hidden;
   transition:
-    background-color 300ms ease,
-    opacity 300ms ease;
+    background-color 160ms ease,
+    opacity 160ms ease;
 }
 /* A step that has not run is quiet by its colour (set on the row's text), never by opacity: its
    name must stay readable at AA contrast. */
@@ -408,7 +408,7 @@
   inset: 0;
   background: linear-gradient(100deg, transparent 30%, color-mix(in oklab, var(--gold) 30%, transparent) 50%, transparent 70%);
   background-size: 220% 100%;
-  animation: shimmer 1.3s linear infinite;
+  animation: shimmer 0.8s linear infinite;
   pointer-events: none;
 }
 .step-mark {
@@ -419,7 +419,7 @@
   flex: none;
 }
 .step-mark [data-pop] {
-  animation: tick-pop 360ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  animation: tick-pop 240ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
 }
 
 .found {
@@ -448,7 +448,7 @@
   font-size: 0.8125rem;
   line-height: 1.4;
   white-space: nowrap;
-  animation: chip-pop 380ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  animation: chip-pop 260ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
 
 /* ── The text under examination: a band of light reads down it while the work runs. ── */
@@ -479,7 +479,7 @@
     var(--gold) 98.6%,
     transparent 100%
   );
-  animation: scan 2.2s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+  animation: scan 1.15s cubic-bezier(0.45, 0, 0.3, 1) infinite;
   pointer-events: none;
 }
 

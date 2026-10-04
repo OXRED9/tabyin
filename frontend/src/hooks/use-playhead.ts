@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
  * a few hours on 4 Oct 2026; the team found verification too slow, and the wait for the model is
  * already long enough for the stage to be seen working.)
  */
-const HOLD_MS = 150
+const HOLD_MS = 110
 /** A replay walks the same steps slowly enough to read each one. */
 const REPLAY_MS = 520
 

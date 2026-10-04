@@ -85,7 +85,7 @@ function useSpotlight(count: number): number {
   const [turn, setTurn] = useState(0)
   useEffect(() => {
     if (count < 2) return
-    const timer = window.setInterval(() => setTurn((n) => n + 1), 900)
+    const timer = window.setInterval(() => setTurn((n) => n + 1), 450)
     return () => window.clearInterval(timer)
   }, [count])
   return count < 2 ? 0 : turn % count
@@ -244,7 +244,7 @@ export default function Investigation({
             <div className="narrator" aria-hidden="true">
               <p className="narrator-line" key={narrated?.id ?? 'start'}>
                 <span className="block text-lg font-semibold text-ink md:text-xl">{narrated ? narrated.title : t.pipeline.running}</span>
-                <span className="block truncate text-sm text-quiet md:text-base">{narrated?.detail ?? ''}</span>
+                <span className="block truncate text-sm text-quiet md:text-base">{narrated && narrated.detail !== narrated.title ? narrated.detail : ''}</span>
               </p>
               <div className="stage-progress" data-running={finished ? undefined : ''}>
                 <span style={{ width: `${Math.round(progress * 100)}%` }} />
