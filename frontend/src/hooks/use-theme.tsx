@@ -19,7 +19,8 @@ function initialTheme(): Theme {
   if (fromUrl === 'light' || fromUrl === 'dark') return fromUrl
   const stored = readStored<string>(THEME_KEY, '')
   if (stored === 'light' || stored === 'dark') return stored
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  // v3 is dark first: the saved choice, else dark.
+  return 'dark'
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -28,7 +29,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
     const meta = document.querySelector('meta[name="theme-color"]')
-    meta?.setAttribute('content', theme === 'dark' ? '#10231e' : '#ffffff')
+    meta?.setAttribute('content', theme === 'dark' ? '#07130f' : '#f1f6f4')
   }, [theme])
 
   const setTheme = useCallback((next: Theme) => {

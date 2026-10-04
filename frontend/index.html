@@ -6,8 +6,8 @@
     <!-- The web app manifest (/manifest.webmanifest) and the home-screen icon are linked by
          src/lib/pwa.ts once the page has loaded: they serve installing, not this first paint. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#ffffff" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#07130f" />
+    <meta name="color-scheme" content="dark light" />
     <meta name="referrer" content="no-referrer" />
     <meta
       name="description"
@@ -15,16 +15,17 @@
     />
     <title>تبيّن — تحقّق قبل أن تصدّق أو تنشر</title>
     <script>
-      // Before the first paint: the saved theme (so dark never flashes light), the saved language
-      // (so the shell below is in it), and which first screen the shell stands for.
+      // Before the first paint: the theme (the saved choice, else dark — so neither flashes the
+      // other), the saved language (so the shell below is in it), and which first screen the
+      // shell stands for.
+      var d = document.documentElement
+      d.classList.add('dark')
       try {
         var q = new URLSearchParams(location.search)
-        var d = document.documentElement
         var t = q.get('theme') || JSON.parse(localStorage.getItem('tabayyun.theme') || 'null')
-        t = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        if (t === 'dark') {
-          d.classList.add('dark')
-          document.querySelector('meta[name="theme-color"]').content = '#10231e'
+        if (t === 'light') {
+          d.classList.remove('dark')
+          document.querySelector('meta[name="theme-color"]').content = '#f1f6f4'
         }
         var l = q.get('lang')
         if (l !== 'ar' && l !== 'en') l = JSON.parse(localStorage.getItem('tabayyun.lang') || 'null')
@@ -33,7 +34,7 @@
           d.dir = 'ltr'
           document.title = 'Tabayyun — verify before you believe or share'
         }
-        // Mock mode's direct route to a report starts on the report's sheet, not on the composer.
+        // Mock mode's direct route to a report starts on the report's workspace, not on the hero.
         if (q.has('mock') && q.get('autorun') === '1') d.dataset.view = 'report'
       } catch (e) {}
     </script>
@@ -80,20 +81,20 @@
   <body>
     <div id="root">
       <!--
-        The static shell: the bar, the sheet and the headline, painted from this HTML and the
-        stylesheet before any script runs. React's first render replaces it with the same
-        thing, alive, so nothing flashes or moves. Keep its classes in step with
-        src/components/app-header.tsx, src/App.tsx and src/components/composer.tsx.
+        The static shell: the rail (or, below 1280px, the bar), and the first screen's headline,
+        painted from this HTML and the stylesheet before any script runs. React's first render
+        replaces it with the same thing, alive, so nothing flashes or moves. Keep its classes in
+        step with src/App.tsx and src/components/shell/rail.tsx.
       -->
-      <div class="flex min-h-dvh flex-col">
-        <header class="sticky top-0 z-40 border-b bg-paper">
-          <div class="flex h-12 items-center gap-1 px-4 sm:gap-3 sm:px-6">
-            <a href="/" tabindex="-1" class="flex items-center gap-2 rounded-control">
+      <div class="flex min-h-dvh">
+        <aside class="sticky top-0 hidden h-dvh w-[17rem] shrink-0 border-e bg-paper xl:block">
+          <div class="flex h-full min-h-0 flex-col gap-4 p-4">
+            <a href="/" tabindex="-1" class="flex items-center gap-2 self-start rounded-control">
               <svg viewBox="0 0 32 32" aria-hidden="true" class="size-7 shrink-0">
-                <rect width="32" height="32" rx="7" fill="var(--green-fill)" />
+                <rect width="32" height="32" rx="7" fill="var(--logo-tile)" />
                 <rect x="13" y="13" width="13" height="13" rx="4" fill="#ffffff" fill-opacity="0.18" stroke="#ffffff" stroke-opacity="0.7" stroke-width="2" />
                 <rect x="6" y="6" width="14" height="14" rx="4.5" fill="var(--gold)" />
-                <circle cx="13" cy="13" r="3.6" fill="var(--green-fill)" />
+                <circle cx="13" cy="13" r="3.6" fill="var(--logo-tile)" />
               </svg>
               <span class="naskh-display text-xl leading-none text-ink">
                 <span data-shell-lang="ar">تبيّن</span>
@@ -101,18 +102,34 @@
               </span>
             </a>
           </div>
-        </header>
-        <main class="flex-1 sm:px-4 sm:py-6 lg:py-10">
-          <div
-            data-shell="sheet"
-            class="mx-auto flex w-full max-w-[45rem] flex-col border-b bg-paper p-5 sm:rounded-sheet sm:border md:p-8 lg:p-12"
-          >
-            <p data-shell="headline" class="naskh-display text-2xl text-balance text-ink md:text-3xl">
-              <span data-shell-lang="ar">فتبيّنوا — تحقّق قبل أن تصدّق أو تنشر</span>
-              <span data-shell-lang="en">Verify before you believe or share</span>
-            </p>
-          </div>
-        </main>
+        </aside>
+        <div class="flex min-w-0 flex-1 flex-col">
+          <header class="sticky top-0 z-40 flex h-12 items-center gap-2 border-b bg-paper px-3 xl:hidden">
+            <span class="size-9"></span>
+            <a href="/" tabindex="-1" class="flex items-center gap-2 rounded-control">
+              <svg viewBox="0 0 32 32" aria-hidden="true" class="size-7 shrink-0">
+                <rect width="32" height="32" rx="7" fill="var(--logo-tile)" />
+                <rect x="13" y="13" width="13" height="13" rx="4" fill="#ffffff" fill-opacity="0.18" stroke="#ffffff" stroke-opacity="0.7" stroke-width="2" />
+                <rect x="6" y="6" width="14" height="14" rx="4.5" fill="var(--gold)" />
+                <circle cx="13" cy="13" r="3.6" fill="var(--logo-tile)" />
+              </svg>
+              <span class="naskh-display text-xl leading-none text-ink">
+                <span data-shell-lang="ar">تبيّن</span>
+                <span data-shell-lang="en">Tabayyun</span>
+              </span>
+            </a>
+          </header>
+          <main class="relative flex-1 px-4 py-5 md:px-8 md:py-8">
+            <div data-shell="hero" class="relative mx-auto flex w-full max-w-[54rem] flex-col gap-6 md:pt-[6vh]">
+              <div class="space-y-2">
+                <p class="text-xl font-semibold text-balance text-ink md:text-2xl 2xl:text-3xl">
+                  <span data-shell-lang="ar">فتبيّنوا — تحقّق قبل أن تصدّق أو تنشر</span>
+                  <span data-shell-lang="en">Verify before you believe or share</span>
+                </p>
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
     </div>
     <!-- The page above is readable without this; the code that makes it work comes after it. -->

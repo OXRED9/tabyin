@@ -16,7 +16,9 @@
  * deletes the caches of older builds: no stale shell.
  */
 const BUILD = new URL(self.location.href).searchParams.get('v') || 'dev'
-const SHELL = `tabayyun-shell-${BUILD}`
+// v3: a new cache family. A worker of this version deletes every older shell cache, whatever its
+// name was, so a phone that kept the v2 shell cannot serve it again.
+const SHELL = `tabayyun-v3-shell-${BUILD}`
 const SHARE = 'tabayyun-share'
 const SHARE_PAYLOAD = '/__share__/payload'
 
@@ -34,7 +36,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       for (const name of await caches.keys()) {
-        if (name.startsWith('tabayyun-shell-') && name !== SHELL) await caches.delete(name)
+        if (name.startsWith('tabayyun-') && name !== SHELL && name !== SHARE) await caches.delete(name)
       }
       await self.clients.claim()
     })(),
