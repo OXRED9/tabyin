@@ -706,3 +706,19 @@ Mock mode only; no paid call. The running stage is the lead's (item 140); these 
      desktop 100 / 100 / 100 (LCP 0.7 s, CLS 0.042). `npm run a11y`: 65 of 71 audits pass; the six that
      fail are the mid-run states, on one thing — a waiting step in the stage is drawn at 55% opacity
      (2.49:1 on light, 3.27:1 on dark), in `investigation/stage.css`.
+
+## v3.1, second pass — two reversals after the phone test (the frontend, 4 October 2026, late)
+
+151. **The engines are cards in the product's own style, not sticky notes** (supersedes the notes of
+     item 143; the three zones, the placement and the content stay). The team found the paper notes out
+     of keeping. Each engine is the same panel as the composer — an icon, one loud figure in the
+     figure colour, a title, one quiet line — rising in a plain stagger. The tape, pins, tilts, tints
+     and the drop are removed, with their styles and tokens.
+152. **Below 1024px a report is one page again** (supersedes item 145's panes): the verdict, the text,
+     then the cards; during a run the stage, the text under the scan, then the cards as they arrive.
+     The team found the «الحواشي | النص» control impractical — tapping a passage took them to another
+     tab and they had to come back. Tapping a passage scrolls to its card and opens it; «موضعه في
+     النص» scrolls back; «الحواشي (N)» in the verdict keeps the cards one tap away. Nothing is hidden
+     and there is no mode. The phone verdict stays short (the sentence's head, the tiles, the links).
+153. **Measured after these**: `npm run a11y` 68 audits, no violation (the stage's waiting step was
+     fixed by the lead in 9bf16d5).
