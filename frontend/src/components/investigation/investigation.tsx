@@ -263,7 +263,7 @@ export default function Investigation({
                     <StatusMark status={node.status} />
                     <span className={cn('shrink-0 font-semibold', node.status === 'waiting' || node.status === 'skipped' ? 'font-normal text-quiet' : 'text-ink')}>{node.title}</span>
                     <span className="tabular flex min-w-0 flex-1 gap-x-2.5 overflow-hidden whitespace-nowrap">
-                      {node.figures.length > 0 ? <Figures figures={node.figures} /> : <span className="truncate text-quiet">{node.status === 'active' ? node.detail : ''}</span>}
+                      {node.figures.length > 0 ? <Figures figures={node.figures} /> : <span className="truncate text-quiet">{node.status === 'active' && node.detail !== node.title ? node.detail : ''}</span>}
                     </span>
                     {ms !== null ? <span className="tabular shrink-0 text-xs text-quiet">{t.pipeline.ms(ms)}</span> : null}
                   </li>
