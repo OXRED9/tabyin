@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 
 /**
  * A step is held on screen at least this long, so that work that took a millisecond can be seen
- * being done: seven steps add at most about 2.9 s to a request that was instant, and nothing to one
- * whose steps each took longer than this (the team asked for the work to be felt — 4 Oct 2026).
+ * being done: seven steps add at most about 1 s to a request that was instant. (It was 420 ms for
+ * a few hours on 4 Oct 2026; the team found verification too slow, and the wait for the model is
+ * already long enough for the stage to be seen working.)
  */
-const HOLD_MS = 420
+const HOLD_MS = 150
 /** A replay walks the same steps slowly enough to read each one. */
 const REPLAY_MS = 520
 

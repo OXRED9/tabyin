@@ -11,6 +11,7 @@ from .rules import (
     decide_quote,
     decide_question,
     decide_request,
+    decide_attribution_by_meaning,
     decide_ruling,
 )
 from .thresholds import THRESHOLDS, Thresholds
@@ -32,5 +33,6 @@ __all__ = [
     "decide_quote",
     "decide_question",
     "decide_request",
+    "decide_attribution_by_meaning",
     "decide_ruling",
 ]

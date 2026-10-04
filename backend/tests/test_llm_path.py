@@ -255,24 +255,42 @@ def test_a_report_of_what_the_prophet_said_is_an_attribution_and_a_biographical_
         assert not attributed(text), text
 
 
-def test_a_report_by_meaning_is_tied_to_the_narration_the_text_itself_recites(run, matn):
-    """Reported on the example clip: the lecturer recites a narration, then says "the Prophet gave the
-    example of ...". That sentence is an attribution: it gets a note, and the narration recited in the
-    same text is what gives it its reference. Beside no recited text, the same pointer shows the
-    narration without raising the state."""
+def test_a_report_by_meaning_is_never_given_a_reference(run, matn):
+    """The worst error this tool can make, reported by the team on the example clip: the lecturer
+    recited a narration, then said "the Prophet gave the example of ...", and that sentence was shown
+    as «له مرجعية» with the narration's grading. A report by meaning is not a text: whatever the
+    pointer says — even "explicit support" from the narration recited beside it — it stays "needs
+    review"; the source's wording is shown for comparison and the note says whose grading it is."""
     full = matn("4560")
     words = [w for w in re.split(r"\s+", re.split(r'[«"“]', full, maxsplit=1)[-1]) if len(w) > 3][:6]
     restated = "وقد ضرب النبي ﷺ مثلاً في هذا فقال ما معناه: " + " ".join(words)  # the narration's own words, re-ordered into a report
     proposal = [claim(type="fact", quote=restated, content_level="B", search_query=" ".join(words[:4]))]
 
     recited = f"قال رسول الله صلى الله عليه وسلم: «{full}».\n{restated}."
-    cards = run(recited, ScriptedProvider(proposal, judge_index=0, evidence_relation="explicit_support"))["cards"]
-    assert [c["claim_type"] for c in cards] == ["hadith", "fact"]
-    note = cards[1]
-    assert note["state"] == "supported" and note["source"]["url"] == cards[0]["source"]["url"] and note["grades"]
-    assert "بالمعنى" in note["note_ar"]
+    for relation, judge_index in (("explicit_support", 0), ("referenced", 0), ("none", -1)):
+        cards = run(recited, ScriptedProvider(proposal, judge_index=judge_index, evidence_relation=relation))["cards"]
+        assert [c["claim_type"] for c in cards] == ["hadith", "fact"], relation
+        note = cards[1]
+        assert note["state"] == "needs_review" and note["rule_id"] == "attribution.by_meaning" and note["referral"], relation
+        # the recited narration is shown beside it for comparison — as referenced evidence, never as its source of support
+        assert note["match_kind"] == "referenced" and note["source"]["url"] == cards[0]["source"]["url"], relation
+        assert "لا حكم هذا الكلام" in note["note_ar"]
 
     alone = run(restated + ".", ScriptedProvider(proposal, judge_index=0, evidence_relation="explicit_support"))["cards"]
-    assert [c["state"] for c in alone] == ["needs_review"]  # shown, never endorsed: nothing recited beside it
-    assert alone[0]["match_kind"] == "referenced" and alone[0]["source"]
+    assert [(c["state"], c["rule_id"]) for c in alone] == [("needs_review", "attribution.by_meaning")]
+
+
+def test_a_statement_about_what_the_prophet_did_is_never_given_a_reference_by_a_pointer(run):
+    """Wider than the attribution marker: "the Prophet used to ..." is a report about him by meaning.
+    It has no saying-verb, so it is the speaker's statement and gets no note of its own — and even when
+    the pointer says an accepted narration states it explicitly, it is not shown as «له مرجعية»."""
+    from tabayyun.extract.lexical import attributes_to_revelation, mentions_prophet
+
+    text = "كان النبي ﷺ يصوم الاثنين والخميس من كل أسبوع."
+    assert mentions_prophet(text) and not attributes_to_revelation(text)
+    assert mentions_prophet("The Prophet used to fast on Mondays") and attributes_to_revelation("The Prophet said that fasting is a shield")
+    assert not mentions_prophet("صيام شهر رمضان واجب على كل مسلم بالغ قادر")
+    proposal = [claim(type="fact", quote=text.rstrip("."), content_level="A", search_query="صيام الاثنين والخميس")]
+    report = run(text, ScriptedProvider(proposal, judge_index=0, evidence_relation="explicit_support"))
+    assert all(c["state"] != "supported" for c in report["cards"]) and report["cards"] == []
 

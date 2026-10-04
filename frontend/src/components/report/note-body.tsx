@@ -312,8 +312,10 @@ export interface NoteBodyProps {
   features: Features
   /** Per-stage timing from the summary, once it has arrived (shown under "why this verdict"). */
   stageSeconds: StageSeconds | undefined
-  /** Print the words as quoted first: on a phone, and for a claim with no place in the text. */
+  /** Print the words as quoted first. */
   showQuoted: boolean
+  /** The verification trail, shown after the texts and what the tool says about them. */
+  trail?: ReactNode
   /** «إحالة إلى أهل العلم»: the approved sites, searched for this note's topic words. */
   onReferral: (cardId: string) => void
   onShare: (cardId: string) => void
@@ -335,6 +337,7 @@ export default function NoteBody({
   features,
   stageSeconds,
   showQuoted,
+  trail,
   onReferral,
   onShare,
   onLocate,
@@ -519,6 +522,8 @@ export default function NoteBody({
           </ul>
         </div>
       ) : null}
+
+      {trail}
 
       <div className="flex flex-wrap items-center gap-2">
         {showReferral ? (

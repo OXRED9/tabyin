@@ -107,10 +107,10 @@ export const EvidenceCard = memo(function EvidenceCard({ claim, card, open, inde
         </button>
         {open ? (
           <div id={bodyId} className="space-y-4 border-t px-4 pt-4 pb-4">
-            {/* A question was referred, not matched: it has no trail to show. */}
-            {card.is_question ? null : <Provenance card={card} />}
+            {/* The order the team asked for: the words as quoted, then the source's text, and the
+                trail last. A question was referred, not matched: it has no trail to show. */}
             <Suspense fallback={null}>
-              <NoteBody {...body} card={card} showQuoted={!card.span || claim.text_as_quoted.length > 60} />
+              <NoteBody {...body} card={card} showQuoted trail={card.is_question ? null : <Provenance card={card} />} />
             </Suspense>
           </div>
         ) : null}

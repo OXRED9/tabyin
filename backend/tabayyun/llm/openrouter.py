@@ -266,7 +266,10 @@ class OpenRouterLLM:
         now = time.monotonic()
         ready = [m for m in measured if self._limited_until.get(m, 0.0) <= now]
         order = ready or measured[-1:]
+        gave_up = False  # a pointing call ran out of time: no other model is asked
         for candidate in order:
+            if gave_up:
+                break
             for attempt in (1, 2):
                 parsed, info, error = await self._once(candidate, task, system, user, schema, model_cls, budget, fallback=False, timeout=timeout)
                 infos.append(info)
@@ -285,12 +288,19 @@ class OpenRouterLLM:
                 if limited or stalled:
                     self._limited_until[candidate] = time.monotonic() + _RATE_LIMIT_PAUSE
                 hand_over = limited and candidate is not order[-1]  # another measured model is waiting: no second try here
-                retry = attempt == 1 and not truncated and not hand_over and (isinstance(error, _RETRYABLE) or isinstance(error, ValueError))
+                # A call that ran out of time is not tried again on the same model (it would wait as long
+                # again), and for pointing and selection it is not passed to another model either: those
+                # answers only add to a report, and one limit is all a reader should wait for them
+                # (seen 4 Oct 2026: 10 s + 10 s + 10 s for a single pointer on a slow evening).
+                timed_out = isinstance(error, (TimeoutError, openai.APITimeoutError))
+                if timed_out and task in ("judge", "select"):
+                    gave_up = True
+                retry = attempt == 1 and not truncated and not hand_over and not timed_out and (isinstance(error, _RETRYABLE) or isinstance(error, ValueError))
                 log.warning("model call failed (task=%s model=%s attempt=%d): %s", task, candidate, attempt, info.error)
                 if not retry:
                     break
 
-        if use_fallback and fallback_model and fallback_model != primary and self._fallback_fits(fallback_model, task):
+        if use_fallback and not gave_up and fallback_model and fallback_model != primary and self._fallback_fits(fallback_model, task):
             parsed, info, _error = await self._once(fallback_model, task, system, user, schema, model_cls, budget, fallback=True, timeout=timeout)
             infos.append(info)
             if parsed is not None:

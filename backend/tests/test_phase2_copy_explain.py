@@ -126,7 +126,7 @@ def test_not_found_explains_how_close_the_nearest_text_was(verify_text, matn):
         "ayah.exact", "ayah.near", "ayah.altered", "ayah.altered_transcript", "ayah.partial_unattributed", "ayah.below_threshold", "ayah.none",
         "hadith.accepted_exact", "hadith.accepted_near", "hadith.possible_paraphrase", "hadith.weak", "hadith.fabricated", "hadith.grading_conflict",
         "hadith.grading_unclear", "hadith.no_grading", "hadith.partial", "hadith.too_short", "hadith.none",
-        "ruling.text_found", "ruling.no_text", "ruling.disputed", "ruling.personal_case",
+        "ruling.text_found", "ruling.no_text", "ruling.disputed", "ruling.personal_case", "attribution.by_meaning",
         "quote.verbatim", "quote.misattributed", "quote.attribution_unknown", "quote.none", "request.no_fabrication",
         "quote.verbatim+level_c", "hadith.none+level_d",
     ],

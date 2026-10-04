@@ -46,6 +46,7 @@ STAGE_EN = {
 }
 _MATCH_PARALLEL = 6
 _HOLD_SECONDS = 6.0  # how long certain notes wait for the model before they are shown without it
+_SILENT_SECONDS = 6.0  # how long a report with notes to show waits for the checks of the speaker's own statements
 
 
 def _where(exc: BaseException) -> str:
@@ -105,6 +106,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         sem = asyncio.Semaphore(_MATCH_PARALLEL)
         cards: list[Card] = []
         tasks: list[asyncio.Task] = []
+        silent: list[asyncio.Task] = []  # checks of the speaker's own statements: shown only if a text is found
         counter = 0
         total = 0
 
@@ -160,7 +162,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
                 return
             stubs = []
             for c in [c for c in claims if is_speakers_statement(c)]:
-                tasks.append(asyncio.create_task(process_silently(c)))
+                silent.append(asyncio.create_task(process_silently(c)))
             claims = [c for c in claims if not is_speakers_statement(c)]
             total += len(claims)
             for c in claims:
@@ -255,6 +257,16 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         await announce(new)
         if tasks:
             await asyncio.gather(*tasks)
+        if silent:
+            if cards:
+                # There is something to show: the checks of the speaker's own statements (shown only
+                # if a text is found for them) get a few more seconds and no more.
+                _finished, late = await asyncio.wait(silent, timeout=_SILENT_SECONDS)
+                for task in late:
+                    task.cancel()
+                await asyncio.gather(*late, return_exceptions=True)
+            else:  # a statement is all there is: its check is the report
+                await asyncio.gather(*silent)
         calls = [getattr(c, "task", c) for c in getattr(llm, "calls", [])]
         await put(("trace", {
             "step": "verify", "notes": len(cards), "pointer_calls": calls.count("judge"), "selection_calls": calls.count("select"),

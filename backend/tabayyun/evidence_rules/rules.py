@@ -267,6 +267,21 @@ def decide_ruling(*, level: ContentLevel, explicit_text_found: bool) -> Decision
     )
 
 
+def decide_attribution_by_meaning() -> Decision:
+    """A statement that reports, in the speaker's own words, what the Prophet ﷺ or the Quran says.
+    It is not a text, so no retrieved text can make it "has a reference": the sources' wording may be
+    shown beside it for comparison, and the matter is referred. (4 Oct 2026: such a statement was shown
+    as «له مرجعية» with the grading of the narration it loosely restated — the worst error this tool
+    can make. The team's decision: never.)"""
+    return Decision(
+        S.needs_review,
+        "attribution.by_meaning",
+        "نُسب هذا الكلام بالمعنى لا باللفظ، فليس نصاً يُتحقق من لفظه ولا يُجزم بنسبته؛ يُراجَع على لفظ المصدر.",
+        "This is reported by meaning, not word for word: it is not a text whose wording can be verified, and its attribution is not asserted; compare it with the source's own wording.",
+        referral=True,
+    )
+
+
 # --------------------------------------------------------------------------- quotes / facts
 
 

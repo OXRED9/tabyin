@@ -97,9 +97,26 @@ _ATTRIBUTION = re.compile(
 )
 
 
+_ATTRIBUTION_EN = re.compile(
+    r"\b(?:prophet|messenger)\b[^.!?]{0,60}\b(?:said|says|taught|told|commanded|ordered|forbade|prohibited|warned|promised|mentioned|explained|described|gave|advised|encouraged)\b"
+    r"|\b(?:allah|god|the qur'?an)\b[^.!?]{0,30}\b(?:says|said|tells|told|commands|commanded|forbids|forbade|promises|promised|mentions|mentioned)\b"
+    r"|\b(?:in|according to) (?:the|a) (?:hadith|sunnah|qur'?an)\b",
+    re.IGNORECASE,
+)
+_MENTIONS_PROPHET = re.compile(rf"(?<!\w)[وف]?{_PROPHET}(?!\w)|صلي الله عليه وسلم|عليه الصلاه والسلام|عليه السلام")
+_MENTIONS_PROPHET_EN = re.compile(r"\b(?:prophet|messenger of (?:allah|god)|pbuh|peace be upon him)\b", re.IGNORECASE)
+
+
 def attributes_to_revelation(text: str) -> bool:
     """True when the statement reports what the Prophet ﷺ or the Quran says without quoting it."""
-    return bool(_ATTRIBUTION.search(normalize_ar(text)))
+    return bool(_ATTRIBUTION.search(normalize_ar(text)) or _ATTRIBUTION_EN.search(text))
+
+
+def mentions_prophet(text: str) -> bool:
+    """True when the statement speaks of the Prophet ﷺ at all — a report of what he said or did, or a
+    remark about him. Wider than ``attributes_to_revelation``: such a statement is not necessarily
+    shown, but a model's pointer can never give it a reference."""
+    return "ﷺ" in text or bool(_MENTIONS_PROPHET.search(normalize_ar(text)) or _MENTIONS_PROPHET_EN.search(text))
 
 
 def looks_like_question(text: str) -> bool:

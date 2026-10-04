@@ -214,6 +214,11 @@ def describe(rule_id: str, f: Facts, t: Thresholds = THRESHOLDS) -> RuleExplanat
             "No explicit text on the matter was retrieved from the approved sources, so it is not asserted.",
             "statement", None,
         ),
+        "attribution.by_meaning": (
+            "الكلام ينقل بالمعنى ما قاله النبي ﷺ أو ما في القرآن وليس اقتباساً بلفظه، فلا يُحكم له بمرجعية مهما قاربه نص في المصادر. إن عُرض نص فهو للمقارنة، وحكمه حكم ذلك النص لا حكم هذا الكلام.",
+            "The statement reports by meaning what the Prophet ﷺ said or what the Quran says; it is not a quotation, so it is never given a reference however close a source text is. A text shown beside it is for comparison, and its grading belongs to that text, not to this statement.",
+            "statement", None,
+        ),
         "ruling.disputed": (
             "صُنّفت المسألة في المستوى (ج): خلافية أو عالية الحساسية، وسقفها «يحتاج مزيد تحقق» مع الإحالة.",
             "The matter was classified as level C (disputed or highly sensitive); its ceiling is “needs further verification”, with referral.",

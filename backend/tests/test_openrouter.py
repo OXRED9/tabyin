@@ -135,10 +135,26 @@ def test_a_primary_that_does_not_answer_in_time_is_also_left_alone_for_a_minute(
 
     fake = Slow([reply(), reply()])
     llm._client = SimpleNamespace(chat=SimpleNamespace(completions=fake))
-    _result, infos = call(llm, task="judge", timeout=0.05)
+    _result, infos = call(llm, task="extract", timeout=0.05)  # extraction is essential: the backup takes it
     assert [i.model for i in infos] == ["alpha/primary", "gamma/second"] and not infos[-1].fallback
     _result, infos = call(llm, task="judge", timeout=0.05)
     assert [i.model for i in infos] == ["gamma/second"]  # no second wait on the stalled model
+
+
+def test_a_pointing_call_that_runs_out_of_time_is_not_passed_to_another_model(llm, monkeypatch):
+    """One limit is all a reader waits for a pointer: no second try, no backup, no fallback."""
+    monkeypatch.setattr(settings, "model_extract_backup", "gamma/second")
+
+    class Slow(FakeCompletions):
+        async def create(self, **kwargs):
+            self.requests.append(kwargs)
+            await asyncio.sleep(1)
+
+    fake = Slow([])
+    llm._client = SimpleNamespace(chat=SimpleNamespace(completions=fake))
+    with pytest.raises(LLMError):
+        call(llm, task="judge", timeout=0.05)
+    assert [r["model"] for r in fake.requests] == ["alpha/primary"]
 
 
 def test_the_backup_serves_extraction_and_pointing_only(llm, monkeypatch):

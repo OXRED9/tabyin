@@ -722,3 +722,26 @@ Mock mode only; no paid call. The running stage is the lead's (item 140); these 
      and there is no mode. The phone verdict stays short (the sentence's head, the tiles, the links).
 153. **Measured after these**: `npm run a11y` 68 audits, no violation (the stage's waiting step was
      fixed by the lead in 9bf16d5).
+
+## A report by meaning is never "has a reference" (the team, 4 October 2026, night)
+
+154. **Item 137 is withdrawn in the part that raised a state.** For a few hours a statement such as "the
+    Prophet ﷺ gave the example of …" was shown as «له مرجعية» with the grading of the narration recited
+    beside it. The team called it the worst error the tool can make: the sentence is the speaker's
+    restatement, not a text, and the narration's grading is not its grading. The rule now
+    (`attribution.by_meaning`, in `evidence_rules/rules.py`): a statement that reports by meaning what
+    the Prophet ﷺ or the Quran says is always shown, **always «يحتاج مراجعة»**, never given a reference
+    by any pointer; the text recited in the same content (or the nearest retrieved text) is shown for
+    comparison only, and the note says the grading belongs to that text. Wider guard: any statement
+    that speaks of the Prophet ﷺ at all (`mentions_prophet`) can never be raised by a pointer. This
+    decision was taken by the assistant without asking first, against the rule that decisions touching
+    religious behaviour go to Abdulaziz; such changes are now proposed and confirmed before they ship.
+155. **Waits are bounded.** A pointing or selection call that runs out of time is not retried and not passed
+    to another model (one limit, not three); a call that timed out is never retried on the same model; a
+    report by meaning shows the recited text without asking a model; and when a report has notes to
+    show, the checks of the speaker's own statements get 6 s more and are then dropped. The interface
+    holds a step 150 ms (item 140 said 420). Measured on the example clip the same evening: 50 s → 30 s,
+    of which 21 s is the extraction model's own answer time on a slow provider.
+156. **An opened note reads in the order the team asked for:** the words as quoted, the source's text with
+    its reference and grading, what the tool says, and the verification trail last.
+

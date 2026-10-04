@@ -24,12 +24,13 @@ from .evidence_rules import (
     decide_ayah,
     decide_hadith,
     decide_quote,
+    decide_attribution_by_meaning,
     decide_question,
     decide_request,
     decide_ruling,
 )
 from .evidence_rules.explain import LEVEL_REASONS, Facts, describe
-from .extract.lexical import attributes_to_revelation
+from .extract.lexical import attributes_to_revelation, mentions_prophet
 from .extract.models import JUDGEMENT_SCHEMA, SELECTION_SCHEMA, LLMJudgement, LLMSelection, RawClaim
 from .extract.prompts import JUDGE_SYSTEM, SELECT_SYSTEM
 from .ingest.document import Document
@@ -603,10 +604,13 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
                     candidates.append((clean, _quran_source(qm, ctx, None), []))
     accepted: list[bool] = [True] * len(candidates)  # the verse fetched by number
     # A statement that reports what the Prophet ﷺ or the Quran says, in the speaker's words, is an
-    # attribution. The texts this same content recites are offered to the pointer first, and for such a
-    # statement only one of them (or a verse) can give it a reference: a report by meaning with nothing
-    # recited beside it is exactly where a model's pointer was seen to endorse a text with no source.
-    attribution = attributes_to_revelation(claim.quote)
+    # attribution by meaning. It is always shown, and NO retrieved text can give it a reference: it is
+    # not a text. The texts this same content recites are offered first, only so that the source's own
+    # wording can be shown beside it for comparison.
+    attribution = attributes_to_revelation(claim.quote) and level != ContentLevel.D
+    # Wider: any statement that speaks of the Prophet ﷺ (what he did, what he used to do). It is not
+    # necessarily shown, but a pointer can never make it "has a reference" either.
+    about_prophet = attribution or mentions_prophet(claim.quote)
     anchors: set[int] = set()
     if attribution:
         for recited in ctx.recited:
@@ -630,21 +634,30 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
     #   evidence the speaker points at, with its grading, and the state is not raised.
     chosen: tuple[str, SourceRef, list[Grade]] | None = None
     referenced: tuple[str, SourceRef, list[Grade]] | None = None
-    if level in (ContentLevel.A, ContentLevel.B, ContentLevel.C) and candidates:
-        hit = await judge_relation(ctx, "evidence", claim.quote, [c[0] for c in candidates], patient=level == ContentLevel.A or attribution)
+    if attribution and anchors:
+        # The text recited in this same content is the one to compare with, when the two share real
+        # vocabulary: no model is asked, and the reader does not wait.
+        near = max(anchors, key=lambda i: _shared_vocabulary(f"{claim.quote} {query}", candidates[i][0])[0])
+        if _shared_vocabulary(f"{claim.quote} {query}", candidates[near][0])[0] >= 2:
+            referenced = candidates[near]
+    if referenced is None and level in (ContentLevel.A, ContentLevel.B, ContentLevel.C) and candidates:
+        # Patient only where the pointer can give a settled statement its reference; for an
+        # attribution it can only choose which text to show, and gets the short limit.
+        hit = await judge_relation(ctx, "evidence", claim.quote, [c[0] for c in candidates], patient=level == ContentLevel.A and not about_prophet)
         if hit is not None and hit[1] in ("explicit_support", "referenced"):
             idx, relation = hit
             shared, ratio = _shared_vocabulary(f"{claim.quote} {query}", candidates[idx][0])
             # the pointed-at text must share vocabulary with the claim: one stem for a verse the
             # system fetched by number, more for a narration that only keyword search surfaced
             if shared >= 1 if candidates[idx][1].kind == "quran" else (shared >= 2 or ratio >= 0.2):
-                tied = not attribution or idx in anchors or candidates[idx][1].kind == "quran"
-                if relation == "explicit_support" and accepted[idx] and level != ContentLevel.C and tied:
+                if relation == "explicit_support" and accepted[idx] and level != ContentLevel.C and not about_prophet:
                     chosen = candidates[idx]
                 else:
                     referenced = candidates[idx]
 
-    if claim.type == ClaimType.ruling or level in (ContentLevel.B, ContentLevel.C):
+    if attribution and level != ContentLevel.C:
+        decision = decide_attribution_by_meaning()
+    elif claim.type == ClaimType.ruling or level in (ContentLevel.B, ContentLevel.C):
         decision = decide_ruling(level=level, explicit_text_found=chosen is not None)
     else:  # a level-A factual statement
         # Without an explicit text it is not asserted — and it is not "no source" either: that verdict
@@ -656,9 +669,6 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
     kw: dict = {}
     if chosen and decision.state == EvidenceState.supported:
         kw = dict(source=chosen[1], grades=chosen[2], match_kind="topic")
-        if attribution:
-            decision.note_ar += " الكلام منقول بالمعنى لا باللفظ؛ لفظ النص في المصدر معروض."
-            decision.note_en += " It is reported by meaning, not word for word; the source's own wording is shown."
         if chosen[1].kind == "quran" and ctx.ui_lang == "en":
             qm = ctx.quran.match(chosen[0])
             if qm:
@@ -667,6 +677,9 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
         shown = referenced or chosen  # a pointer that did not make the claim "supported" is still worth showing
         if shown:
             kw = dict(source=shown[1], grades=shown[2], match_kind="referenced")
+            if attribution:
+                decision.note_ar += " الحكم المعروض هو حكم النص المعروض، لا حكم هذا الكلام."
+                decision.note_en += " The grading shown belongs to the text shown, not to this statement."
             decision.note_ar += " أقرب نص في المصادر لما أُشير إليه معروض مع حكمه؛ عرضه لا يعني ترجيحاً ولا حكماً من تبيّن."
             decision.note_en += " The closest text in the sources to what is referred to is shown with its grading; showing it is neither a preference nor a ruling by Tabayyun."
     if not ctx.llm_enabled and decision.state != EvidenceState.supported:
