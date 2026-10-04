@@ -649,3 +649,107 @@ is never fabricated, and the report can replay the trace afterwards with its rea
 - **Quality floor unchanged**: responsive from 360px, AA contrast, visible focus, labelled controls,
   reduced motion, Lighthouse accessibility ≥ 95; performance ≥ 90 is still the target and the measured
   number is reported whatever it is.
+
+### What was built, and where it departs from the plan above
+
+- **The map has four columns, not a ring of nine**: the input and its reading · the Mushaf matcher,
+  the narration index and the extraction model, which start together · the gradings and the pointing
+  model · the rule engine and the report. From 1024px it is a map with links; below that a vertical
+  timeline; with reduced motion the same nodes are a checklist that ticks.
+- **The log sits under the map, not beside it** (beside the timeline on a tablet, under it on a
+  phone). It prints one line per step the server reported — reading, the algorithmic scan, the
+  extraction model, the verification, the rules, the report — because a `trace` measures a step, not
+  a node: the scan's millisecond belongs to the Mushaf and the index together, the verification's
+  seconds to the gradings, the pointing and the selection together. Nodes carry figures; times are
+  only in the log.
+- **Held, never invented**: a step is held 200 ms (seven steps, 1.4 s at most; measured on the mock,
+  0.86 s between the last card and the verdict). A replay walks the same steps at 520 ms each. With
+  reduced motion there is no hold and no replay animation: «أعد عرض التحرّي» opens the finished
+  checklist.
+- **A model that was not called is drawn as not used** — dashed edge, a dash for a mark, «فحص لفظي
+  فقط» / «لم يُستخدم», dashed links — and never lit. The verdict's "what worked on this report"
+  lists only the nodes that ran.
+- **The rail appears from 1280px**; below that it is a drawer behind a 48px bar (menu, the brand as
+  the way home, «تحقّق جديد»). The rail holds the history list itself, so the separate history panel
+  is gone.
+- **Evidence cards open in place at every width** (no bottom sheet): closed, a card is three lines
+  of fixed height, the same as a claim still being checked, so nothing moves when a verdict lands.
+- **Headings are 40 / 28 at most** on the first screen (56 only from 1536px): at 56 the Arabic
+  headline wrapped to three lines over the composer and pushed it under the fold on a laptop.
+- **The glow is spent in three places only**: a working node, the composer while it has the focus,
+  the card whose passage is under the pointer.
+
+### v3 critique — round 1 (first complete capture set, `docs/screenshots/v3/`)
+
+**What impresses.** The running map: real figures counting up in gold tabular numerals (6,236 ·
+62,376 · the model's own id), gold pulses on the links into the working nodes, the log filling line
+by line with real times. The verdict's five tiles. The trail at the head of an open card — match →
+source → grading → rule id → action reads in two seconds and shows that a rule, not a model, decided.
+Dark and light both look finished; the Naskh text on the deep green field is the best the source
+text has looked.
+
+**What is noise.**
+- The pulse was drawn as thick gold brackets at the node edges (a stretched SVG with
+  `non-scaling-stroke` and a normalised dash do not agree), and stood frozen under reduced motion.
+  → The links are drawn in real units; without motion there is no pulse, the link is tinted.
+- The verdict of a question-only or single-citation report showed four dashed zeros and a 1.
+  → No tiles where there is nothing to count; the sentence is the verdict.
+- The elapsed time was said in the verdict and again in the colophon; the legend link stood under the
+  composer and in the rail. → Each once.
+- On a phone the verdict filled the first screen: two-column tiles with a truncated state word, a
+  full-width export button, a second «تحقّق جديد». → Tiles three and two with the word in full, export
+  as an icon beside the sentence, «تحقّق جديد» left to the bar.
+- The phone timeline was 700px of three-line steps. → Two fixed lines per step (450px): the name,
+  then what it is doing or the figures it reported.
+
+**What is inconsistent.**
+- The scan's time was printed on the Mushaf line and again on the index line, and the verification's
+  on the pointing model alone — attributing a measurement to a node the server never measured.
+  → The log is per reported step (see above).
+- A replay replaced the verdict with the running head («جارٍ التحقق…» on a finished report).
+  → The verdict stays; the map opens under it.
+- The pane was titled «الأدلة» while every other string says «الحواشي», and the trail «مسار الدليل»
+  on cards that have no evidence. → «الحواشي», «مسار التحقق».
+- The log grew a line at a time and pushed the text down. → The map, the timeline and the log hold
+  their full size from the first event.
+- On a tablet the timeline left half the panel empty. → The log stands beside it.
+- A time the server rounded to 0 read «0 مث». → «أقل من 1 مث».
+
+### v3 critique — round 2 (after the fixes; the set in `docs/screenshots/v3/` is this round's)
+
+**What impresses now.** The moment a run ends: the map folds into the verdict and the text and the
+cards glide up to meet it (320 ms), instead of the page leaping. The phone timeline with the log
+under it reads as one instrument. The lexical-only run is honest at a glance: two dashed nodes, two
+dashed sets of links, and a verdict that lists only what ran.
+
+**What was still noise.**
+- A source chip that wrapped on a phone was a two-line pill. → Chips that can wrap have the control's
+  corner (10px), not a pill's.
+- «3 من 11» broke across two lines in the progress sentence. → Kept together.
+- A no-claims report kept an empty half-width column beside its text. → The text takes the width.
+- The evidence pane showed «قيد التحقق…» before any claim was announced, and on a stacked layout the
+  arriving text then pushed it off the screen. → The pane takes its place when the first claims do.
+
+**What was still inconsistent.**
+- Layout stability, measured (`layout-shift` entries over a whole mock run): the swap from map to
+  verdict moved everything under it by 240px on a desktop and by up to 490px on a phone; the progress
+  line changed height when «إلغاء» left it and when it wrapped; the history's note jumped the length of
+  the rail when the first report was saved; the line under the workspace crossed the screen as the
+  text arrived. Sum: 0.12–0.40. → The swap is a glide (the layout changes once, under a transform);
+  the progress line, the rail's history block and the log hold fixed heights; a report is at least a
+  screen tall, so the line under it starts below the fold (the rail carries the same line beside
+  every screen). Sum after: 0.003–0.008 on the same runs.
+- The whole-page captures painted the phone's bar across the middle of an open card (a capture taken
+  while scrolled). → Captures below 1280px are taken from the top; from 1280px they are the window,
+  as the application is seen.
+
+**Left as it is, knowingly.**
+- On a phone the verdict says the states twice — in the sentence and in the tiles. The sentence is
+  what a screen reader and a shared text carry; the tiles are the glance and the filter. A report of
+  one citation, or of questions only, has no tiles.
+- The trail at the head of an open card repeats, in five short lines, what the note under it says in
+  full (source, grading, action). That is its purpose: the chain at a glance, then the detail.
+- On a fresh run the first screen of a phone is all investigation; the text and the cards are one
+  scroll away, usable the moment they arrive. That is the direction's choice ("the investigation is
+  the hero"), and the timeline was halved in height to pay for it.
+- Under reduced motion the swap from map to verdict is instant (a jump, as asked for).

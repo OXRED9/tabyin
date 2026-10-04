@@ -12,23 +12,23 @@
 مشاركة في **تحدي الذكاء الاصطناعي في خدمة المحتوى الإسلامي** (مؤسسة باذل الأهلية) — المسار الرابع:
 أدوات المعرفة والتحقق لتمكين المعرفين بالإسلام.
 
-| الصفحة وحاشيتها: كل حكم بجانب السطر الذي يخصّه | الشاشة الأولى على الجوال |
+| التحرّي معروضاً أثناء العمل: كل رقم واسم نموذج مما أرسله الخادم | الشاشة الأولى على الجوال |
 |---|---|
-| ![تقرير التحقق: النص صفحة والأحكام حواشٍ](docs/screenshots/v2/report-1440.png) | ![الشاشة الأولى](docs/screenshots/v2/empty-390.png) |
+| ![خريطة التحرّي أثناء العمل](docs/screenshots/v3/running-1440-dark.png) | ![الشاشة الأولى](docs/screenshots/v3/empty-390-dark.png) |
 
-| حاشية مفتوحة: نص المصدر، التخريج، المقارنة | استشهاد واحد على الجوال: الحكم يظهر بلا نقر |
+| التقرير: الخلاصة، النص بمواضعه، الحواشي | حاشية مفتوحة: مسار التحقق ثم نص المصدر والتخريج |
 |---|---|
-| ![حاشية مفتوحة](docs/screenshots/v2/note-open-1440.png) | ![استشهاد واحد](docs/screenshots/v2/single-claim-390.png) |
+| ![تقرير التحقق](docs/screenshots/v3/report-1440-dark.png) | ![حاشية مفتوحة بمسار التحقق](docs/screenshots/v3/card-open-1440-light.png) |
 
-| قراءة صورة ثم مراجعتها قبل التحقق | بطاقة التثبّت | خلاصة التحقق |
+| سؤال يُحال ولا يُجاب | بطاقة التثبّت | خلاصة التحقق |
 |---|---|---|
-| ![نص مقروء من صورة](docs/screenshots/v2/image-read-390.png) | ![بطاقة تثبّت](docs/screenshots/v2/card-server-contradicted-portrait-light-ar.png) | ![بطاقة الخلاصة](docs/screenshots/v2/card-server-summary-square-light-ar.png) |
+| ![سؤال أُحيل إلى أهل العلم](docs/screenshots/v3/question-1440-dark.png) | ![بطاقة تثبّت](docs/screenshots/v2/card-server-contradicted-portrait-light-ar.png) | ![بطاقة الخلاصة](docs/screenshots/v2/card-server-summary-square-light-ar.png) |
 
-لقطات الواجهة في [`docs/screenshots/v2/`](docs/screenshots/v2/) مأخوذة من **وضع العرض التجريبي**
-(`?mock=1`) الذي يعيد تشغيل بيانات مولَّدة برمجياً من المصادر نفسها؛ وبطاقات `card-server-*` رسمها
-الخادم. لقطات الواجهة الأولى (`docs/screenshots/*.png` خارج `v2`) من التصميم السابق وتُركت سجلاً.
-خطة التصميم ونقد اللقطات في [`docs/DESIGN.md`](docs/DESIGN.md)، وتقريرا Lighthouse لصفحة التقرير في
-[`docs/lighthouse/`](docs/lighthouse/) (الأداء 91 بمحاكاة الجوال و100 للحاسوب، وإمكانية الوصول 100).
+لقطات الواجهة في [`docs/screenshots/v3/`](docs/screenshots/v3/) مأخوذة من **وضع العرض التجريبي**
+(`?mock=1`) الذي يعيد تشغيل بيانات مولَّدة برمجياً من المصادر نفسها؛ وبطاقات `card-server-*` (في
+`docs/screenshots/v2/`) رسمها الخادم. لقطات التصميمين السابقين (`docs/screenshots/v2/` وما خارجه)
+تُركت سجلاً. خطة التصميم ونقد اللقطات في [`docs/DESIGN.md`](docs/DESIGN.md) (القسم 10 للواجهة
+الحالية)، وتقريرا Lighthouse لصفحة التقرير في [`docs/lighthouse/`](docs/lighthouse/) (الأداء 92 بمحاكاة الجوال و100 للحاسوب، وإمكانية الوصول 100).
 
 ## ميزات الاستخدام اليومي (المرحلة الثانية)
 

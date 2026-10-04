@@ -572,3 +572,60 @@ Decided in the frontend for «تبيّن يتحقق مما يُنقل، ولا �
     name and how many claims it proposed, pointing calls, gradings fetched, timings — and never the
     user's text. The interface shows the work from them; nothing in that display is invented.
 
+
+## v3 — the investigation, shown: the frontend (4 October 2026)
+
+Built in mock mode only; no paid call was made. The plan is `docs/DESIGN.md` §10; what was built,
+where it departs from the plan, and the two critique rounds are appended there.
+
+124. **The display reads only what the server sent.** `lib/pipeline.ts` turns the `stage`, `trace`,
+     `claims`, `card` and `summary` events and `meta.engines` into nine nodes and a log; no step, model
+     name or number exists anywhere else in the interface. A figure appears only once its own step has
+     been revealed. `trace` is stored with a report in the browser's history, so a reopened report can
+     replay with its real figures and times; a report saved before v3 has no trace and offers no replay.
+125. **A step is held, never invented.** The screen reveals a reached step every 200 ms at the fastest
+     (seven steps: 1.4 s at most; 0.86 s measured on the mock between the last card and the verdict),
+     and never runs ahead of the server. With `prefers-reduced-motion` there is no hold. A replay walks
+     the same steps at 520 ms each.
+126. **Times belong to the step the server measured, not to a node.** The scan's time covers the Mushaf
+     and the narration index together, the verification's covers gradings, pointing and selection: the
+     log prints one line per `trace` (reading, algorithmic matching, extraction model, checking the
+     sources) plus the rules and the report, and nodes carry figures only. A time the server rounded
+     to 0 is shown as «أقل من 1 مث».
+127. **A model that did not run is shown as not used.** In lexical-only mode (`summary.mode`, the
+     `llm_unavailable` notice, or `meta.engines.models.extract === null`) the extraction and pointing
+     nodes are dashed with «فحص لفظي فقط» / «لم يُستخدم» and never light. The gradings node shows
+     «تعذّر الوصول إلى الدرر السنية» when `trace.dorar` is `unreachable` and «لم يُحتج إليها» when it
+     was not called. The verdict's list of what worked holds only nodes that ran.
+128. **A picture's reading is a node.** When the verified text came from the image reader, `start` is
+     told so (`via: 'image'`, kept with the submitted input in the browser only) and the reading node
+     shows the vision model's id from `meta.engines.models.vision`.
+129. **The application shell**: a rail from 1280px (brand as the way home, «تحقّق جديد», the local
+     history, the transparency line, the legend, language, theme), a drawer below that. The history
+     panel is gone — the rail is the history. The transparency line stands in the rail and under the
+     workspace.
+130. **Dark is the default theme**: the saved choice, else dark (the system preference is no longer
+     consulted). `theme-color` is `#07130f` / `#f1f6f4`; the manifest's colours are the dark field's.
+     The service worker's cache family is `tabayyun-v3-shell-<build>`, and a v3 worker deletes every
+     other `tabayyun-*` cache except the share payload's.
+131. **Evidence cards open in place at every width.** The bottom sheet and the margin layout are
+     removed; everything the note body did stays inside the open card, under its trail. A closed card
+     and a claim still being checked have the same three-line height.
+132. **The trail of a card** is built from the card's own fields: `match_kind` and `similarity`,
+     `source.ref` and the source's name as a link, the distinct `grades[].grade_text` verbatim with
+     their `source_name`, `rule_id`, and the action. A question has no trail (it was referred, not
+     matched).
+133. **State tiles** show all five states (and the questions, when there are any) once a report holds
+     more than one item; a report of a single citation or of questions only has its sentence alone.
+     Tiles and the sentence's clauses both filter.
+134. **Layout stability is kept by construction**: the map, the timeline, the log, the progress line
+     and a closed card have fixed heights; the evidence pane appears with the first claims; a report is
+     at least a screen tall; and the swap from map to verdict is a FLIP glide. Measured over whole mock
+     runs: 0.003–0.008 (it was 0.12–0.40 before these).
+135. **Removed with v2's sheet**: `app-header`, `history-panel`, `progress-panel`, `note`, `notes-list`,
+     `note-sheet`, `inline-note`, `use-margin-layout`, `state-badge`, and `scripts/screenshots-v2.mjs`
+     (item 59's "the ones that run" is now `screenshots-v3.mjs` and `a11y.mjs`). The v2 captures stay
+     in `docs/screenshots/v2/` as a record; the verdict-card captures there are still current.
+136. **Lighthouse on the built report page** (mock, `?scenario=video&autorun=1&speed=8`): phone 92 /
+     accessibility 100 / best practices 100 (FCP 0.8 s, LCP 3.4 s, TBT 0, CLS 0.004); desktop 100 / 100
+     / 100 (LCP 0.7 s, CLS 0.014). `npm run a11y`: 66 audits, no violation, lowest contrast 5.05:1.
