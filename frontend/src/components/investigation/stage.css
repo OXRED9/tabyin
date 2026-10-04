@@ -397,12 +397,8 @@
     background-color 300ms ease,
     opacity 300ms ease;
 }
-.step[data-status='waiting'] {
-  opacity: 0.55;
-}
-.step[data-status='skipped'] {
-  opacity: 0.5;
-}
+/* A step that has not run is quiet by its colour (set on the row's text), never by opacity: its
+   name must stay readable at AA contrast. */
 .step[data-status='active'] {
   background: color-mix(in oklab, var(--gold) 12%, transparent);
 }

@@ -257,7 +257,7 @@ export default function Investigation({
                 return (
                   <li key={node.id} className="step" data-node={node.id} data-status={node.status}>
                     <StatusMark status={node.status} />
-                    <span className={cn('shrink-0 font-semibold', node.status === 'waiting' ? 'text-quiet' : 'text-ink')}>{node.title}</span>
+                    <span className={cn('shrink-0 font-semibold', node.status === 'waiting' || node.status === 'skipped' ? 'font-normal text-quiet' : 'text-ink')}>{node.title}</span>
                     <span className="tabular flex min-w-0 flex-1 gap-x-2.5 overflow-hidden whitespace-nowrap">
                       {node.figures.length > 0 ? <Figures figures={node.figures} /> : <span className="truncate text-quiet">{node.status === 'active' ? node.detail : ''}</span>}
                     </span>
