@@ -83,6 +83,24 @@ def _image_example() -> list[dict]:
     return [{"id": "image", "input_type": "image", "label_ar": "لقطة شاشة لرسالة متداولة", "label_en": "A screenshot of a forwarded message", "text": None, "url": "/api/examples/screenshot.png"}]
 
 
+def _engines() -> dict:
+    """What actually does the work — the interface shows these, and only these, when it shows the work:
+    the size of each index and the model configured for each task (None when there is no key)."""
+    from .llm.openrouter import get_llm
+    from .sources.hadith import get_hadith_index
+    from .sources.quran import get_quran_index
+
+    llm, hadith = get_llm(), get_hadith_index()
+    models = llm.status()["models"] if llm.available else {}
+    return {
+        "quran_verses": len(get_quran_index().ayahs),
+        "graded_narrations": len(hadith.hadeethenc),
+        "book_narrations": hadith.books_count,
+        "models": {task: models.get(task) for task in ("extract", "vision", "audio")},
+        "live_gradings": settings.dorar_enabled,
+    }
+
+
 def _vision_available() -> bool:
     from .llm.openrouter import get_llm
 
@@ -100,6 +118,7 @@ def build_meta() -> dict:
             "alternatives": settings.features_alternatives,
         },
         "feedback": {"email": settings.feedback_email or None, "whatsapp": settings.feedback_whatsapp or None},
+        "engines": _engines(),
         "app_url": settings.public_url.rstrip("/") if settings.public_url else None,
         "data_version": get_data_version(),
         "terms": load_terms(),

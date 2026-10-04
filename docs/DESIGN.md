@@ -595,3 +595,57 @@ performance 91, accessibility 100, best practices 100 (first paint 0.8 s, larges
 shift 0.004); desktop — 100 / 100 / 100. What moved the phone number from 58: compression on the
 API (68), then a first screen painted from HTML before any script, one Naskh weight, two Plex
 weights and dialogs loaded on demand (91).
+
+## 10. v3 — the investigation, shown (the team's direction, 4 October 2026)
+
+The team showed v2 to people and it was taken for "a search box": the page was calm, the answer
+arrived quietly, and none of the work behind it was visible. The direction changes: **the interface
+must show the investigation** — the engines, the models, the scale, the steps — and feel like a
+modern, full-screen application, while staying clean, clear and useful. v3 supersedes §1–§7 where
+they conflict (the single orchestrated motion, the bare sheet, "gold only in the verified ring" as
+a principle of restraint). What v3 keeps from v2: the brand colours, Naskh for every word of a
+source and Plex for the tool, the five ring glyphs and state colours, and every function.
+
+### One rule that does not bend: nothing in the show is invented
+
+Every node, counter, model name and log line comes from what the server really did — the `stage`,
+`trace`, `claims` and `card` events of the stream and `meta.engines`. No fake steps, no fake models,
+no numbers that were not measured. A step that finished in a millisecond may be *held* on screen
+long enough to be seen (a few hundred milliseconds; the whole show adds at most about 1.5 s), but it
+is never fabricated, and the report can replay the trace afterwards with its real timings.
+
+### Three ideas
+
+1. **Mission control, not a form.** A full-viewport application: a side rail (brand, «تحقّق جديد»,
+   the local history), and a workspace that fills the rest. No narrow sheet on a desk.
+2. **The investigation is the hero.** While a request runs, the workspace becomes a live map of the
+   pipeline: the input, the reading/transcription step, the extraction model, the Mushaf matcher
+   (6,236 verses), the narration index (62,376 narrations), the live gradings from Dorar, the pointing
+   model, the rule engine, the report. Nodes light as their real events arrive, counters run up to
+   the real numbers, pulses travel the links, and a log prints each step with its figures and time.
+3. **Evidence with its provenance.** A result is a rich evidence card: the state, the quoted words,
+   the source's words in Naskh, and a provenance rail — matched at 0.97 → the source and reference →
+   the grading and who gave it → the rule that decided. Sources appear as named, linked chips.
+
+### Look
+
+- **Dark first** (light theme kept): a deep green-black field (`#07130F`), raised panels
+  (`#0D1F1A`, `#12281F`) with hairline borders in translucent green, luminous brand green
+  (`#2FBF9F` for light on dark, `#1B6B5E` on light), gold (`#D9B648`) for the verified ring, key
+  figures and the "live" pulse. Depth comes from layered panels, soft inner glows and a faint grid or
+  field of points behind the pipeline — atmosphere, not wallpaper; the content stays flat and legible.
+- **Type**: IBM Plex Sans Arabic for the interface (large, confident headings: 56 / 40 / 28 / 20 /
+  16 / 14), tabular figures for every counter; Amiri and Amiri Quran for source text as now.
+- **Motion**: purposeful and fast. Easing `cubic-bezier(.2,.8,.2,1)`; node activation 300 ms; counters
+  600 ms; link pulses 700 ms; cards rise in 250 ms as they arrive. `prefers-reduced-motion` turns the
+  map into a static checklist that ticks.
+- **Layout**: empty state — a centred hero (headline, the composer as a large command surface, the
+  example chips) over a strip of real capabilities («٦٬٢٣٦ آية · ٦٢٬٣٧٦ رواية · مطابقة خوارزمية ·
+  أحكام المحدّثين منقولة حرفياً») and the three engines as small cards. Running — the pipeline map
+  with the log beside it, the source text arriving below. Done — a verdict header (the summary
+  sentence, state tiles with counts, time taken, engines used, a button to replay the investigation),
+  then two panes: the text with its highlighted passages, and the evidence cards. On a phone the
+  rail becomes a drawer, the map becomes a vertical timeline, the panes stack.
+- **Quality floor unchanged**: responsive from 360px, AA contrast, visible focus, labelled controls,
+  reduced motion, Lighthouse accessibility ≥ 95; performance ≥ 90 is still the target and the measured
+  number is reported whatever it is.

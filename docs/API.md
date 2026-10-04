@@ -36,6 +36,10 @@ interface Alternative {
 addressed. The report is composed in the browser and sent by the reader's own mail or WhatsApp;
 this API has no endpoint that receives it.
 
+`meta.engines` lists what does the work, for the interface to show truthfully:
+`{ quran_verses, graded_narrations, book_narrations, models: { extract, vision, audio }, live_gradings }`
+(model ids are `null` when no key is configured).
+
 ### `trace` events (what was done, in numbers)
 
 Sent on the verification stream between the other events. Counts, timings and model names only —
