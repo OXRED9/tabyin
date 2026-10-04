@@ -1,12 +1,13 @@
-import { FileText, Upload } from 'lucide-react'
+import { FileText, Menu, Plus, Upload } from 'lucide-react'
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
-import { AppHeader } from '@/components/app-header'
 import { Composer } from '@/components/composer'
 import type { AttachKind } from '@/components/composer'
 import { InlineError } from '@/components/inline-error'
+import { Capabilities } from '@/components/home/hero'
 import { InstallLine } from '@/components/install-line'
 import { ReportView } from '@/components/report/report-view'
+import { BrandLink, Rail } from '@/components/shell/rail'
 import { Button } from '@/components/ui/button'
 import { DirectionProvider } from '@/components/ui/direction'
 import { useImageReader } from '@/hooks/use-image-reader'
@@ -31,7 +32,6 @@ import type { SharedPayload } from '@/lib/pwa'
 import { assembleReport } from '@/lib/report'
 import { chronological } from '@/lib/states'
 import type { Card, Meta, MetaExample, OcrResult, Report, VerifyInput } from '@/lib/types'
-import { cn } from '@/lib/utils'
 
 const DEFAULT_LIMITS: Meta['limits'] = {
   max_text_chars: 60000,
@@ -41,7 +41,7 @@ const DEFAULT_LIMITS: Meta['limits'] = {
 }
 
 // Not needed to paint the page: each is fetched when first wanted.
-const HistoryPanel = lazy(() => import('@/components/history-panel'))
+const RailDrawer = lazy(() => import('@/components/shell/rail-drawer'))
 const Toaster = lazy(() => import('@/components/ui/sonner'))
 const loadExport = () => import('@/lib/export')
 
@@ -65,9 +65,9 @@ function Shell() {
   const [meta, setMeta] = useState<Meta | null>(null)
   const [draft, setDraft] = useState<InputDraft>(emptyDraft)
   const history = useSyncExternalStore(subscribeHistory, loadHistory)
-  const [historyOpen, setHistoryOpen] = useState(false)
-  // The panel stays mounted once it has been opened, so it can close with its transition.
-  const [historySeen, setHistorySeen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  // The drawer stays mounted once it has been opened, so it can close with its transition.
+  const [drawerSeen, setDrawerSeen] = useState(false)
   const toaster = useSyncExternalStore(subscribeToaster, toasterWanted)
   const [autorunPending, setAutorunPending] = useState(AUTORUN)
   // `?share=unavailable`: something was shared to the app but could not be received.
@@ -124,8 +124,9 @@ function Shell() {
       cards,
       summary: state.summary,
       generatedAt: state.generatedAt,
+      trace: state.traces,
     })
-  }, [done, state.source, state.summary, state.generatedAt, state.claims, state.cards, state.segments])
+  }, [done, state.source, state.summary, state.generatedAt, state.claims, state.cards, state.segments, state.traces])
 
   // Local history: the last ten reports, in this browser only.
   useEffect(() => {
@@ -207,7 +208,8 @@ function Shell() {
         }
       }
       window.scrollTo({ top: 0 })
-      void start(input)
+      // A text that the vision model read from a picture says so: that reading was a real step.
+      void start(input, input.input_type === 'text' && image?.status === 'read' ? 'image' : undefined)
     },
     [draft, image?.status, limits, running, showError, start],
   )
@@ -303,7 +305,6 @@ function Shell() {
 
   const openHistoryEntry = useCallback(
     (entry: HistoryEntry) => {
-      setHistoryOpen(false)
       restore(entry)
       removeImage()
       setDraft(draftFromInput(entry.input))
@@ -312,15 +313,14 @@ function Shell() {
     [removeImage, restore],
   )
 
-  const showHistory = useCallback(() => {
-    setHistorySeen(true)
-    setHistoryOpen(true)
+  const openDrawer = useCallback(() => {
+    setDrawerSeen(true)
+    setDrawerOpen(true)
   }, [])
 
   const wipeHistory = useCallback(() => {
     const previous = loadHistory()
     clearHistory()
-    setHistoryOpen(false)
     notify((toast) =>
       toast(t.history.cleared, {
         action: {
@@ -473,6 +473,15 @@ function Shell() {
         : !!safeHref(example.url),
   )
 
+  const rail = {
+    history,
+    currentId: done ? state.generatedAt : null,
+    onHome: goHome,
+    onNew: verifyAnother,
+    onOpenEntry: openHistoryEntry,
+    onClearHistory: wipeHistory,
+  }
+
   return (
     <DirectionProvider dir={dir}>
       <>
@@ -483,27 +492,29 @@ function Shell() {
           {t.skipToContent}
         </a>
 
-        <div className="flex min-h-dvh flex-col">
-          <AppHeader
-            hasReport={hasReport}
-            onExportJson={exportJson}
-            onExportHtml={exportPrintable}
-            onCopyReport={features.copy ? copyReport : undefined}
-            onHome={goHome}
-          />
+        {/* A full-viewport application: the rail beside the workspace (a drawer below 1280px). */}
+        <div className="flex min-h-dvh">
+          <Rail {...rail} />
 
-          <main id="main" className="flex-1 sm:px-4 sm:py-6 lg:py-10">
-            {/* One sheet of paper on the desk. It is narrow while it is a blank page and widens
-                to the text-and-margin layout the moment a verification starts. */}
-            <div
-              data-sheet={hasResults ? 'report' : 'compose'}
-              className={cn(
-                'mx-auto flex w-full flex-col border-b bg-paper p-5 sm:rounded-sheet sm:border md:p-8 lg:p-12 print:border-0',
-                hasResults ? 'max-w-[66rem]' : 'max-w-[45rem]',
-              )}
-            >
+          <div className="flex min-w-0 flex-1 flex-col">
+            <header className="sticky top-0 z-40 flex h-12 items-center gap-2 border-b bg-paper px-3 xl:hidden print:hidden">
+              <Button type="button" variant="ghost" size="icon" data-testid="menu" aria-label={t.shell.menu} aria-haspopup="dialog" onClick={openDrawer}>
+                <Menu aria-hidden="true" />
+              </Button>
+              <BrandLink onHome={goHome} />
+              <span className="flex-1" />
               {hasResults ? (
-                <>
+                <Button type="button" variant="ghost" size="icon" aria-label={t.shell.newVerification} onClick={verifyAnother}>
+                  <Plus aria-hidden="true" />
+                </Button>
+              ) : null}
+            </header>
+
+            <main id="main" className="relative flex-1 px-4 py-5 md:px-8 md:py-8">
+              {hasResults ? (
+                // At least a screen tall: what stands under the workspace is below the fold from the
+                // first event, so the text and the cards arriving never push it across the screen.
+                <div className="mx-auto min-h-dvh w-full max-w-[86rem]">
                   <h1 className="sr-only">{t.report.title}</h1>
                   <ReportView
                     key={state.run}
@@ -512,64 +523,71 @@ function Shell() {
                     onCancel={autorunPending ? undefined : cancel}
                     meta={meta}
                     error={errorNode}
+                    exportActions={
+                      hasReport
+                        ? {
+                            onExportJson: exportJson,
+                            onExportHtml: exportPrintable,
+                            onCopyReport: features.copy ? copyReport : undefined,
+                          }
+                        : undefined
+                    }
                     onVerifyAnother={verifyAnother}
                   />
-                </>
-              ) : (
-                <Composer
-                  draft={draft}
-                  onChange={patchDraft}
-                  onSubmit={() => submit()}
-                  limits={limits}
-                  imageInput={features.image}
-                  notice={shareUnavailable ? t.pwa.shareUnavailable : null}
-                  image={image}
-                  onImage={readImageFile}
-                  onPasteText={pasteAndVerify}
-                  onImageRemove={() => {
-                    // The error about a picture leaves with the picture.
-                    if (image?.status === 'failed') clearError()
-                    removeImage()
-                  }}
-                  examples={examples}
-                  onExample={applyExample}
-                  historyCount={history.length}
-                  onOpenHistory={showHistory}
-                  hasError={!!error}
-                  errorId={errorId}
-                  error={errorNode}
-                  fieldRef={fieldRef}
-                  pickerRef={pickerRef}
-                />
-              )}
-
-              {/* The transparency line is the sheet's footer in every state. */}
-              <footer className="mt-10 space-y-3 border-t pt-4 text-sm text-quiet">
-                <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-                  <p>{t.transparency}</p>
-                  {hasResults && !running && history.length > 0 ? (
-                    <Button type="button" variant="link" onClick={showHistory} className="print:hidden">
-                      {t.input.recent(history.length)}
-                    </Button>
-                  ) : null}
                 </div>
-                {/* Offered only after a verification has succeeded, never on load. */}
-                {hasReport ? <InstallLine /> : null}
-              </footer>
-            </div>
-          </main>
+              ) : (
+                <>
+                  {/* The field of points behind the first screen: atmosphere, not wallpaper. */}
+                  <div aria-hidden="true" className="field-points pointer-events-none absolute inset-x-0 top-0 h-[26rem]" />
+                  <div className="relative mx-auto flex w-full max-w-[54rem] flex-col gap-6 md:pt-[6vh]">
+                    <div className="space-y-2">
+                      <h1 className="text-xl font-semibold text-balance text-ink md:text-2xl 2xl:text-3xl">{t.headline}</h1>
+                      <p className="text-base text-quiet md:text-lg">{t.input.label}</p>
+                    </div>
+                    <Composer
+                      draft={draft}
+                      onChange={patchDraft}
+                      onSubmit={() => submit()}
+                      limits={limits}
+                      imageInput={features.image}
+                      notice={shareUnavailable ? t.pwa.shareUnavailable : null}
+                      image={image}
+                      onImage={readImageFile}
+                      onPasteText={pasteAndVerify}
+                      onImageRemove={() => {
+                        // The error about a picture leaves with the picture.
+                        if (image?.status === 'failed') clearError()
+                        removeImage()
+                      }}
+                      examples={examples}
+                      onExample={applyExample}
+                      hasError={!!error}
+                      errorId={errorId}
+                      error={errorNode}
+                      fieldRef={fieldRef}
+                      pickerRef={pickerRef}
+                    />
+                    <Capabilities engines={meta?.engines} />
+                  </div>
+                </>
+              )}
+            </main>
+
+            {/* The transparency line stands under the workspace in every state. */}
+            <footer className="space-y-3 px-4 pb-5 text-sm text-quiet md:px-8">
+              <p className="mx-auto w-full max-w-[86rem]">{t.transparency}</p>
+              {/* Offered only after a verification has succeeded, never on load. */}
+              {hasReport ? (
+                <div className="mx-auto w-full max-w-[86rem]">
+                  <InstallLine />
+                </div>
+              ) : null}
+            </footer>
+          </div>
         </div>
 
         <Suspense fallback={null}>
-          {historySeen ? (
-            <HistoryPanel
-              open={historyOpen}
-              onOpenChange={setHistoryOpen}
-              entries={history}
-              onOpen={openHistoryEntry}
-              onClear={wipeHistory}
-            />
-          ) : null}
+          {drawerSeen ? <RailDrawer open={drawerOpen} onOpenChange={setDrawerOpen} {...rail} /> : null}
           {toaster ? (
             <Toaster dir={dir} position={wide ? 'bottom-center' : 'top-center'} offset={24} mobileOffset={{ top: 64 }} />
           ) : null}

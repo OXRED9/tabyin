@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true" className={cn('size-7 shrink-0', className)}>
-      <rect width="32" height="32" rx="7" fill="var(--green-fill)" />
+      <rect width="32" height="32" rx="7" fill="var(--logo-tile)" />
       <rect
         x="13"
         y="13"
@@ -23,7 +23,7 @@ export function LogoMark({ className }: { className?: string }) {
         strokeWidth="2"
       />
       <rect x="6" y="6" width="14" height="14" rx="4.5" fill="var(--gold)" />
-      <circle cx="13" cy="13" r="3.6" fill="var(--green-fill)" />
+      <circle cx="13" cy="13" r="3.6" fill="var(--logo-tile)" />
     </svg>
   )
 }

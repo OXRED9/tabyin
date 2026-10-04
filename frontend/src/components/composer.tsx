@@ -1,4 +1,5 @@
 import {
+  ArrowUp,
   AudioLines,
   ChevronDown,
   ClipboardPaste,
@@ -65,8 +66,6 @@ interface ComposerProps {
   onImageRemove: () => void
   examples: MetaExample[]
   onExample: (example: MetaExample) => void
-  historyCount: number
-  onOpenHistory: () => void
   hasError: boolean
   errorId: string
   error: ReactNode
@@ -96,8 +95,6 @@ export function Composer({
   onImageRemove,
   examples,
   onExample,
-  historyCount,
-  onOpenHistory,
   hasError,
   errorId,
   error,
@@ -126,7 +123,7 @@ export function Composer({
   const fieldDir = textDirection(draft.text) ?? dir
   // Amiri is for a text under examination. An address is not that: it is set in the tool's own
   // face, on the same lines.
-  const fieldFace = link ? 'font-sans text-base leading-(--line)' : 'page-text'
+  const fieldFace = link ? 'font-sans text-base leading-10' : 'page-text'
 
   /** A picture goes to the reader; anything else is a clip to transcribe. */
   const take = (chosen: File) => {
@@ -261,11 +258,19 @@ export function Composer({
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
     >
-      <h1 className="naskh-display text-2xl text-balance text-ink md:text-3xl">{t.headline}</h1>
-
-      <label htmlFor={`${id}-field`} className="mt-8 block text-base font-semibold text-ink">
+      <label htmlFor={`${id}-field`} className="sr-only">
         {t.input.label}
       </label>
+
+      {/* The command surface: one panel that takes a text, a link, a picture, a clip. It lights
+          while it has the focus or something is being dropped on it. */}
+      <div
+        data-testid="composer"
+        className={cn(
+          'panel relative p-2 transition-shadow duration-300 focus-within:shadow-glow',
+          dragging && 'shadow-glow',
+        )}
+      >
 
       {/* What the reader is doing, said once for a screen reader as it changes. */}
       <p role="status" aria-live="polite" className="sr-only">
@@ -273,14 +278,14 @@ export function Composer({
       </p>
 
       {notice ? (
-        <p role="status" className="mt-3 flex items-start gap-2 text-sm text-ink">
+        <p role="status" className="flex items-start gap-2 px-2 pt-2 text-sm text-ink">
           <StateGlyph state="needs_review" className="mt-0.5 size-[18px]" />
           {notice}
         </p>
       ) : null}
 
       {image ? (
-        <div data-testid="image-row" className="mt-3 flex items-center gap-3 rounded-control border border-rule-strong p-2">
+        <div data-testid="image-row" className="m-2 flex items-center gap-3 rounded-control border border-rule-strong p-2">
           {noPreview === image.preview ? (
             <span className="flex size-10 shrink-0 items-center justify-center rounded-sheet border">
               <ImageIcon aria-hidden="true" className="size-5 text-quiet" />
@@ -314,10 +319,10 @@ export function Composer({
         </div>
       ) : null}
 
-      {read ? <p className="mt-3 text-sm font-semibold text-ink">{t.input.imageRead}</p> : null}
+      {read ? <p className="px-2 text-sm font-semibold text-ink">{t.input.imageRead}</p> : null}
 
       {file ? (
-        <div className="mt-3 flex items-center gap-3 rounded-control border border-rule-strong p-3">
+        <div className="m-2 flex items-center gap-3 rounded-control border border-rule-strong p-3">
           <FileAudio aria-hidden="true" className="size-5 shrink-0 text-quiet" />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-base font-semibold text-with-page" dir="auto">
@@ -346,7 +351,7 @@ export function Composer({
       ) : (
         // The field's direction follows what is typed (a link reads left to right); the wrapper
         // takes the same direction, so the clear button always sits at the end of the text's line.
-        <div className="relative mt-3" dir={fieldDir}>
+        <div className="relative" dir={fieldDir}>
           <textarea
             id={`${id}-field`}
             ref={fieldRef}
@@ -361,11 +366,11 @@ export function Composer({
             disabled={reading}
             rows={4}
             className={cn(
-              'ruled block max-h-[50vh] min-h-[calc(var(--line)*4+0.75rem)] w-full resize-none rounded-sheet border border-rule-strong bg-paper px-4 pt-1 pb-2 text-ink transition-colors duration-150 field-sizing-content placeholder:font-sans placeholder:text-base placeholder:leading-(--line) placeholder:text-quiet focus-visible:border-green disabled:opacity-60 aria-invalid:border-contra',
+              // The panel around it carries the edge and the focus light; the field itself has none.
+              'block max-h-[50vh] min-h-32 w-full resize-none rounded-control border border-transparent bg-transparent px-3 pt-2 pb-2 text-ink field-sizing-content placeholder:font-sans placeholder:text-base placeholder:leading-10 placeholder:text-quiet focus-visible:outline-none disabled:opacity-60 aria-invalid:border-contra',
               fieldFace,
               // Room at the end of the first line for × (or for «لصق» while the field is empty).
               draft.text ? 'pe-12' : canPaste && 'pe-24',
-              dragging && 'border-green',
             )}
           />
           {/* A word the reader could not read is written «[?]». Each one is ringed, in place:
@@ -375,7 +380,7 @@ export function Composer({
               aria-hidden="true"
               dir={fieldDir}
               className={cn(
-                'pointer-events-none absolute inset-0 overflow-hidden border border-transparent px-4 pt-1 pb-2 pe-12 break-words whitespace-pre-wrap text-transparent',
+                'pointer-events-none absolute inset-0 overflow-hidden border border-transparent px-3 pt-2 pb-2 pe-12 break-words whitespace-pre-wrap text-transparent',
                 fieldFace,
               )}
               style={scrollbar ? { paddingInlineEnd: `calc(3rem + ${scrollbar}px)` } : undefined}
@@ -434,7 +439,7 @@ export function Composer({
       {/* What the reader says about its own reading: unread words, an uncertain reading, and the
           noise it left out, word for word. */}
       {read && !file ? (
-        <div className="mt-3 space-y-2 text-sm">
+        <div className="space-y-2 px-2 pt-1 text-sm">
           {unread > 0 ? (
             <p data-testid="image-unread" className="flex items-start gap-2 font-semibold text-review-ink">
               <StateGlyph state="needs_review" className="mt-0.5 size-[18px]" />
@@ -466,7 +471,7 @@ export function Composer({
       ) : null}
 
       {link && linkLabel ? (
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-2 pt-1">
           <span
             data-testid="link-tag"
             className="inline-flex min-h-8 items-center gap-2 rounded-tag bg-accent ps-3 pe-1 text-sm text-ink"
@@ -499,12 +504,10 @@ export function Composer({
       ) : null}
 
       {nearLimit ? (
-        <p className={cn('tabular mt-2 text-sm text-quiet', overLimit && 'font-semibold text-contra-ink')} dir="ltr">
+        <p className={cn('tabular px-2 pt-1 text-sm text-quiet', overLimit && 'font-semibold text-contra-ink')} dir="ltr">
           {t.input.chars(draft.text.length, limits.max_text_chars)}
         </p>
       ) : null}
-
-      {error ? <div className="mt-4">{error}</div> : null}
 
       {/* No `capture`: with it a phone would open the camera only, never the gallery. */}
       <input
@@ -519,7 +522,9 @@ export function Composer({
           event.target.value = ''
         }}
       />
-      <div role="group" aria-label={t.input.attach} className="mt-3 -ms-3 flex flex-wrap gap-x-1">
+      {/* The foot of the panel: what can be attached, and the one action. */}
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+      <div role="group" aria-label={t.input.attach} className="flex min-w-0 flex-1 flex-wrap gap-x-1">
         {attachments.map(({ kind, label, icon: Icon }) => (
           <Button
             key={kind}
@@ -534,7 +539,7 @@ export function Composer({
                   : t.input.fileLimit(limits.max_upload_mb)
             }
             onClick={() => (kind === 'link' ? void attachLink() : openPicker(kind))}
-            className="px-3"
+            className="px-2.5"
           >
             <Icon aria-hidden="true" className="text-quiet" />
             {label}
@@ -542,12 +547,17 @@ export function Composer({
         ))}
       </div>
 
-      <Button type="submit" size="xl" data-testid="verify" disabled={reading} className="mt-4 w-full">
+      <Button type="submit" size="xl" data-testid="verify" disabled={reading} className="max-sm:w-full">
+        <ArrowUp aria-hidden="true" />
         {t.input.verify}
       </Button>
+      </div>
+      </div>
+
+      {error ? <div className="mt-4">{error}</div> : null}
 
       {/* The row keeps its height while /api/meta is on its way, so nothing below it moves. */}
-      <div className="mt-6 flex min-h-9 flex-wrap items-center gap-2">
+      <div className="mt-5 flex min-h-9 flex-wrap items-center gap-2">
         {examples.length > 0 ? <span className="text-sm text-quiet">{t.input.examples}</span> : null}
         {examples.map((example) => (
           <button
@@ -561,13 +571,9 @@ export function Composer({
         ))}
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2">
-        <LegendLink />
-        {historyCount > 0 ? (
-          <Button type="button" variant="link" onClick={onOpenHistory}>
-            {t.input.recent(historyCount)}
-          </Button>
-        ) : null}
+      {/* From 1280px up the rail carries the legend. */}
+      <div className="mt-3 xl:hidden">
+        <LegendLink className="text-sm" />
       </div>
     </form>
   )
