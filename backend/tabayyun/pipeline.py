@@ -14,7 +14,7 @@ from pathlib import Path
 
 from .config import settings
 from .evidence_rules.thresholds import THRESHOLDS as t
-from .extract import RawClaim, absorb_closed_quotes, drop_noise, keep_personal_cases, keep_questions, merge_claims, widen_scanned_verses
+from .extract import RawClaim, absorb_closed_quotes, drop_noise, keep_personal_cases, keep_questions, merge_claims, widen_scanned_narrations, widen_scanned_verses
 from .extract.lexical import attributes_to_revelation, extract_by_markers, is_fabrication_request, looks_like_question, scan_hadith, scan_hadith_verbatim, scan_quran
 from .extract.llm_extractor import extract_with_llm
 from .ingest.document import Document, IngestError
@@ -233,6 +233,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
             if held:
                 if mode == "full":
                     quick, rest = widen_scanned_verses(quick, rest, quran, t.ayah_near)
+                    quick, rest = widen_scanned_narrations(quick, rest)
                 await announce_quick()
         else:
             mode = "lexical_only"

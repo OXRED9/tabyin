@@ -509,9 +509,9 @@ export const ar = {
     // not something it quotes, and showing it raises no state.
     referencedSource: 'الدليل المشار إليه في المصادر',
     referencedShort: 'الدليل المشار إليه',
-    nearbyLine: 'لم يُطابَق بلفظه في المصادر — أقرب نص معروض للمقارنة',
-    nearbyTitle: 'نص قريب في المصادر — للمقارنة فقط',
-    nearbyHint: 'ليس بالضرورة هو ما ورد في النص، ولا يُنسب إليه حكمه.',
+    nearbyLine: 'لم يُطابَق بلفظه — نصوص ذات صلة معروضة للمقارنة',
+    nearbyTitle: 'نصوص ذات صلة',
+    nearbyHint: 'نص مشابه لما ورد وجدنا له مرجعية في المصادر، لكنه ليس كلام القائل بلفظه؛ حكمه حكم هذا النص لا حكم ما قيل.',
     nearbyShort: 'أقرب نص',
     sourceBefore: 'ما قبله في المصدر',
     showWhole: 'عرض النص كاملاً',

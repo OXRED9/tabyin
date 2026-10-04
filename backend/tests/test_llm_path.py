@@ -311,3 +311,18 @@ def test_a_scan_hit_that_straddles_the_opening_quotation_mark_is_not_a_note():
     nested = RawClaim(type=ClaimType.hadith, quote="n", start=35, end=200, origin="hadith_scan")  # past an inner closing mark: kept
     assert nested in absorb_closed_quotes([nested], [closed])
 
+
+def test_a_sentence_presenting_the_next_quotation_is_not_a_note_and_a_narration_with_additions_is_one_note(run, matn):
+    """Reported by the team on a clip: «هذا دعاء دعاه نبينا ﷺ» before a supplication got a note of its
+    own, and the supplication (quoted with added phrases) got two notes — the whole, and its intact
+    middle as "exact". Now: one note, on the quotation."""
+    full = matn("4560")
+    body = re.split(r'[«"“]', full, maxsplit=1)[-1]
+    words = body.split()
+    quoted = " ".join(["كلمة", "زائدة", "هنا"] + words[:14] + ["وعبارة", "مضافة"])  # an intact middle, words added around it
+    intro = "هذا دعاء دعاه نبينا محمد صلى الله عليه وسلم"
+    text = f"{intro}. حافظوا عليه: {quoted}. والله أعلم"
+    proposal = [claim(type="fact", quote=intro, content_level="B"), claim(type="hadith", quote=quoted)]
+    cards = run(text, ScriptedProvider(proposal, judge_index=-1))["cards"]
+    assert [c["claim_type"] for c in cards] == ["hadith"] and cards[0]["text_as_quoted"] == quoted
+

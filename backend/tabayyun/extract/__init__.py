@@ -68,6 +68,38 @@ def merge_claims(primary: list[RawClaim], extra: list[RawClaim]) -> list[RawClai
     return merged
 
 
+def widen_scanned_narrations(scanned: list[RawClaim], proposed: list[RawClaim]) -> tuple[list[RawClaim], list[RawClaim]]:
+    """One note for a narration quoted with words added or changed.
+
+    The scan finds such a quotation only as its intact fragment, which is "exact" on its own (seen
+    4 Oct 2026: a supplication with two added phrases gave an "exact" note on its middle beside a
+    note on the whole). When the model proposes the wider narration around the fragment, the wider
+    one is the quotation and replaces it: one note, whose comparison shows what differs.
+    """
+    kept = list(scanned)
+    left: list[RawClaim] = []
+    for c in proposed:
+        inside = [p for p in kept if p.type == ClaimType.hadith and overlap(p, c) >= 0.9 * (p.end - p.start)] if c.type == ClaimType.hadith else []
+        if not inside or (c.end - c.start) < 1.2 * max(p.end - p.start for p in inside):
+            left.append(c)
+            continue
+        kept = [p for p in kept if all(p is not i for i in inside)]
+        c.explicit_attribution = c.explicit_attribution or any(p.explicit_attribution for p in inside)
+        kept.append(c)
+    kept.sort(key=lambda c: c.start)
+    return kept, left
+
+
+# A sentence that presents the quotation after it: "this is a supplication the Prophet ﷺ made",
+# "this hadith ...", "listen to this verse". The quotation is what gets verified; the presentation is
+# not a claim of its own (the team, 4 Oct 2026: such a sentence got a note «يحتاج مراجعة»).
+_PRESENTS = re.compile(r"(?<!\w)(?:هذا|هذه|هذي|ذا)\s+(?:ال)?(?:دعاء|حديث|ايه|ذكر|قول|دعوه|وصيه|اثر)(?!\w)|(?<!\w)(?:قال|يقول|ودعا|دعا)\s*[:：]\s*$")
+
+
+def presents_a_quotation(text: str) -> bool:
+    return bool(_PRESENTS.search(normalize_ar(text).strip()))
+
+
 def widen_scanned_verses(scanned: list[RawClaim], proposed: list[RawClaim], quran, near: float) -> tuple[list[RawClaim], list[RawClaim]]:
     """One note for a verse quoted with a changed word.
 
@@ -147,6 +179,13 @@ def drop_noise(claims: list[RawClaim], shown: list[RawClaim] | None = None, quot
     for c in claims:
         if c.type == ClaimType.attributed_quote and len(_words(c.quote).split()) < 3:
             continue
+        if c.type in (ClaimType.fact, ClaimType.ruling) and not c.is_question and len(_words(c.quote).split()) <= 30:
+            # It presents the quotation that follows it closely: the quotation is the claim.
+            follows = [q for q in quoted + (quotations or []) if q is not c and 0 <= q.start - c.end <= 80]
+            from .lexical import attributes_to_revelation  # here: lexical imports this package's models
+
+            if follows and (presents_a_quotation(c.quote) or attributes_to_revelation(c.quote)):
+                continue
         if c.type == ClaimType.fact and not c.is_question and any(q is not c and overlap(q, c) >= 0.9 * (q.end - q.start) for q in quoted + (quotations or [])):
             continue
         if c.type in _QUOTED:
