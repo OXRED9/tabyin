@@ -1,0 +1,658 @@
+/*
+ * The investigation stage (docs/DESIGN.md §10, v3.1): an instrument, not a diagram. A dial with the
+ * engines on its orbit, a core that says what is working now, a line that narrates it, the steps
+ * as they complete, and the citations as they are found. Everything it shows comes from
+ * `lib/pipeline.ts`; this file only decides how it moves.
+ *
+ * Motion: the dial turns slowly, a sweep searches while the work runs, a beam flows from the engine
+ * that is working to the core, and a finished run closes the ring. With reduced motion nothing
+ * travels or turns — steps still light and fade in place, so the stage is never a frozen frame.
+ */
+
+.stage-body {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: center;
+}
+.stage-side {
+  display: grid;
+  gap: 0.625rem;
+  width: 100%;
+  min-width: 0;
+}
+@media (min-width: 768px) {
+  .stage-body {
+    grid-template-columns: 19rem minmax(0, 1fr);
+    align-items: center;
+    justify-items: stretch;
+    gap: 2.25rem;
+    padding-inline: 0.5rem;
+  }
+}
+@media (min-width: 1280px) {
+  .stage-body {
+    grid-template-columns: 21rem minmax(0, 1fr);
+    gap: 3rem;
+  }
+}
+
+/* ── The dial ─────────────────────────────────────────────────────────── */
+
+.orb {
+  position: relative;
+  width: min(15.5rem, 70vw);
+  aspect-ratio: 1;
+  container-type: inline-size;
+  isolation: isolate;
+}
+@media (min-width: 768px) {
+  .orb {
+    width: 100%;
+  }
+}
+.orb > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* A soft light behind the instrument: it is working. */
+.orb-halo {
+  position: absolute;
+  inset: 8%;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in oklab, var(--green) 20%, transparent) 0%, transparent 68%);
+  animation: orb-halo 2.6s ease-in-out infinite;
+  z-index: -1;
+}
+.orb[data-finished] .orb-halo {
+  background: radial-gradient(circle, color-mix(in oklab, var(--gold) 26%, transparent) 0%, transparent 68%);
+  animation: none;
+}
+
+.orb-ticks {
+  stroke: var(--rule-strong);
+  transform-origin: 0 0;
+  animation: orb-spin 60s linear infinite;
+}
+.orb-ticks-major {
+  stroke: var(--green);
+  opacity: 0.55;
+  transform-origin: 0 0;
+  animation: orb-spin 60s linear infinite;
+}
+.orb-orbit {
+  stroke: var(--rule);
+}
+.orb-inner {
+  stroke: var(--rule);
+  stroke-dasharray: 1 3.2;
+  transform-origin: 0 0;
+  animation: orb-spin 28s linear infinite reverse;
+}
+
+/* The search: a wedge of light that turns over the orbit while the work runs. */
+.orb-sweep {
+  position: absolute;
+  inset: 9%;
+  border-radius: 999px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 62%,
+    color-mix(in oklab, var(--green) 10%, transparent) 78%,
+    color-mix(in oklab, var(--green) 34%, transparent) 99%,
+    transparent 100%
+  );
+  mask: radial-gradient(circle, transparent 0 41%, #000 42% 100%);
+  animation: orb-spin 2.8s linear infinite;
+  transition: opacity 500ms ease;
+}
+.orb[data-finished] .orb-sweep {
+  opacity: 0;
+}
+
+/* The ring around the core: an arc that runs while the work does, and closes when it is done. */
+.orb-arc {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 26 74;
+  transform-origin: 0 0;
+  animation: orb-spin 1.5s linear infinite;
+  transition: stroke-dasharray 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.orb-arc-track {
+  fill: none;
+  stroke: color-mix(in oklab, var(--gold) 22%, transparent);
+  stroke-width: 2.4;
+}
+.orb[data-finished] .orb-arc {
+  stroke-dasharray: 100 0;
+  animation: none;
+}
+
+/* A beam from each engine to the core: faint until it has worked, flowing while it works. */
+.beam {
+  stroke: var(--rule);
+  stroke-width: 0.7;
+  opacity: 0.55;
+  transition:
+    stroke 300ms ease,
+    opacity 300ms ease;
+}
+.beam[data-status='done'] {
+  stroke: var(--green);
+  opacity: 0.5;
+}
+.beam[data-status='warning'] {
+  stroke: var(--review);
+  opacity: 0.5;
+}
+.beam[data-status='skipped'] {
+  stroke-dasharray: 1.5 3;
+  opacity: 0.3;
+}
+.beam[data-status='active'] {
+  stroke: var(--gold);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 2.5 5.5;
+  opacity: 1;
+  animation: beam-flow 520ms linear infinite;
+}
+
+/* The engines, on the orbit. */
+.orb-sats {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sat {
+  --size: clamp(2.125rem, 15cqi, 2.875rem);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--size);
+  height: var(--size);
+  margin: calc(var(--size) / -2);
+  transform: rotate(var(--angle)) translateY(-39cqi) rotate(calc(var(--angle) * -1));
+}
+.sat-face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1.5px solid var(--rule-strong);
+  color: var(--quiet);
+  transition:
+    border-color 300ms ease,
+    color 300ms ease,
+    box-shadow 300ms ease,
+    opacity 300ms ease,
+    scale 320ms cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+.sat-face svg {
+  width: 46%;
+  height: 46%;
+}
+.sat[data-status='active'] .sat-face {
+  border-color: var(--gold);
+  color: var(--green);
+  scale: 1.16;
+  box-shadow:
+    0 0 0 4px color-mix(in oklab, var(--gold) 20%, transparent),
+    0 8px 22px -8px color-mix(in oklab, var(--gold) 70%, transparent);
+  animation: sat-breathe 1.1s ease-in-out infinite;
+}
+.sat[data-status='done'] .sat-face {
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 4px 14px -8px color-mix(in oklab, var(--green) 70%, transparent);
+}
+.sat[data-status='warning'] .sat-face {
+  border-color: var(--review);
+  color: var(--review-ink);
+}
+.sat[data-status='skipped'] .sat-face {
+  border-style: dashed;
+  opacity: 0.45;
+}
+.sat-tick {
+  position: absolute;
+  inset-block-start: -0.25rem;
+  inset-inline-end: -0.25rem;
+  display: grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: var(--green-fill);
+  color: var(--on-fill);
+  animation: tick-pop 360ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.sat-tick svg {
+  width: 0.625rem;
+  height: 0.625rem;
+  stroke-width: 3;
+}
+
+/* The core: what is working now, in large. */
+.orb-core {
+  position: absolute;
+  inset: 28.5%;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--paper);
+  box-shadow:
+    0 0 0 1px var(--rule),
+    0 14px 36px -16px color-mix(in oklab, var(--green) 60%, transparent),
+    inset 0 0 26px color-mix(in oklab, var(--green) 9%, transparent);
+  text-align: center;
+}
+.orb-core-inner {
+  display: grid;
+  justify-items: center;
+  gap: 0.0625rem;
+  padding-inline: 0.25rem;
+  min-width: 0;
+  animation: core-in 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.orb-core-inner > svg {
+  width: clamp(1.125rem, 9cqi, 1.625rem);
+  height: clamp(1.125rem, 9cqi, 1.625rem);
+  color: var(--green);
+}
+.core-figure {
+  font-size: clamp(1.125rem, 9.5cqi, 1.875rem);
+  line-height: 1.15;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--figure);
+  white-space: nowrap;
+}
+.core-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.6875rem, 4.4cqi, 0.875rem);
+  line-height: 1.35;
+  color: var(--quiet);
+}
+.core-seal {
+  display: grid;
+  place-items: center;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  border: 2px solid var(--gold);
+  color: var(--green);
+  animation: seal-in 520ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.core-seal svg {
+  width: 58%;
+  height: 58%;
+  stroke-width: 2.4;
+}
+/* The run closes: one ring leaves the core, once. */
+.orb-burst {
+  position: absolute;
+  inset: 28.5%;
+  border-radius: 999px;
+  border: 2px solid var(--gold);
+  pointer-events: none;
+  animation: orb-burst 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.dots {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  height: 1.15em;
+}
+.dots i {
+  width: 0.34em;
+  height: 0.34em;
+  border-radius: 999px;
+  background: var(--gold);
+  animation: dot 900ms ease-in-out infinite;
+}
+.dots i:nth-child(2) {
+  animation-delay: 150ms;
+}
+.dots i:nth-child(3) {
+  animation-delay: 300ms;
+}
+
+/* ── The narrator, the steps, the finds ───────────────────────────────── */
+
+.narrator {
+  display: grid;
+  gap: 0.375rem;
+}
+.narrator-line {
+  min-height: 3.25rem;
+  animation: line-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media (min-width: 768px) {
+  .narrator-line {
+    min-height: 3.75rem;
+  }
+}
+.stage-progress {
+  position: relative;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: var(--rule);
+  overflow: hidden;
+}
+.stage-progress > span {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  border-radius: inherit;
+  background: linear-gradient(to left, var(--gold), var(--green));
+  transition: width 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+:where([dir='ltr']) .stage-progress > span {
+  background: linear-gradient(to right, var(--gold), var(--green));
+}
+.stage-progress[data-running] > span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.65) 50%, transparent 80%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+
+.steps {
+  display: grid;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 1.875rem;
+  min-width: 0;
+  padding-inline: 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  overflow: hidden;
+  transition:
+    background-color 300ms ease,
+    opacity 300ms ease;
+}
+.step[data-status='waiting'] {
+  opacity: 0.55;
+}
+.step[data-status='skipped'] {
+  opacity: 0.5;
+}
+.step[data-status='active'] {
+  background: color-mix(in oklab, var(--gold) 12%, transparent);
+}
+.step[data-status='active']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, color-mix(in oklab, var(--gold) 30%, transparent) 50%, transparent 70%);
+  background-size: 220% 100%;
+  animation: shimmer 1.3s linear infinite;
+  pointer-events: none;
+}
+.step-mark {
+  display: grid;
+  place-items: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+}
+.step-mark [data-pop] {
+  animation: tick-pop 360ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+
+.found {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.found::-webkit-scrollbar {
+  display: none;
+}
+.found-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  flex: none;
+  padding: 0.1875rem 0.625rem 0.1875rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  animation: chip-pop 380ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+/* ── The text under examination: a band of light reads down it while the work runs. ── */
+
+/* In the base layer, under the utilities: where the pane is sticky it stays sticky. */
+@layer base {
+  [data-scanning] {
+    position: relative;
+  }
+}
+[data-scanning] {
+  clip-path: inset(0 round 1rem);
+}
+[data-scanning]::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 1;
+  height: 9rem;
+  translate: 0 -100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in oklab, var(--green) 7%, transparent) 40%,
+    color-mix(in oklab, var(--green) 16%, transparent) 80%,
+    color-mix(in oklab, var(--gold) 38%, transparent) 96.5%,
+    var(--gold) 98.6%,
+    transparent 100%
+  );
+  animation: scan 2.2s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+  pointer-events: none;
+}
+
+/* ── Keyframes ────────────────────────────────────────────────────────── */
+
+@keyframes orb-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+@keyframes orb-halo {
+  0%,
+  100% {
+    opacity: 0.55;
+    scale: 0.96;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.04;
+  }
+}
+@keyframes beam-flow {
+  to {
+    stroke-dashoffset: -8;
+  }
+}
+@keyframes sat-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px color-mix(in oklab, var(--gold) 22%, transparent),
+      0 8px 22px -8px color-mix(in oklab, var(--gold) 70%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 7px color-mix(in oklab, var(--gold) 10%, transparent),
+      0 8px 22px -8px color-mix(in oklab, var(--gold) 70%, transparent);
+  }
+}
+@keyframes tick-pop {
+  from {
+    opacity: 0;
+    scale: 0.2;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes core-in {
+  from {
+    opacity: 0;
+    scale: 0.84;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes seal-in {
+  from {
+    opacity: 0;
+    scale: 0.4;
+    rotate: -40deg;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    rotate: 0deg;
+  }
+}
+@keyframes orb-burst {
+  from {
+    opacity: 0.9;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 2.3;
+  }
+}
+@keyframes dot {
+  0%,
+  100% {
+    opacity: 0.3;
+    translate: 0 0;
+  }
+  40% {
+    opacity: 1;
+    translate: 0 -0.22em;
+  }
+}
+@keyframes line-in {
+  from {
+    opacity: 0;
+    translate: 0 0.5rem;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+@keyframes chip-pop {
+  from {
+    opacity: 0;
+    scale: 0.6;
+    translate: 0 0.375rem;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+@keyframes scan {
+  from {
+    top: 0;
+    translate: 0 -100%;
+  }
+  to {
+    top: 100%;
+    translate: 0 0;
+  }
+}
+
+/* Nothing travels or turns; steps still light, fade and tick in place. */
+@media (prefers-reduced-motion: reduce) {
+  .orb-ticks,
+  .orb-ticks-major,
+  .orb-inner,
+  .orb-arc,
+  .orb-halo,
+  .beam,
+  .sat-face,
+  .dots i,
+  .stage-progress > span::after,
+  .step::after {
+    animation: none !important;
+  }
+  .orb-sweep,
+  .orb-burst,
+  [data-scanning]::after {
+    display: none;
+  }
+  .orb-core-inner,
+  .narrator-line,
+  .found-chip,
+  .sat-tick,
+  .core-seal,
+  .step-mark [data-pop] {
+    animation: fade-in 240ms ease both !important;
+  }
+  .dots i {
+    opacity: 0.8;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

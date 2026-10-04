@@ -2,8 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { prefersReducedMotion } from '@/hooks/use-media-query'
 
-/** A step is held on screen at least this long: seven steps add at most 1.4 s to a fast request. */
-const HOLD_MS = 200
+/**
+ * A step is held on screen at least this long, so that work that took a millisecond can be seen
+ * being done: seven steps add at most about 2.9 s to a request that was instant, and nothing to one
+ * whose steps each took longer than this (the team asked for the work to be felt — 4 Oct 2026).
+ */
+const HOLD_MS = 420
 /** A replay walks the same steps slowly enough to read each one. */
 const REPLAY_MS = 520
 

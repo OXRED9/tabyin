@@ -12,24 +12,27 @@ import {
   TextSearch,
   TriangleAlert,
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 
+import { StateGlyph } from '@/components/state-glyph'
 import { useCountUp } from '@/hooks/use-count-up'
-import { useMediaQuery } from '@/hooks/use-media-query'
 import { useI18n } from '@/lib/i18n'
-import { figuresText } from '@/lib/pipeline'
 import type { Figure, LogLine, NodeId, NodeStatus, PipelineNode } from '@/lib/pipeline'
+import type { EvidenceState } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
+import './stage.css'
+
 /*
- * The investigation, shown (docs/DESIGN.md §10): a live map of the pipeline. Nodes light on their
- * real events, counters run up to the real numbers, a pulse travels the links that lead to a
- * node while it works, and a log prints each step with its figures and its time. Everything here
- * is drawn from `lib/pipeline.ts`, which reads only what the server sent.
+ * The investigation, shown (docs/DESIGN.md §10, v3.1): an instrument rather than a diagram. A dial
+ * with the engines on its orbit; the one that is working is lit, a beam flows from it to the core,
+ * and the core says what it is doing in large. Beside it a line narrates the step, the steps tick
+ * off with the figures and times the server reported, and each citation appears as it is found.
  *
- * At 1024px and up it is a map in four columns; below that, a vertical timeline. With reduced
- * motion nothing moves: the same nodes are a checklist that ticks. The map, the timeline and the
- * log each hold their full size from the first event, so nothing under them moves as they fill.
+ * Nothing here is invented: nodes, statuses, figures and times come from `lib/pipeline.ts`, which
+ * reads only what the server sent. An engine that did not run is drawn dashed and never lights.
+ * With reduced motion nothing turns or travels; the same steps light and fade in place.
  */
 
 const ICONS: Record<NodeId, typeof FileText> = {
@@ -44,43 +47,62 @@ const ICONS: Record<NodeId, typeof FileText> = {
   report: TextSearch,
 }
 
-/** A number runs up to its value; anything else is shown as it is. */
-function Value({ value }: { value: number | string }) {
-  return typeof value === 'number' ? <Counter value={value} /> : <>{value}</>
+/** The engines on the orbit, in the order the work reaches them, clockwise from the top. */
+const ORBIT: NodeId[] = ['read', 'mushaf', 'narrations', 'model', 'gradings', 'pointer', 'rules']
+/** The step of the log whose measured time is printed on a row: one time per step the server timed. */
+const TIMED: Partial<Record<NodeId, LogLine['id']>> = { read: 'read', mushaf: 'scan', model: 'model', gradings: 'verify' }
+/** Radius of the orbit in the dial's drawing (its box is 200 wide, centred on 0,0). */
+const R = 78
+
+/** A citation as the stage shows it while the work runs: its kind, and its state once decided. */
+export interface StageCitation {
+  id: string
+  kind: string
+  state: EvidenceState | null
+  /** The state in a word (or "a question"), once decided. */
+  word: string | null
 }
+
 function Counter({ value }: { value: number }) {
   return <>{useCountUp(value).toLocaleString('en-US')}</>
 }
+function Value({ value }: { value: number | string }) {
+  return typeof value === 'number' ? <Counter value={value} /> : <>{value}</>
+}
 
-function Figures({ figures, className }: { figures: Figure[]; className?: string }) {
-  if (figures.length === 0) return null
+function Dots() {
   return (
-    <span className={cn('tabular flex flex-wrap gap-x-3 text-sm', className)}>
-      {figures.map((figure) => (
-        <span key={figure.label} className="whitespace-nowrap">
-          <span className="text-quiet">{figure.label} </span>
-          <span className="font-semibold text-figure">
-            <Value value={figure.value} />
-          </span>
-        </span>
-      ))}
+    <span className="dots" aria-hidden="true">
+      <i />
+      <i />
+      <i />
     </span>
   )
 }
 
-/** The node's state, said three ways: its edge (CSS), this mark, and a word for a screen reader. */
+/** Among several engines working at once, the spotlight moves from one to the next. */
+function useSpotlight(count: number): number {
+  const [turn, setTurn] = useState(0)
+  useEffect(() => {
+    if (count < 2) return
+    const timer = window.setInterval(() => setTurn((n) => n + 1), 900)
+    return () => window.clearInterval(timer)
+  }, [count])
+  return count < 2 ? 0 : turn % count
+}
+
 function StatusMark({ status }: { status: NodeStatus }) {
   const { t } = useI18n()
   return (
-    <span className="flex size-5 shrink-0 items-center justify-center" data-mark={status}>
+    <span className="step-mark" data-mark={status}>
       {status === 'done' ? (
-        <Check aria-hidden="true" className="size-4 text-green" />
+        <Check aria-hidden="true" data-pop="" className="size-4 text-green" />
       ) : status === 'active' ? (
         <span aria-hidden="true" className="size-2.5 animate-live rounded-tag bg-gold" />
       ) : status === 'skipped' ? (
         <Minus aria-hidden="true" className="size-4 text-quiet" />
       ) : status === 'warning' ? (
-        <TriangleAlert aria-hidden="true" className="size-4 text-review" />
+        <TriangleAlert aria-hidden="true" data-pop="" className="size-4 text-review" />
       ) : (
         <span aria-hidden="true" className="size-2 rounded-tag border border-rule-strong" />
       )}
@@ -89,221 +111,95 @@ function StatusMark({ status }: { status: NodeStatus }) {
   )
 }
 
-function Detail({ node }: { node: PipelineNode }) {
-  return node.modelId ? (
-    <bdi dir="ltr" title={node.detail} className="tabular block truncate text-sm text-ink">
-      {node.detail}
-    </bdi>
-  ) : (
-    <span title={node.detail} className="block truncate text-sm text-quiet">
-      {node.detail}
-    </span>
-  )
-}
-
-// ── The map (1024px and up) ───────────────────────────────────────────────────────────────────
-
-/** The four columns, in the order the work flows; a column's nodes are stacked. */
-const COLUMNS: NodeId[][] = [
-  ['input', 'read'],
-  ['mushaf', 'narrations', 'model'],
-  ['gradings', 'pointer'],
-  ['rules', 'report'],
-]
-/**
- * The map's measures, in the units of its links' drawing (16 to the rem): nodes are 6.5rem tall
- * with 0.75rem between them, centred in a map three nodes high; a link's column is 3rem wide.
- * The drawing is laid out in these same units, so it scales with the text and never stretches.
- */
-const NODE = 104
-const GAP = 12
-const MAP_HEIGHT = NODE * 3 + GAP * 2
-const LINK_WIDTH = 48
-const centres = (count: number) =>
-  Array.from({ length: count }, (_, i) => MAP_HEIGHT / 2 + (i - (count - 1) / 2) * (NODE + GAP))
-/** Links between neighbouring columns: from which nodes of the left one to which of the right. */
-const LINKS: { from: NodeId[]; to: NodeId[] }[] = [
-  { from: ['read'], to: ['mushaf', 'narrations', 'model'] },
-  { from: ['mushaf', 'narrations', 'model'], to: ['gradings', 'pointer'] },
-  { from: ['gradings', 'pointer'], to: ['rules'] },
-]
-
-function MapNode({ node }: { node: PipelineNode }) {
-  const Icon = ICONS[node.id]
+function Figures({ figures }: { figures: Figure[] }) {
   return (
-    <li data-node={node.id} data-status={node.status} className="node flex h-[6.5rem] min-w-0 flex-col justify-center gap-0.5 px-3">
-      <span className="flex items-center gap-2">
-        <Icon aria-hidden="true" className={cn('size-4 shrink-0', node.status === 'waiting' || node.status === 'skipped' ? 'text-quiet' : 'text-green')} />
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{node.title}</span>
-        <StatusMark status={node.status} />
-      </span>
-      <Detail node={node} />
-      <Figures figures={node.figures} className="min-h-[1.4rem]" />
-    </li>
+    <>
+      {figures.map((figure) => (
+        <span key={figure.label} className="whitespace-nowrap">
+          <span className="font-semibold text-figure">
+            <Value value={figure.value} />
+          </span>{' '}
+          <span className="text-quiet">{figure.label}</span>
+        </span>
+      ))}
+    </>
   )
 }
 
-function Links({ group, nodes }: { group: (typeof LINKS)[number]; nodes: Map<NodeId, PipelineNode> }) {
-  const left = COLUMNS.find((column) => column.includes(group.from[0]))!
-  const right = COLUMNS.find((column) => column.includes(group.to[0]))!
-  const y = (column: NodeId[], id: NodeId) => centres(column.length)[column.indexOf(id)]
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox={`0 0 ${LINK_WIDTH} ${MAP_HEIGHT}`}
-      // The work flows with the reading direction: mirrored where the page reads right to left.
-      className="h-full w-full rtl:-scale-x-100"
-    >
-      {group.from.flatMap((from) =>
-        group.to.map((to) => {
-          const source = nodes.get(from)!
-          const target = nodes.get(to)!
-          const d = `M0 ${y(left, from)} C ${LINK_WIDTH / 2} ${y(left, from)}, ${LINK_WIDTH / 2} ${y(right, to)}, ${LINK_WIDTH} ${y(right, to)}`
-          // A link carries a pulse while the node it leads to works, and stays lit once both ends ran.
-          const ran = (status: NodeStatus) => status === 'done' || status === 'warning'
-          const lit = ran(source.status) && ran(target.status)
-          const pulsing = target.status === 'active' && source.status !== 'waiting' && source.status !== 'skipped'
-          return (
-            <g key={`${from}-${to}`}>
-              <path
-                d={d}
-                className="link"
-                data-lit={lit || undefined}
-                data-pulsing={pulsing || undefined}
-                strokeDasharray={target.status === 'skipped' || source.status === 'skipped' ? '3 4' : undefined}
-              />
-              <path d={d} pathLength={1} className="link-pulse" data-on={pulsing || undefined} />
-            </g>
-          )
-        }),
-      )}
-    </svg>
-  )
-}
-
-/** The short vertical tie between two stacked nodes that follow one another. */
-function Tie({ lit, pulsing }: { lit: boolean; pulsing: boolean }) {
-  return (
-    <li aria-hidden="true" className="flex h-3 justify-center">
-      <span className={cn('w-px transition-colors duration-300', lit ? 'bg-green' : 'bg-rule', pulsing && 'animate-live bg-gold')} />
-    </li>
-  )
-}
-
-function PipelineMap({ nodes }: { nodes: PipelineNode[] }) {
-  const byId = new Map(nodes.map((node) => [node.id, node]))
-  return (
-    <div data-testid="pipeline-map" className="grid h-[21rem] grid-cols-[minmax(0,1fr)_3rem_minmax(0,1fr)_3rem_minmax(0,1fr)_3rem_minmax(0,1fr)]">
-      {COLUMNS.map((column, index) => {
-        // The first and last columns are sequences (the input is read; the rules lead to the
-        // report): their two nodes are tied by a short line instead of a gap.
-        const sequence = index === 0 || index === COLUMNS.length - 1
-        return [
-          <ol key={column[0]} className={cn('flex min-w-0 flex-col justify-center', sequence ? '' : 'gap-3')}>
-            {column.map((id, i) => {
-              const node = byId.get(id)!
-              const next = sequence && i === 0 ? byId.get(column[1])! : null
-              return [
-                <MapNode key={id} node={node} />,
-                next ? (
-                  <Tie
-                    key={`${id}-tie`}
-                    lit={next.status === 'done'}
-                    pulsing={next.status === 'active'}
-                  />
-                ) : null,
-              ]
-            })}
-          </ol>,
-          index < LINKS.length ? <Links key={`links-${index}`} group={LINKS[index]} nodes={byId} /> : null,
-        ]
-      })}
-    </div>
-  )
-}
-
-// ── The timeline (below 1024px) ───────────────────────────────────────────────────────────────
-
-/**
- * Each step is two lines of fixed height — its name, then what it is doing or the figures it
- * reported — so the timeline keeps its length from the first event to the last and nothing under
- * it moves while it fills.
- */
-function Timeline({ nodes }: { nodes: PipelineNode[] }) {
-  return (
-    <ol data-testid="pipeline-timeline" className="relative">
-      {nodes.map((node, i) => {
-        const Icon = ICONS[node.id]
-        const last = i === nodes.length - 1
-        const next = nodes[i + 1]
-        return (
-          <li key={node.id} data-node={node.id} data-status={node.status} className={cn('relative flex gap-3', !last && 'pb-2')}>
-            {/* The line down to the next step: lit when that step has run, pulsing while it works. */}
-            {last ? null : (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'absolute start-[0.9375rem] top-8 bottom-0 w-px',
-                  next.status === 'done' || next.status === 'warning' ? 'bg-green' : 'bg-rule',
-                  next.status === 'active' && 'animate-live bg-gold',
-                )}
-              />
-            )}
-            <span className="node mt-1 flex size-8 shrink-0 items-center justify-center" data-status={node.status}>
-              <Icon aria-hidden="true" className={cn('size-4', node.status === 'waiting' || node.status === 'skipped' ? 'text-quiet' : 'text-green')} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="flex h-5 items-center gap-2">
-                <span className={cn('min-w-0 truncate text-sm font-semibold', node.status === 'waiting' ? 'text-quiet' : 'text-ink')}>{node.title}</span>
-                <StatusMark status={node.status} />
-              </span>
-              <span className="flex h-[22px] items-center gap-3 overflow-hidden whitespace-nowrap">
-                {node.modelId || node.figures.length === 0 ? <Detail node={node} /> : null}
-                <Figures figures={node.figures} className="flex-nowrap" />
-              </span>
-            </span>
-          </li>
-        )
-      })}
-    </ol>
-  )
-}
-
-// ── The log ───────────────────────────────────────────────────────────────────────────────────
-
-/**
- * How many lines a full run prints: the log holds that much room from the start. Where the
- * window is narrow a line with several figures takes two, and two of the six have several.
- */
-const LOG_LINES = 6
-const LOG_WRAPPED = 2
-
-function Log({ lines }: { lines: LogLine[] }) {
+/** The dial: ticks, the orbit, a beam per engine, the sweep, and the core. Drawn for the eye only. */
+function Dial({ orbit, focus, finished, elapsed }: { orbit: PipelineNode[]; focus: PipelineNode | null; finished: boolean; elapsed: Figure | null }) {
   const { t } = useI18n()
+  const angle = (i: number) => (360 / orbit.length) * i
+  const point = (i: number) => {
+    const a = ((angle(i) - 90) * Math.PI) / 180
+    return { x: Math.cos(a) * R, y: Math.sin(a) * R }
+  }
+  const FocusIcon = focus ? ICONS[focus.id] : null
+  const figure = focus?.figures[focus.figures.length - 1] ?? null
   return (
-    <ol
-      aria-label={t.pipeline.log}
-      data-testid="pipeline-log"
-      style={{ '--log-lines': LOG_LINES, '--log-wrapped': LOG_WRAPPED } as CSSProperties}
-      // Under the timeline on a phone, beside it on a tablet, under the map in two columns from 1024px.
-      className="grid min-h-[calc((var(--log-lines)+var(--log-wrapped))*1.5rem+0.8125rem)] content-start gap-x-8 border-t pt-3 md:max-lg:min-h-0 md:max-lg:border-s md:max-lg:border-t-0 md:max-lg:ps-6 md:max-lg:pt-0 lg:min-h-[calc(var(--log-lines)/2*1.5rem+0.8125rem)] lg:grid-cols-2"
-    >
-      {lines.map((line) => {
-        const said = line.figures.length > 0 ? figuresText(line.figures) : line.detail
-        return (
-          <li key={line.id} data-line={line.id} className="flex min-h-6 min-w-0 animate-rise items-start gap-2 text-sm leading-6 lg:h-6">
-            <span className="flex h-6 shrink-0 items-center">
-              <StatusMark status={line.status} />
+    <div className="orb" data-finished={finished ? '' : undefined} aria-hidden="true">
+      <span className="orb-halo" />
+      <svg viewBox="-100 -100 200 200" fill="none">
+        {/* The rim: fine ticks, a longer one every tenth, turning slowly like an instrument's scale. */}
+        <circle r="96" className="orb-ticks" strokeWidth="2.5" pathLength="360" strokeDasharray="0.5 2.5" />
+        <circle r="95" className="orb-ticks-major" strokeWidth="4.5" pathLength="360" strokeDasharray="0.7 29.3" />
+        <circle r={R} className="orb-orbit" strokeWidth="0.6" />
+        <circle r="50" className="orb-inner" strokeWidth="0.8" />
+        {orbit.map((node, i) => {
+          const { x, y } = point(i)
+          // Drawn from the engine to the core, so the flow runs inwards.
+          return <line key={node.id} x1={x * 0.86} y1={y * 0.86} x2={x * 0.6} y2={y * 0.6} className="beam" data-status={node.status} />
+        })}
+        <circle r="44.5" className="orb-arc-track" />
+        <circle r="44.5" className="orb-arc" pathLength="100" />
+      </svg>
+      <span className="orb-sweep" />
+      <ul className="orb-sats">
+        {orbit.map((node, i) => {
+          const Icon = ICONS[node.id]
+          return (
+            <li key={node.id} className="sat" data-status={node.status} style={{ '--angle': `${angle(i)}deg` } as CSSProperties}>
+              <span className="sat-face">
+                <Icon />
+                {node.status === 'done' ? (
+                  <span className="sat-tick">
+                    <Check />
+                  </span>
+                ) : null}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      {finished ? <span className="orb-burst" /> : null}
+      <div className="orb-core">
+        {finished ? (
+          <div className="orb-core-inner" key="finished">
+            <span className="core-seal">
+              <Check />
             </span>
-            <span className="shrink-0 font-semibold text-ink">{line.title}</span>
-            <span title={said} className="tabular min-w-0 flex-1 text-quiet lg:truncate">
-              {said}
+            {elapsed ? (
+              <span className="core-label tabular">
+                <Value value={elapsed.value} />
+              </span>
+            ) : null}
+          </div>
+        ) : focus && FocusIcon ? (
+          <div className="orb-core-inner" key={focus.id}>
+            <FocusIcon />
+            <span className="core-figure">{figure ? <Value value={figure.value} /> : <Dots />}</span>
+            <span className="core-label">{figure ? figure.label : focus.title}</span>
+          </div>
+        ) : (
+          <div className="orb-core-inner" key="waiting">
+            <span className="core-figure">
+              <Dots />
             </span>
-            {line.ms !== null ? <span className="tabular shrink-0 text-figure">{t.pipeline.ms(line.ms)}</span> : null}
-          </li>
-        )
-      })}
-    </ol>
+            <span className="core-label">{t.pipeline.running}</span>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -311,22 +207,78 @@ export default function Investigation({
   nodes,
   log,
   head,
+  citations = [],
 }: {
   nodes: PipelineNode[]
   log: LogLine[]
-  /** What stands above the map: the progress line while it runs, a title when it is replayed. */
+  /** What stands above the stage: the progress line while it runs, a title when it is replayed. */
   head: ReactNode
+  /** The citations found so far, in reading order. */
+  citations?: StageCitation[]
 }) {
   const { t } = useI18n()
-  const wide = useMediaQuery('(min-width: 1024px)')
+  const byId = new Map(nodes.map((node) => [node.id, node]))
+  const orbit = ORBIT.map((id) => byId.get(id)).filter((node): node is PipelineNode => !!node)
+  const report = byId.get('report')
+  const finished = report?.status === 'done'
+
+  // What the core shows: an engine that is working now (the spotlight moves between several), or
+  // the first one still to come.
+  const working = orbit.filter((node) => node.status === 'active')
+  const spotlight = useSpotlight(working.length)
+  const focus = working[spotlight] ?? working[0] ?? orbit.find((node) => node.status === 'waiting') ?? null
+  const settledCount = orbit.filter((node) => node.status !== 'waiting' && node.status !== 'active').length
+  const progress = finished ? 1 : (settledCount + (working.length > 0 ? 0.5 : 0)) / (orbit.length + 1)
+  const times = new Map(log.map((line) => [line.id, line.ms]))
+  const elapsed = report?.figures[0] ?? null
+  const narrated = finished ? report : (working[spotlight] ?? working[0] ?? null)
+
   return (
     <section aria-label={t.pipeline.title} data-testid="investigation" className="panel relative overflow-hidden">
       <div aria-hidden="true" className="field-points pointer-events-none absolute inset-0" />
-      <div className="relative space-y-4 p-4 md:p-5">
+      <div className="relative space-y-3 p-4 md:space-y-4 md:p-5">
         {head}
-        <div className="space-y-4 md:max-lg:grid md:max-lg:grid-cols-2 md:max-lg:gap-6 md:max-lg:space-y-0">
-          {wide ? <PipelineMap nodes={nodes} /> : <Timeline nodes={nodes} />}
-          <Log lines={log} />
+        <div className="stage-body">
+          <Dial orbit={orbit} focus={focus} finished={finished} elapsed={elapsed} />
+          <div className="stage-side">
+            <div className="narrator" aria-hidden="true">
+              <p className="narrator-line" key={narrated?.id ?? 'start'}>
+                <span className="block text-lg font-semibold text-ink md:text-xl">{narrated ? narrated.title : t.pipeline.running}</span>
+                <span className="block truncate text-sm text-quiet md:text-base">{narrated?.detail ?? ''}</span>
+              </p>
+              <div className="stage-progress" data-running={finished ? undefined : ''}>
+                <span style={{ width: `${Math.round(progress * 100)}%` }} />
+              </div>
+            </div>
+            <ol aria-label={t.pipeline.log} data-testid="pipeline-log" className="steps">
+              {orbit.map((node) => {
+                const timed = TIMED[node.id]
+                const ms = timed && node.status !== 'waiting' && node.status !== 'active' ? (times.get(timed) ?? null) : null
+                return (
+                  <li key={node.id} className="step" data-node={node.id} data-status={node.status}>
+                    <StatusMark status={node.status} />
+                    <span className={cn('shrink-0 font-semibold', node.status === 'waiting' ? 'text-quiet' : 'text-ink')}>{node.title}</span>
+                    <span className="tabular flex min-w-0 flex-1 gap-x-2.5 overflow-hidden whitespace-nowrap">
+                      {node.figures.length > 0 ? <Figures figures={node.figures} /> : <span className="truncate text-quiet">{node.status === 'active' ? node.detail : ''}</span>}
+                    </span>
+                    {ms !== null ? <span className="tabular shrink-0 text-xs text-quiet">{t.pipeline.ms(ms)}</span> : null}
+                  </li>
+                )
+              })}
+            </ol>
+            <ul className="found" aria-hidden="true">
+              {citations.slice(0, 12).map((citation) => (
+                <li key={citation.id} className="found-chip">
+                  <StateGlyph state={citation.state ?? 'pending'} className="size-4" />
+                  <span className="text-ink">{citation.kind}</span>
+                  {citation.word ? <span className="text-quiet">{citation.word}</span> : null}
+                </li>
+              ))}
+              {citations.length > 12 ? (
+                <li className="found-chip tabular text-quiet">+{(citations.length - 12).toLocaleString('en-US')}</li>
+              ) : null}
+            </ul>
+          </div>
         </div>
       </div>
     </section>

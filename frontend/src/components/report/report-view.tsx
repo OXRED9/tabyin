@@ -434,7 +434,20 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
         </section>
       }
     >
-      <Investigation nodes={nodes} log={log} head={head} />
+      <Investigation
+        nodes={nodes}
+        log={log}
+        head={head}
+        citations={ordered.map((claim) => {
+          const decided = states.get(claim.id) ?? null
+          return {
+            id: claim.id,
+            kind: t.claimTypes[claim.claim_type],
+            state: questions.has(claim.id) ? null : decided,
+            word: decided ? (questions.has(claim.id) ? t.question.word : t.stateWords[decided]) : null,
+          }
+        })}
+      />
     </Suspense>
   )
 
@@ -507,6 +520,7 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
           {/* The text, with each citation marked in its state's ink. */}
           <section
             aria-label={t.panes.text}
+            data-scanning={running ? '' : undefined}
             className="panel min-w-0 self-start p-4 md:p-6 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto"
           >
             {hasText ? (
