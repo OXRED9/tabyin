@@ -26,6 +26,12 @@ def absorb_closed_quotes(scanned: list[RawClaim], closed: list[RawClaim]) -> lis
     """
     kept = list(scanned)
     for c in closed:
+        # A scan hit that straddles the opening edge of the quotation mixes the words that introduce it
+        # («قال رسول الله ﷺ: …») with its first words, and matched some other narration on that
+        # mixture (seen 4 Oct 2026: an «exact» note on the introduction and the first five words of a
+        # supplication). The quotation marks say where the quotation is: such a hit is dropped. (A hit that
+        # runs past the closing edge is kept: the quotation may hold a quotation of its own.)
+        kept = [p for p in kept if not (p.type == c.type and p.start < c.start < p.end < c.end)]
         inside = [p for p in kept if p.type == c.type and overlap(p, c) >= 0.9 * (p.end - p.start)]
         if len(inside) == 1 and (inside[0].end - inside[0].start) >= 0.9 * (c.end - c.start):
             # The scan already covers the whole quotation. The quotation marks say exactly where it

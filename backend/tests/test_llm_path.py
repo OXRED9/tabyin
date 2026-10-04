@@ -294,3 +294,20 @@ def test_a_statement_about_what_the_prophet_did_is_never_given_a_reference_by_a_
     report = run(text, ScriptedProvider(proposal, judge_index=0, evidence_relation="explicit_support"))
     assert all(c["state"] != "supported" for c in report["cards"]) and report["cards"] == []
 
+
+def test_a_scan_hit_that_straddles_the_opening_quotation_mark_is_not_a_note():
+    """Reported by the team: «قال رسول الله ﷺ: «…»» gave an «exact» note on the introduction plus the
+    first words of the quotation (they matched some other narration), and the quotation itself a
+    second note. The quotation marks decide: one quotation, one note."""
+    from tabayyun.extract import absorb_closed_quotes
+    from tabayyun.extract.models import RawClaim
+    from tabayyun.schemas import ClaimType
+
+    closed = RawClaim(type=ClaimType.hadith, quote="q", start=35, end=118, closed=True, explicit_attribution=True, origin="marker")
+    straddling = RawClaim(type=ClaimType.hadith, quote="s", start=4, end=55, origin="hadith_scan")
+    covering = RawClaim(type=ClaimType.hadith, quote="c", start=10, end=130, origin="hadith_scan")  # chain and wording: kept
+    assert absorb_closed_quotes([straddling], [closed]) == [closed]
+    assert covering in absorb_closed_quotes([covering], [closed])
+    nested = RawClaim(type=ClaimType.hadith, quote="n", start=35, end=200, origin="hadith_scan")  # past an inner closing mark: kept
+    assert nested in absorb_closed_quotes([nested], [closed])
+

@@ -423,7 +423,7 @@ export const ar = {
   matchKinds: {
     exact: 'تطابق نصي كامل',
     near: 'تطابق قريب',
-    partial: 'اقتباس مجتزأ',
+    partial: 'تطابق جزئي',
     paraphrase: 'رواية بالمعنى',
     topic: 'تطابق في الموضوع',
     referenced: 'دليل مشار إليه',

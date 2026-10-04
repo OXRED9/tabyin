@@ -349,7 +349,7 @@ export const en: Dictionary = {
   matchKinds: {
     exact: 'Exact match',
     near: 'Near match',
-    partial: 'Partial quote',
+    partial: 'Partial match',
     paraphrase: 'Paraphrase',
     topic: 'Topic match',
     referenced: 'Evidence referred to',
