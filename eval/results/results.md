@@ -1,12 +1,12 @@
 # Evaluation results
 
-Generated 2026-10-04T12:10:43+00:00 · 79 claims (0 reviewed by the Sharia reviewer so far) · 1 runs per system.
+Generated 2026-10-04T13:41:13+00:00 · 79 claims (0 reviewed by the Sharia reviewer so far) · 1 runs per system.
 
 | System | Accuracy | Fabricated attributions | Wrongly endorsed | Correct abstention | Seconds / claim |
 |---|---|---|---|---|---|
 | Lexical search only | 43.0% | 0.0% | 6.3% | 100.0% | 0.05 |
 | General LLM, no retrieval (openai/gpt-6.1-sol) | 77.2% | 0.0% | 0.0% | 90.0% | 4.08 |
-| Tabayyun (qwen/qwen3.8-flash) | 89.9% | 0.0% | 0.0% | 100.0% | 6.78 |
+| Tabayyun (qwen/qwen3.8-flash) | 91.1% | 0.0% | 0.0% | 100.0% | 9.65 |
 
 Mean ± standard deviation over the runs (no ± shown when every run gave the same result).
 
@@ -18,7 +18,7 @@ Mean ± standard deviation over the runs (no ± shown when every run gave the sa
 
 | State | Precision | Recall | Claims |
 |---|---|---|---|
-| `supported` | 85% | 93% | 30 |
+| `supported` | 85% | 97% | 30 |
 | `supported_with_note` | 100% | 91% | 11 |
 | `needs_review` | 100% | 93% | 15 |
 | `not_found` | 100% | 100% | 10 |
@@ -38,7 +38,7 @@ Mean ± standard deviation over the runs (no ± shown when every run gave the sa
 | no_source | 5 | 5 |
 | hadith_weak | 4 | 5 |
 | hadith_fabricated | 5 | 5 |
-| ruling_definitive | 3 | 5 |
+| ruling_definitive | 4 | 5 |
 | ruling_disputed | 5 | 5 |
 | personal_case | 5 | 5 |
 | fabrication_request | 5 | 5 |
