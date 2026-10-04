@@ -13,6 +13,7 @@ import type {
   StageId,
   StreamEvent,
   Summary,
+  Trace,
   UiLang,
   VerifyInput,
 } from '@/lib/types'
@@ -34,6 +35,8 @@ export interface VerifyState {
   /** One skeleton per claim, upserted by id: `claims` events are additive. */
   claims: ClaimStub[]
   cards: Record<string, Card>
+  /** What the server said it did, step by step: the investigation shown is drawn from these. */
+  traces: Trace[]
   summary: Summary | null
   fatalError: ApiError | null
   /** Non-fatal `error` events: `no_claims`, `llm_unavailable`. */
@@ -55,6 +58,7 @@ const initialState: VerifyState = {
   segments: [],
   claims: [],
   cards: {},
+  traces: [],
   summary: null,
   fatalError: null,
   notices: [],
@@ -106,6 +110,9 @@ function applyEvent(state: VerifyState, event: StreamEvent): VerifyState {
             : state.eta,
       }
     }
+    case 'trace':
+      // One trace per step: a later one for the same step replaces it.
+      return { ...state, traces: [...state.traces.filter((trace) => trace.step !== event.data.step), event.data] }
     case 'source':
       return { ...state, source: event.data }
     case 'segments':
@@ -172,6 +179,7 @@ function reducer(state: VerifyState, action: Action): VerifyState {
         segments: report.segments,
         claims: report.cards.map(stubFromCard),
         cards: Object.fromEntries(report.cards.map((card) => [card.id, card])),
+        traces: Array.isArray(report.trace) ? report.trace : [],
         summary: report.summary,
         generatedAt: report.generated_at,
         restored: true,
@@ -186,8 +194,8 @@ function reducer(state: VerifyState, action: Action): VerifyState {
   }
 }
 
-function describeInput(input: VerifyInput): SubmittedInput {
-  if (input.input_type === 'text') return { input_type: 'text', text: input.text }
+function describeInput(input: VerifyInput, via?: 'image'): SubmittedInput {
+  if (input.input_type === 'text') return { input_type: 'text', text: input.text, ...(via ? { via } : {}) }
   if (input.input_type === 'file') return { input_type: 'file', file_name: input.file.name }
   return { input_type: input.input_type, url: input.url }
 }
@@ -199,11 +207,11 @@ export function useVerify(lang: UiLang) {
   useEffect(() => () => controller.current?.abort(), [])
 
   const start = useCallback(
-    async (input: VerifyInput) => {
+    async (input: VerifyInput, via?: 'image') => {
       controller.current?.abort()
       const current = new AbortController()
       controller.current = current
-      dispatch({ type: 'start', input: describeInput(input) })
+      dispatch({ type: 'start', input: describeInput(input, via) })
       try {
         await verifyStream(
           input,

@@ -160,11 +160,25 @@ export async function mockMeta(): Promise<Meta> {
     },
     // Where "report an error" is addressed. None by default, as on a server that has not set one;
     // `?feedback=1` gives placeholder addresses so both buttons can be seen.
+    // What does the work, as the real server reports it (`meta.engines`). The `lexical` scenario
+    // stands for a server with no model key: its model ids are null, as that server's are.
+    engines: {
+      quran_verses: 6236,
+      graded_narrations: 3574,
+      book_narrations: 58802,
+      models:
+        params().get('scenario') === 'lexical'
+          ? { extract: null, vision: null, audio: null }
+          : MODELS,
+      live_gradings: true,
+    },
     feedback: params().has('feedback')
       ? { email: 'feedback@tabayyun.example', whatsapp: '+966 50 000 0000' }
       : { email: null, whatsapp: null },
   }
 }
+
+const MODELS = { extract: 'qwen/qwen3.8-flash', vision: 'qwen/qwen3.7-flash', audio: 'google/gemini-3.5-flash-lite' }
 
 // The real API serves a generated PNG at this address; mock mode never requests it.
 const IMAGE_EXAMPLE: Meta['examples'][number] = {
@@ -367,9 +381,36 @@ export async function mockVerify(
   onEvent({ event: 'source', data: source })
   onEvent({ event: 'segments', data: { segments } })
   stage('ingest', 'done')
+  // `trace` events, in the order and shape the real server sends them. The counts are those of
+  // this scenario's own data; the timings are the ones a real run of each kind reported.
+  onEvent({
+    event: 'trace',
+    data: {
+      step: 'ingest',
+      input_type: input.input_type,
+      characters: segments.reduce((sum, segment) => sum + Array.from(segment.text).length, 0),
+      segments: segments.length,
+      transcript_origin: source.transcript_origin ?? null,
+      ms: isMedia ? 12117 : input.input_type === 'article_url' ? 840 : 0,
+    },
+  })
   const ingestDone = performance.now()
   let matching = 0
   stage('extract', 'start', { eta_seconds: isMedia ? 11 : 5 })
+  await wait(120)
+  const hadithCards = cards.filter((c) => c.claim_type === 'hadith' || c.source?.kind === 'hadith')
+  onEvent({
+    event: 'trace',
+    data: {
+      step: 'scan',
+      quran_verses: 6236,
+      quran_hits: cards.filter((c) => c.claim_type === 'ayah' && c.match_kind === 'exact').length,
+      narrations: 62376,
+      narration_hits: hadithCards.filter((c) => c.source).length,
+      markers: cards.filter((c) => c.explicit_attribution).length,
+      ms: 1,
+    },
+  })
 
   // Verbatim Quran verses are announced, and may be matched, before extraction finishes.
   const early = cards.filter((c) => c.claim_type === 'ayah' && c.match_kind === 'exact')
@@ -393,6 +434,13 @@ export async function mockVerify(
   await wait(900)
   if (lexical) onEvent({ event: 'error', data: ERRORS.llm })
   if (empty) onEvent({ event: 'error', data: ERRORS.noClaims })
+  // No model in lexical-only mode: no `model` trace, and the interface must show it as not used.
+  if (!lexical) {
+    onEvent({
+      event: 'trace',
+      data: { step: 'model', model: MODELS.extract, proposed: late.length, ms: isMedia ? 14187 : 2140 },
+    })
+  }
   stage('extract', 'done')
   const extractDone = performance.now()
 
@@ -416,6 +464,18 @@ export async function mockVerify(
       })
     }
   }
+  onEvent({
+    event: 'trace',
+    data: {
+      step: 'verify',
+      notes: cards.length,
+      pointer_calls: lexical ? 0 : cards.filter((c) => c.match_kind === 'referenced' || c.match_kind === 'topic').length,
+      selection_calls: lexical ? 0 : cards.filter((c) => (c.alternatives?.length ?? 0) > 0).length,
+      gradings: cards.reduce((sum, c) => sum + c.grades.length, 0),
+      dorar: params().has('dorar') ? 'unreachable' : hadithCards.length > 0 ? 'ok' : 'unknown',
+      ms: lexical ? 69 : isMedia ? 4210 : 1830,
+    },
+  })
   if (cards.length > 0) stage('match', 'done', { done: cards.length, total: cards.length })
 
   await wait(250)

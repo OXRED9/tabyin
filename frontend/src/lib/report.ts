@@ -1,5 +1,5 @@
 import { chronological } from './states'
-import type { Card, ClaimStub, EvidenceState, Report, Segment, SourceInfo, Summary } from './types'
+import type { Card, ClaimStub, EvidenceState, Report, Segment, SourceInfo, Summary, Trace } from './types'
 
 export const DISCLAIMER_AR = 'تبيّن أداة مدعومة بالذكاء الاصطناعي، لا تغني عن الرجوع إلى أهل العلم'
 
@@ -10,6 +10,7 @@ export function assembleReport(parts: {
   cards: Card[]
   summary: Summary
   generatedAt: string
+  trace: Trace[]
 }): Report {
   return {
     source: parts.source,
@@ -19,6 +20,7 @@ export function assembleReport(parts: {
     generated_at: parts.generatedAt,
     tool: 'Tabayyun',
     disclaimer_ar: DISCLAIMER_AR,
+    trace: parts.trace,
   }
 }
 

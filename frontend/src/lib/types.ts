@@ -296,6 +296,7 @@ export interface Meta {
   /** PUBLIC_URL; null → the UI uses window.location.origin */
   app_url?: string | null
   data_version?: string
+  engines?: Engines
   /**
    * Where a reader's "report an error" message is addressed. The message is composed in the
    * browser and sent by the reader's own mail or WhatsApp: no endpoint of ours receives it.
@@ -337,6 +338,8 @@ export interface Report {
   generated_at: string
   tool: string
   disclaimer_ar: string
+  /** The run's trace, kept so a finished report can replay its investigation. Absent on older reports. */
+  trace?: Trace[]
 }
 
 export type VerifyInput =
@@ -345,7 +348,53 @@ export type VerifyInput =
   | { input_type: 'video_url'; url: string }
   | { input_type: 'file'; file: File }
 
+/**
+ * `trace` events: what was done, in numbers. Counts, timings and model names only — never the
+ * user's text. The investigation shown on screen is drawn from these and from nothing else.
+ */
+export type Trace =
+  | {
+      step: 'ingest'
+      input_type: InputType
+      characters: number
+      segments: number
+      transcript_origin: string | null
+      ms: number
+    }
+  | {
+      step: 'scan'
+      quran_verses: number
+      quran_hits: number
+      narrations: number
+      narration_hits: number
+      markers: number
+      ms: number
+    }
+  /** Only when a model extracted claims: absent in lexical-only mode. */
+  | { step: 'model'; model: string; proposed: number; ms: number }
+  | {
+      step: 'verify'
+      notes: number
+      pointer_calls: number
+      selection_calls: number
+      gradings: number
+      /** `ok`, `unreachable`, or `unknown` when Dorar was not called. */
+      dorar: string
+      ms: number
+    }
+
+/** `meta.engines`: what does the work, for the interface to show truthfully. */
+export interface Engines {
+  quran_verses: number
+  graded_narrations: number
+  book_narrations: number
+  /** Model ids; null when no key is configured. */
+  models: { extract: string | null; vision: string | null; audio: string | null }
+  live_gradings: boolean
+}
+
 export type StreamEvent =
+  | { event: 'trace'; data: Trace }
   | { event: 'stage'; data: StageEvent }
   | { event: 'source'; data: SourceInfo }
   | { event: 'segments'; data: { segments: Segment[] } }

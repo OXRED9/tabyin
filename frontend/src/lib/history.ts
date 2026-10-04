@@ -13,6 +13,8 @@ export interface SubmittedInput {
   text?: string
   url?: string
   file_name?: string
+  /** The text was read from a picture by the vision model before it was verified. */
+  via?: 'image'
 }
 
 export interface HistoryEntry {
