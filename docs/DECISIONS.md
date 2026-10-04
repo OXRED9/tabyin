@@ -526,3 +526,27 @@ gradings beside the state, verifying after «لصق»).
     team chose referral instead: it needs no scholar's time and never puts the tool in the position of
     arguing for a ruling.
 
+
+Decided in the frontend for «تبيّن يتحقق مما يُنقل، ولا يجيب عما يُسأل» (4 October).
+
+115. **A question is shown as a question, not as "needs review".** It borrows the review's half ring
+     and ink, is named «سؤال», and its line says «أُحيل إلى أهل العلم». Its open note holds the
+     backend's sentence and the search links, and nothing else a verdict would have: no suggested
+     action, no level line, no collation, gradings, «الثابت في الباب» or share card; «أبلغ عن خطأ»
+     stays. Where notes open in place (1024px and up) every question's note opens by itself when
+     the report completes; on a phone it is open inline only when it is the report's one claim.
+116. **Questions are counted apart from citations.** The five states count citations only; the
+     sentence's last clause counts the questions, and the summary's filter can show them alone. A
+     report that is only questions says «سؤال واحد: تبيّن يتحقق مما يُنقل ولا يجيب عما يُسأل.»
+     The summary card, the shared text, the history line and the exports use the same count.
+117. **Referral links come from one place** (`lib/referral.ts`, `ReferralLinks`): only `fatwa`
+     sites, in the server's order; a link searches for the first `max_words` words of the note's
+     `referral_query`, or opens the site when there is no query or no search address. The line
+     «روابط بحث…» is shown only when at least one link searches. A `meta` without `kind` (an older
+     server) offers all its links.
+118. **A graded narration's collapsed line drops the claim type** (this amends 109): «مخالف للمصدر
+     — حكمه في المصادر: «…»». With «حديث ·» before them the gradings were cut off at 390px and in
+     the 22rem margin, which defeated the line's purpose; «حكمه» already says it is a narration.
+119. **The mock's disputed matters search for «أحكام الصيام»** — topic words fitting the mock
+     clip, not a religious text — and its personal case has no query, as the backend sends for
+     level D. `?scenario=question` is one question, «ما حكم الزكاة؟», with the query «حكم الزكاة».
