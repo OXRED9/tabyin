@@ -32,6 +32,16 @@ class Document:
             pos += len(seg.text) + len(SEPARATOR)
         self.full_text = SEPARATOR.join(s.text for s in self.segments)
 
+    def locate_all(self, start: int, end: int) -> list[Span]:
+        """Every segment the offsets cover, in order: a narration recited across two caption lines is
+        one quotation with two spans, so the whole of it can be marked."""
+        spans: list[Span] = []
+        for i, seg in enumerate(self.segments):
+            a, b = max(start, self._offsets[i]) - self._offsets[i], min(end, self._offsets[i] + len(seg.text)) - self._offsets[i]
+            if b > a and seg.text[a:b].strip():
+                spans.append(Span(segment_id=seg.id, start=a, end=b))
+        return spans
+
     def locate(self, start: int, end: int) -> tuple[Span | None, Timestamp | None]:
         """Map absolute character offsets in ``full_text`` to a segment-relative span and a timestamp."""
         if not self.segments:

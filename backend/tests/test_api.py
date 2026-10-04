@@ -130,3 +130,16 @@ def test_trace_events_say_what_was_done_in_numbers_and_carry_no_user_text(client
     assert all(isinstance(v, (int, float, str, type(None))) for t in traces.values() for v in t.values())
     assert not any("أهل الحي" in str(v) for t in traces.values() for v in t.values())  # counts and timings only
 
+
+def test_a_quotation_recited_across_two_segments_is_marked_in_both():
+    """Reported on the example clip: a narration that ran over two caption lines was marked only in
+    the first. A claim now carries one span per segment it covers."""
+    from tabayyun.ingest.document import Document, Segment
+    from tabayyun.schemas import SourceInfo
+
+    doc = Document(source=SourceInfo(input_type="text"), segments=[Segment(id=0, text="أول الكلام ثم بداية"), Segment(id=1, text="تتمة الاقتباس ثم كلام آخر")])
+    start, end = doc.full_text.index("بداية"), doc.full_text.index("الاقتباس") + len("الاقتباس")
+    spans = doc.locate_all(start, end)
+    assert [(s.segment_id, doc.segments[s.segment_id].text[s.start : s.end]) for s in spans] == [(0, "بداية"), (1, "تتمة الاقتباس")]
+    assert doc.locate(start, end)[0] == spans[0]  # the single span stays the first one
+

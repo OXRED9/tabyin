@@ -243,3 +243,36 @@ def test_model_claims_do_not_duplicate_what_the_scans_already_found(run, ayah):
     provider = ScriptedProvider([claim(type="ayah", quote=verse, explicit_attribution=True, certainty="not_applicable")])
     report = run(text, provider)
     assert len(report["cards"]) == 1 and report["cards"][0]["rule_id"] == "ayah.exact"
+
+
+def test_a_report_of_what_the_prophet_said_is_an_attribution_and_a_biographical_remark_is_not():
+    from tabayyun.extract.lexical import attributes_to_revelation as attributed
+
+    for text in ("وقد ضربَ النبي ﷺ مثلاً بعبادة الهجرة", "وقد نهى النبي ﷺ عن ذلك", "بيّن لنا رسولنا الكريم فضل الصدقة",
+                 "كما جاء في الحديث أن ذلك من الإيمان", "يخبرنا الله في كتابه بعاقبة الصابرين", "وهذا من سنة النبي ﷺ"):  # fmt: skip
+        assert attributed(text), text
+    for text in ("ولد النبي ﷺ في مكة", "هاجر رسول الله إلى المدينة", "وهكذا جميع العبادات تحتاج إلى نية سابقة", "النية محلها القلب"):
+        assert not attributed(text), text
+
+
+def test_a_report_by_meaning_is_tied_to_the_narration_the_text_itself_recites(run, matn):
+    """Reported on the example clip: the lecturer recites a narration, then says "the Prophet gave the
+    example of ...". That sentence is an attribution: it gets a note, and the narration recited in the
+    same text is what gives it its reference. Beside no recited text, the same pointer shows the
+    narration without raising the state."""
+    full = matn("4560")
+    words = [w for w in re.split(r"\s+", re.split(r'[«"“]', full, maxsplit=1)[-1]) if len(w) > 3][:6]
+    restated = "وقد ضرب النبي ﷺ مثلاً في هذا فقال ما معناه: " + " ".join(words)  # the narration's own words, re-ordered into a report
+    proposal = [claim(type="fact", quote=restated, content_level="B", search_query=" ".join(words[:4]))]
+
+    recited = f"قال رسول الله صلى الله عليه وسلم: «{full}».\n{restated}."
+    cards = run(recited, ScriptedProvider(proposal, judge_index=0, evidence_relation="explicit_support"))["cards"]
+    assert [c["claim_type"] for c in cards] == ["hadith", "fact"]
+    note = cards[1]
+    assert note["state"] == "supported" and note["source"]["url"] == cards[0]["source"]["url"] and note["grades"]
+    assert "بالمعنى" in note["note_ar"]
+
+    alone = run(restated + ".", ScriptedProvider(proposal, judge_index=0, evidence_relation="explicit_support"))["cards"]
+    assert [c["state"] for c in alone] == ["needs_review"]  # shown, never endorsed: nothing recited beside it
+    assert alone[0]["match_kind"] == "referenced" and alone[0]["source"]
+

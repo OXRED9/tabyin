@@ -62,6 +62,8 @@ export interface ClaimStub {
   claim_type: ClaimType
   text_as_quoted: string
   span: Span | null
+  /** Every segment the quotation covers, in order (`span` is the first). Absent on older reports. */
+  spans?: Span[]
   timestamp: Timestamp | null
   /** Character offset in the whole text: the chronological sort key. */
   position?: number
@@ -178,6 +180,8 @@ export interface Card {
   disagreement_noted: boolean
   timestamp: Timestamp | null
   span: Span | null
+  /** Every segment the quotation covers, in order (`span` is the first). Absent on older reports. */
+  spans?: Span[]
   /** Character offset in the whole text: the chronological sort key. */
   position?: number
   warnings: string[]

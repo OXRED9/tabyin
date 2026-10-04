@@ -81,6 +81,30 @@
       ]
     },
     {
+      "model": "deepseek/deepseek-v4-pro",
+      "state_accuracy": 0.85,
+      "type_accuracy": 0.8,
+      "level_accuracy": 0.5,
+      "exact_quote_rate": 0.8095238095238095,
+      "invalid_json_calls": 0,
+      "refused_calls": 0,
+      "truncated_calls": 0,
+      "calls": 27,
+      "max_tokens_extract": 8000,
+      "lexical_only_items": 0,
+      "seconds_per_item": 7.401845685148873,
+      "cost_per_item_usd": 0.00046029016000000015,
+      "cost_total_usd": 0.009205803200000003,
+      "misses": [
+        "quote_misattributed-01→supported",
+        "quote_misattributed-02→supported",
+        "ruling_definitive-01→no_output"
+      ],
+      "reasoning_effort": "none",
+      "judge_effort": "low",
+      "label": "deepseek/deepseek-v4-pro (extraction none, pointing low)"
+    },
+    {
       "model": "openai/gpt-6-luna",
       "state_accuracy": 0.8,
       "type_accuracy": 0.9,

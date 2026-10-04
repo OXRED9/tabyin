@@ -82,6 +82,26 @@ _QUESTION = re.compile(
 QUESTION_MAX_CHARS = 400
 
 
+# A statement that reports, in the speaker's own words, what the Prophet ﷺ said, did or taught, or what
+# Allah says in His Book: an attribution, not the speaker's own opinion. Written for the normaliser's
+# spelling. A biographical remark ("the Prophet was born in ...") has none of these verbs and is not one.
+_SAID = r"[وف]?[ينت]?(?:قال|قول|ذكر|خبر\w{0,2}|اخبر\w{0,2}|بين|امر\w{0,2}|نهي|نهانا|حث\w{0,2}|ضرب|اوصي|وصي|اوصانا|علم\w{0,2}|حذر\w{0,2}|رغب|وعد|بشر|شرع|دعا|وصف|شبه|فسر|لعن|حرم|احل|اباح|اوجب|فرض)"
+_PROPHET = r"(?:ال|لل|بال|وال)?(?:نبي\w{0,2}|رسول\w{0,2}|مصطفي)"
+_ATTRIBUTION = re.compile(
+    rf"(?<!\w){_SAID}(?:\s+\w+){{0,2}}?\s+{_PROPHET}(?!\w)"
+    rf"|(?<!\w){_PROPHET}(?:\s+\w+){{0,5}}?\s+{_SAID}(?!\w)"
+    rf"|(?<!\w)(?:عن|حديث|قول|وصيه|سنه|هدي)\s+{_PROPHET}(?!\w)"
+    r"|(?<!\w)(?:جاء?|ورد|ثبت)\s+في\s+(?:الحديث|السنه)(?!\w)"  # the normaliser drops the hamza of «جاء»
+    rf"|(?<!\w){_SAID}\s+(?:الله|تعالي|ربنا|سبحانه)(?!\w)"
+    r"|(?<!\w)في\s+(?:القران|كتاب\s+الله|كتابه|محكم\s+التنزيل)(?!\w)"
+)
+
+
+def attributes_to_revelation(text: str) -> bool:
+    """True when the statement reports what the Prophet ﷺ or the Quran says without quoting it."""
+    return bool(_ATTRIBUTION.search(normalize_ar(text)))
+
+
 def looks_like_question(text: str) -> bool:
     plain, _ = _plain(text)
     return bool(_QUESTION.search(plain))

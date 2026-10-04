@@ -10,7 +10,7 @@ import asyncio
 import logging
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .config import settings
 from .dataversion import get_data_version
@@ -29,6 +29,7 @@ from .evidence_rules import (
     decide_ruling,
 )
 from .evidence_rules.explain import LEVEL_REASONS, Facts, describe
+from .extract.lexical import attributes_to_revelation
 from .extract.models import JUDGEMENT_SCHEMA, SELECTION_SCHEMA, LLMJudgement, LLMSelection, RawClaim
 from .extract.prompts import JUDGE_SYSTEM, SELECT_SYSTEM
 from .ingest.document import Document
@@ -75,6 +76,9 @@ class Context:
     llm: LLMSession
     llm_enabled: bool  # False in lexical-only mode
     ui_lang: str = "ar"
+    # The verses and narrations the text itself quotes (found by the scans). A statement that reports
+    # one of them by meaning ("the Prophet gave the example of ...") can be tied to it.
+    recited: list[RawClaim] = field(default_factory=list)
 
 
 def _stems(text: str) -> set[str]:
@@ -248,6 +252,7 @@ def _base_card(claim: RawClaim, cid: str, index: int, decision: Decision, ctx: C
         grade_unavailable=decision.grade_unavailable,
         warnings=list(decision.warnings),
         span=span,
+        spans=ctx.doc.locate_all(claim.start, claim.end),
         timestamp=ts,
         position=claim.start,
         **kw,
@@ -557,6 +562,24 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
 # --------------------------------------------------------------------------- rulings / facts
 
 
+def _recited_candidate(recited: RawClaim, ctx: Context) -> tuple[str, SourceRef, list[Grade], bool] | None:
+    """The source record of a verse or narration the text itself quotes: (text, source, gradings,
+    accepted). Only a quotation the matchers confirm, and only a narration that carries its grading."""
+    if recited.type == ClaimType.ayah:
+        qm = ctx.quran.match(recited.quote)
+        if qm is None or qm.similarity < THRESHOLDS.ayah_near:
+            return None
+        clean = " ".join(ctx.quran.ayahs[i][3] for a in range(qm.ayah_start, qm.ayah_end + 1) if (i := ctx.quran.by_ref.get((qm.surah, a))) is not None)
+        return (clean, _quran_source(qm, ctx, None), [], True) if clean else None
+    _orig, norm = aligned_words(recited.quote, drop_honorifics=True)
+    required = THRESHOLDS.hadith_required(min(len(norm), content_words(norm) + 1))
+    for c in ctx.hadith.search(recited.quote, k=10):
+        if c.similarity >= required and c.grade_text:
+            grade = Grade(text=c.grade_text, source_name=HADEETHENC_NAME_AR, source_url=c.url)
+            return c.text, _hadith_source(c, ctx), [grade], classify_grade(c.grade_text) == GradeCategory.accepted
+    return None
+
+
 async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card:
     """Rulings and factual statements: supported only by an explicit retrieved text."""
     level = claim.content_level
@@ -579,9 +602,24 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
                     evidence_match = qm
                     candidates.append((clean, _quran_source(qm, ctx, None), []))
     accepted: list[bool] = [True] * len(candidates)  # the verse fetched by number
+    # A statement that reports what the Prophet ﷺ or the Quran says, in the speaker's words, is an
+    # attribution. The texts this same content recites are offered to the pointer first, and for such a
+    # statement only one of them (or a verse) can give it a reference: a report by meaning with nothing
+    # recited beside it is exactly where a model's pointer was seen to endorse a text with no source.
+    attribution = attributes_to_revelation(claim.quote)
+    anchors: set[int] = set()
+    if attribution:
+        for recited in ctx.recited:
+            found = await asyncio.to_thread(_recited_candidate, recited, ctx)
+            if found and all(found[1].url != c[1].url or found[1].ref != c[1].ref for c in candidates):
+                anchors.add(len(candidates))
+                candidates.append(found[:3])
+                accepted.append(found[3])
     for c in await asyncio.to_thread(ctx.hadith.topic_search, f"{query} {claim.quote}", k=5):
         if not c.grade_text:
             continue  # a narration is never shown as evidence without its grading
+        if any(c.url == shown[1].url for shown in candidates):
+            continue  # already offered as a text this content recites
         g = Grade(text=c.grade_text, source_name=HADEETHENC_NAME_AR, source_url=c.url)
         candidates.append((c.text, _hadith_source(c, ctx), [g]))
         accepted.append(classify_grade(c.grade_text) == GradeCategory.accepted)
@@ -593,14 +631,15 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
     chosen: tuple[str, SourceRef, list[Grade]] | None = None
     referenced: tuple[str, SourceRef, list[Grade]] | None = None
     if level in (ContentLevel.A, ContentLevel.B, ContentLevel.C) and candidates:
-        hit = await judge_relation(ctx, "evidence", claim.quote, [c[0] for c in candidates], patient=level == ContentLevel.A)
+        hit = await judge_relation(ctx, "evidence", claim.quote, [c[0] for c in candidates], patient=level == ContentLevel.A or attribution)
         if hit is not None and hit[1] in ("explicit_support", "referenced"):
             idx, relation = hit
             shared, ratio = _shared_vocabulary(f"{claim.quote} {query}", candidates[idx][0])
             # the pointed-at text must share vocabulary with the claim: one stem for a verse the
             # system fetched by number, more for a narration that only keyword search surfaced
             if shared >= 1 if candidates[idx][1].kind == "quran" else (shared >= 2 or ratio >= 0.2):
-                if relation == "explicit_support" and accepted[idx] and level != ContentLevel.C:
+                tied = not attribution or idx in anchors or candidates[idx][1].kind == "quran"
+                if relation == "explicit_support" and accepted[idx] and level != ContentLevel.C and tied:
                     chosen = candidates[idx]
                 else:
                     referenced = candidates[idx]
@@ -617,6 +656,9 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
     kw: dict = {}
     if chosen and decision.state == EvidenceState.supported:
         kw = dict(source=chosen[1], grades=chosen[2], match_kind="topic")
+        if attribution:
+            decision.note_ar += " الكلام منقول بالمعنى لا باللفظ؛ لفظ النص في المصدر معروض."
+            decision.note_en += " It is reported by meaning, not word for word; the source's own wording is shown."
         if chosen[1].kind == "quran" and ctx.ui_lang == "en":
             qm = ctx.quran.match(chosen[0])
             if qm:

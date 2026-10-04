@@ -180,6 +180,7 @@ class Card(BaseModel):
 
     timestamp: Timestamp | None = None
     span: Span | None = None
+    spans: list[Span] = Field(default_factory=list)  # every segment the quotation covers (``span`` is the first)
     position: int = 0  # character offset in the whole text: the chronological sort key
     warnings: list[str] = Field(default_factory=list)
     copy_text: str | None = None  # F4: the source's wording, ready to paste (never the user's)
@@ -217,6 +218,7 @@ class ClaimStub(BaseModel):
     claim_type: ClaimType
     text_as_quoted: str
     span: Span | None = None
+    spans: list[Span] = Field(default_factory=list)
     timestamp: Timestamp | None = None
     position: int = 0
 

@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     # One model per task. IDs come from the live catalog (scripts/check_models.py lists and tests
     # them); they are set in .env / the deployment's environment, never guessed in code.
     model_extract: str = ""  # claim extraction, level classification, pointing at retrieved texts
+    # A second, measured model for the same job, used when the first is rate-limited or down. Its
+    # answers count as the primary's (unlike MODEL_FALLBACK's): it passed the same bake-off.
+    model_extract_backup: str = ""
     model_vision: str = ""  # reading text from images exactly as written
     model_audio: str = ""  # speech -> timestamped segments
     model_cheap: str = ""  # one-line topic summaries and build-time chores

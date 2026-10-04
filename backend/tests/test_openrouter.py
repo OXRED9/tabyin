@@ -58,9 +58,11 @@ def llm(monkeypatch, tmp_path):
     monkeypatch.setattr(settings, "model_extract", "alpha/primary")
     monkeypatch.setattr(settings, "model_vision", "alpha/vision")
     monkeypatch.setattr(settings, "model_fallback", "beta/backup:free")
+    monkeypatch.setattr(settings, "model_extract_backup", "")
     monkeypatch.setattr(settings, "daily_spend_limit_usd", 10.0)
     models = {
         "alpha/primary": info("alpha/primary"),
+        "gamma/second": info("gamma/second"),
         "alpha/vision": info("alpha/vision", modalities=("text", "image")),
         "beta/backup:free": info("beta/backup:free", structured=False, prompt=0.0, completion=0.0),
     }
@@ -104,6 +106,29 @@ def test_one_retry_on_rate_limit_then_success_without_fallback(llm):
     _result, infos = call(llm)
     assert [i.model for i in infos] == ["alpha/primary", "alpha/primary"] and [i.ok for i in infos] == [False, True]
     assert not infos[-1].fallback and len(fake.requests) == 2
+
+
+def test_a_rate_limited_primary_hands_over_to_the_measured_backup_at_once(llm, monkeypatch):
+    """4 Oct 2026: the primary's only provider refused requests for minutes and every report came back
+    from the free model with "reduced coverage". The measured backup now answers instead: no second
+    try on the limited model, no fallback flag, and the limited model is left alone for a minute."""
+    monkeypatch.setattr(settings, "model_extract_backup", "gamma/second")
+    fake = llm.script(http_error(openai.RateLimitError, 429), reply(), reply(), reply())
+    _result, infos = call(llm)
+    assert [i.model for i in infos] == ["alpha/primary", "gamma/second"] and not infos[-1].fallback and len(fake.requests) == 2
+    _result, infos = call(llm, task="judge")  # within the pause: straight to the backup
+    assert [i.model for i in infos] == ["gamma/second"] and not infos[-1].fallback
+    llm._limited_until.clear()  # the pause is over
+    _result, infos = call(llm)
+    assert [i.model for i in infos] == ["alpha/primary"]
+
+
+def test_the_backup_serves_extraction_and_pointing_only(llm, monkeypatch):
+    monkeypatch.setattr(settings, "model_extract_backup", "gamma/second")
+    fake = llm.script(http_error(openai.RateLimitError, 429), http_error(openai.RateLimitError, 429))
+    with pytest.raises(LLMError):
+        call(llm, task="vision")  # reading an image exactly is a different measurement: no stand-in
+    assert [r["model"] for r in fake.requests] == ["alpha/vision", "alpha/vision"]
 
 
 def test_two_failures_switch_to_the_fallback_and_flag_it(llm):

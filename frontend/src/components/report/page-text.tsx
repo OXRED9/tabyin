@@ -31,26 +31,37 @@ interface PageTextProps {
 interface Piece {
   text: string
   claim: ClaimStub | null
+  /** A quotation can run over several segments: its first piece is the link target, its last holds the ring. */
+  first: boolean
+  last: boolean
 }
+
+/** Every segment a claim covers. A report saved before `spans` existed has only the first. */
+const spansOf = (claim: ClaimStub) => (claim.spans?.length ? claim.spans : claim.span ? [claim.span] : [])
 
 /** Cut a segment into plain runs and claim runs. Overlapping spans keep the earlier claim. */
 function splitSegment(segment: Segment, claims: ClaimStub[]): Piece[] {
   const length = codePointLength(segment.text)
   const spans = claims
-    .filter((c) => c.span && c.span.segment_id === segment.id)
-    .map((c) => ({ claim: c, start: Math.max(0, c.span!.start), end: Math.min(length, c.span!.end) }))
+    .flatMap((c) => {
+      const all = spansOf(c)
+      return all.map((span, i) => ({ claim: c, span, first: i === 0, last: i === all.length - 1 }))
+    })
+    .filter((s) => s.span.segment_id === segment.id)
+    .map((s) => ({ ...s, start: Math.max(0, s.span.start), end: Math.min(length, s.span.end) }))
     .filter((s) => s.end > s.start)
     .sort((a, b) => a.start - b.start)
 
+  const plain = (text: string): Piece => ({ text, claim: null, first: false, last: false })
   const pieces: Piece[] = []
   let cursor = 0
   for (const span of spans) {
     if (span.start < cursor) continue
-    if (span.start > cursor) pieces.push({ text: sliceByCodePoints(segment.text, cursor, span.start), claim: null })
-    pieces.push({ text: sliceByCodePoints(segment.text, span.start, span.end), claim: span.claim })
+    if (span.start > cursor) pieces.push(plain(sliceByCodePoints(segment.text, cursor, span.start)))
+    pieces.push({ text: sliceByCodePoints(segment.text, span.start, span.end), claim: span.claim, first: span.first, last: span.last })
     cursor = span.end
   }
-  if (cursor < length) pieces.push({ text: sliceByCodePoints(segment.text, cursor), claim: null })
+  if (cursor < length) pieces.push(plain(sliceByCodePoints(segment.text, cursor)))
   return pieces
 }
 
@@ -155,7 +166,8 @@ export const PageText = memo(function PageText({
                   const state = settled && !hidden.has(claim.id) ? known : null
                   const style = state ? STATE_STYLE[state] : null
                   const lit = activeId === claim.id || openIds.has(claim.id)
-                  const cut = piece.text.trimEnd().lastIndexOf(' ') + 1
+                  // Only the quotation's last piece ends with the ring; an earlier one is all "head".
+                  const cut = piece.last ? piece.text.trimEnd().lastIndexOf(' ') + 1 : piece.text.length
                   const head = piece.text.slice(0, cut)
                   const tail = piece.text.slice(cut)
                   const pending = style ? undefined : ''
@@ -167,7 +179,7 @@ export const PageText = memo(function PageText({
                   return (
                     <a
                       key={i}
-                      id={`span-${claim.id}`}
+                      id={piece.first ? `span-${claim.id}` : undefined}
                       href={`#note-${claim.id}`}
                       data-span={claim.id}
                       data-state={state ?? 'pending'}
@@ -196,18 +208,20 @@ export const PageText = memo(function PageText({
                           left alone at the start of a line. The ring holds its place from the
                           moment the claim is announced: lines do not re-break when the verdict
                           arrives. */}
-                      <span className="whitespace-nowrap">
-                        <span className="claim-ink" data-pending={pending} data-tail={head ? '' : undefined} style={inkStyle}>
-                          {tail}
+                      {piece.last ? (
+                        <span className="whitespace-nowrap">
+                          <span className="claim-ink" data-pending={pending} data-tail={head ? '' : undefined} style={inkStyle}>
+                            {tail}
+                          </span>
+                          <StateGlyph
+                            state={state ?? 'pending'}
+                            className={cn(
+                              'ms-1 inline-block size-[0.8em] align-[-0.08em]',
+                              hidden.has(claim.id) && 'invisible',
+                            )}
+                          />
                         </span>
-                        <StateGlyph
-                          state={state ?? 'pending'}
-                          className={cn(
-                            'ms-1 inline-block size-[0.8em] align-[-0.08em]',
-                            hidden.has(claim.id) && 'invisible',
-                          )}
-                        />
-                      </span>
+                      ) : null}
                     </a>
                   )
                 })}

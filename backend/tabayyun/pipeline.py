@@ -15,7 +15,7 @@ from pathlib import Path
 from .config import settings
 from .evidence_rules.thresholds import THRESHOLDS as t
 from .extract import RawClaim, absorb_closed_quotes, drop_noise, keep_personal_cases, keep_questions, merge_claims, widen_scanned_verses
-from .extract.lexical import extract_by_markers, is_fabrication_request, looks_like_question, scan_hadith, scan_hadith_verbatim, scan_quran
+from .extract.lexical import attributes_to_revelation, extract_by_markers, is_fabrication_request, looks_like_question, scan_hadith, scan_hadith_verbatim, scan_quran
 from .extract.llm_extractor import extract_with_llm
 from .ingest.document import Document, IngestError
 from .llm.base import LLMError
@@ -110,14 +110,16 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
 
         def is_speakers_statement(c: RawClaim) -> bool:
             """The speaker's own explanation or assertion: not a verse, a narration or an attributed
-            saying, not a question or a personal case, not a matter marked as disputed. Tabayyun
-            verifies what is quoted, so such a statement gets a note only when an explicit source
-            text was found for it; otherwise it is left alone — no "needs review" on a lecturer's
-            own words."""
+            saying, not a question or a personal case, not a matter marked as disputed, and not a
+            report of what the Prophet ﷺ or the Quran says (that is an attribution, and is always
+            shown). Tabayyun verifies what is quoted, so the speaker's own statement gets a note only
+            when an explicit source text was found for it; otherwise it is left alone — no "needs
+            review" on a lecturer's own words."""
             return (
                 c.type in (ClaimType.fact, ClaimType.ruling)
                 and not c.is_question
                 and c.content_level in (ContentLevel.A, ContentLevel.B)
+                and not attributes_to_revelation(c.quote)
             )
 
         async def process_silently(claim: RawClaim) -> None:
@@ -134,7 +136,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
             total += 1
             card.id, card.index = f"c{counter}", counter
             span, ts = doc.locate(claim.start, claim.end)
-            stub = ClaimStub(id=card.id, index=counter, claim_type=claim.type, text_as_quoted=claim.quote, span=span, timestamp=ts, position=claim.start)
+            stub = ClaimStub(id=card.id, index=counter, claim_type=claim.type, text_as_quoted=claim.quote, span=span, spans=doc.locate_all(claim.start, claim.end), timestamp=ts, position=claim.start)
             await put(("claims", {"claims": [stub.model_dump(mode="json")]}))
             cards.append(card)
             await put(("card", card.model_dump(mode="json")))
@@ -165,7 +167,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
                 counter += 1
                 cid = f"c{counter}"
                 span, ts = doc.locate(c.start, c.end)
-                stubs.append(ClaimStub(id=cid, index=counter, claim_type=c.type, text_as_quoted=c.quote, span=span, timestamp=ts, position=c.start))
+                stubs.append(ClaimStub(id=cid, index=counter, claim_type=c.type, text_as_quoted=c.quote, span=span, spans=doc.locate_all(c.start, c.end), timestamp=ts, position=c.start))
                 tasks.append(asyncio.create_task(process(c, cid, counter)))
             if stubs:
                 await put(("claims", {"claims": [s.model_dump(mode="json") for s in stubs]}))
@@ -191,6 +193,8 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         }))  # fmt: skip
         # Every quotation found, including repeats and delimited quotations that get no note of their own.
         seen_quotations: list[RawClaim] = [c for c in closed if c.type in (ClaimType.ayah, ClaimType.hadith)]
+
+        ctx.recited = [c for c in quick if c.type in (ClaimType.ayah, ClaimType.hadith)]
 
         async def announce_quick() -> None:
             nonlocal quick
@@ -220,7 +224,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
                 log.warning("LLM extraction failed, switching to lexical-only mode: %s", e)
                 mode = "lexical_only"
             if mode == "full":
-                await put(("trace", {"step": "model", "model": llm.llm.model_for("extract") if hasattr(llm, "llm") else None,
+                await put(("trace", {"step": "model", "model": (getattr(llm, "models_used", None) or [None])[-1],
                                      "proposed": len(rest), "ms": int((time.monotonic() - t_scan) * 1000)}))  # fmt: skip
                 rest = keep_personal_cases(rest, markers)
                 rest = keep_questions(rest, markers, looks_like_question, is_fabrication_request)

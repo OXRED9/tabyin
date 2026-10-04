@@ -45,6 +45,8 @@ MAX_TOKENS = {"extract": 8000, "judge": 900, "select": 300, "vision": 4000, "aud
 TIMEOUT_SECONDS = {"audio": 240.0, "vision": 90.0, "judge": 10.0, "select": 6.0}
 _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.IGNORECASE)
 _RETRYABLE = (openai.RateLimitError, openai.APITimeoutError, openai.APIConnectionError, openai.InternalServerError)
+_BACKED_UP = ("extract", "judge", "select")  # tasks served by MODEL_EXTRACT, and by MODEL_EXTRACT_BACKUP when it cannot answer
+_RATE_LIMIT_PAUSE = 60.0  # seconds a rate-limited model is left alone
 
 
 @dataclass
@@ -110,6 +112,7 @@ class OpenRouterLLM:
                 default_headers=headers,
             )
         self._guard_warned = False
+        self._limited_until: dict[str, float] = {}  # model -> monotonic time before which it is skipped (it answered 429)
 
     # ------------------------------------------------------------------ configuration
 
@@ -136,7 +139,7 @@ class OpenRouterLLM:
         return {
             "provider": "openrouter",
             "configured": self._client is not None,
-            "models": {t: self.model_for(t) or None for t in ("extract", "vision", "audio", "cheap", "baseline")} | {"fallback": settings.model_fallback or None},
+            "models": {t: self.model_for(t) or None for t in ("extract", "vision", "audio", "cheap", "baseline")} | {"extract_backup": settings.model_extract_backup or None} | {"fallback": settings.model_fallback or None},
             "spend_guard_active": self.spend_guard_active(),
         }
 
@@ -252,17 +255,34 @@ class OpenRouterLLM:
                 self._guard_warned = True
             primary = ""  # go straight to the fallback
 
-        if primary:
+        # The measured models for this task, in order: the configured one, then (for extraction and
+        # pointing) the backup that passed the same bake-off. A model that answered "rate-limited" is
+        # skipped for a minute and not asked twice: its provider's shared pool does not clear in seconds,
+        # and the reader should not wait on it (seen 4 Oct 2026: every request fell to the free model).
+        measured = [primary] if primary else []
+        backup = settings.model_extract_backup
+        if primary and model is None and task in _BACKED_UP and backup and backup != primary:
+            measured.append(backup)
+        now = time.monotonic()
+        ready = [m for m in measured if self._limited_until.get(m, 0.0) <= now]
+        order = ready or measured[-1:]
+        for candidate in order:
             for attempt in (1, 2):
-                parsed, info, error = await self._once(primary, task, system, user, schema, model_cls, budget, fallback=False, timeout=timeout)
+                parsed, info, error = await self._once(candidate, task, system, user, schema, model_cls, budget, fallback=False, timeout=timeout)
                 infos.append(info)
                 if parsed is not None:
+                    if candidate != primary:
+                        log.info("task=%s served by the backup model %s", task, candidate)
                     return parsed, infos
                 # An answer cut off at the output budget is not retried: the same request runs to the
                 # same length again and is paid for twice (seen in the bake-off: 2 x 41 s, 2 x $0.0013).
                 truncated = isinstance(error, ValueError) and "truncated" in str(error)
-                retry = attempt == 1 and not truncated and (isinstance(error, _RETRYABLE) or isinstance(error, ValueError))
-                log.warning("model call failed (task=%s model=%s attempt=%d): %s", task, primary, attempt, info.error)
+                limited = isinstance(error, openai.RateLimitError)
+                if limited:
+                    self._limited_until[candidate] = time.monotonic() + _RATE_LIMIT_PAUSE
+                hand_over = limited and candidate is not order[-1]  # another measured model is waiting: no second try here
+                retry = attempt == 1 and not truncated and not hand_over and (isinstance(error, _RETRYABLE) or isinstance(error, ValueError))
+                log.warning("model call failed (task=%s model=%s attempt=%d): %s", task, candidate, attempt, info.error)
                 if not retry:
                     break
 
