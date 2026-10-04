@@ -31,6 +31,8 @@ interface StateStyle {
   solid: string
   /** The 2px tick on a note's text-side edge. */
   tick: string
+  /** The start edge of an evidence card, in the state's colour (the other edges stay hairlines). */
+  edge: string
   /** The CSS variable holding the solid colour: underlines and connectors read it. */
   variable: string
   /** The CSS variable holding the ink colour. */
@@ -45,6 +47,7 @@ export const STATE_STYLE: Record<EvidenceState, StateStyle> = {
     soft: 'bg-supported-soft',
     solid: 'bg-supported',
     tick: 'border-supported',
+    edge: 'border-s-supported',
     variable: 'var(--supported)',
     inkVariable: 'var(--supported-ink)',
     softVariable: 'var(--supported-soft)',
@@ -54,6 +57,7 @@ export const STATE_STYLE: Record<EvidenceState, StateStyle> = {
     soft: 'bg-noted-soft',
     solid: 'bg-noted',
     tick: 'border-noted',
+    edge: 'border-s-noted',
     variable: 'var(--noted)',
     inkVariable: 'var(--noted-ink)',
     softVariable: 'var(--noted-soft)',
@@ -63,6 +67,7 @@ export const STATE_STYLE: Record<EvidenceState, StateStyle> = {
     soft: 'bg-review-soft',
     solid: 'bg-review',
     tick: 'border-review',
+    edge: 'border-s-review',
     variable: 'var(--review)',
     inkVariable: 'var(--review-ink)',
     softVariable: 'var(--review-soft)',
@@ -72,6 +77,7 @@ export const STATE_STYLE: Record<EvidenceState, StateStyle> = {
     soft: 'bg-missing-soft',
     solid: 'bg-missing',
     tick: 'border-missing',
+    edge: 'border-s-missing',
     variable: 'var(--missing)',
     inkVariable: 'var(--missing-ink)',
     softVariable: 'var(--missing-soft)',
@@ -81,6 +87,7 @@ export const STATE_STYLE: Record<EvidenceState, StateStyle> = {
     soft: 'bg-contra-soft',
     solid: 'bg-contra',
     tick: 'border-contra',
+    edge: 'border-s-contra',
     variable: 'var(--contra)',
     inkVariable: 'var(--contra-ink)',
     softVariable: 'var(--contra-soft)',

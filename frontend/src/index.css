@@ -3,9 +3,10 @@
 @import "shadcn/tailwind.css";
 
 /*
- * Design tokens for "the page and its margin" (docs/DESIGN.md §2). Every component reads these;
- * nothing below this file names a hex value, except the verdict-card template, which has its own
- * fixed palette because it is rasterised and must match its server-side twin.
+ * Design tokens for v3, "the investigation, shown" (docs/DESIGN.md §10; the states, the faces and
+ * the glyphs are those of §2). Every component reads these; nothing below this file names a hex
+ * value, except the verdict-card template, which has its own fixed palette because it is
+ * rasterised and must match its server-side twin.
  *
  * Fonts are self-hosted from @fontsource packages: the product promises that the browser talks
  * to nothing but /api, so there is no font CDN. Three voices:
@@ -84,7 +85,7 @@
   /* There is no monospace family: numbers that line up use Plex's tabular figures. */
   --font-mono: var(--font-ui);
 
-  /* Type scale: 14 / 16 / 20 / 26 / 34 / 44. Weight does the hierarchy before size: 400 and 600. */
+  /* Type scale: 14 / 16 / 20 / 28 / 40 / 56. Large, confident headings; 400 to read, 600 to lead. */
   --text-xs: 0.875rem;
   --text-xs--line-height: 1.6;
   --text-sm: 0.875rem;
@@ -93,16 +94,18 @@
   --text-base--line-height: 1.7;
   --text-lg: 1.25rem;
   --text-lg--line-height: 1.6;
-  --text-xl: 1.625rem;
-  --text-xl--line-height: 1.45;
-  --text-2xl: 2.125rem;
-  --text-2xl--line-height: 1.4;
-  --text-3xl: 2.75rem;
-  --text-3xl--line-height: 1.35;
+  --text-xl: 1.75rem;
+  --text-xl--line-height: 1.4;
+  --text-2xl: 2.5rem;
+  --text-2xl--line-height: 1.3;
+  --text-3xl: 3.5rem;
+  --text-3xl--line-height: 1.2;
 
-  /* The named base colours. */
+  /* The named base colours: the field behind everything, a panel on it, a raised part of a panel. */
   --color-desk: var(--desk);
   --color-paper: var(--paper);
+  --color-raised: var(--raised);
+  --color-figure: var(--figure);
   --color-ink: var(--ink);
   --color-quiet: var(--quiet);
   --color-green: var(--green);
@@ -150,26 +153,28 @@
 
   /*
    * Radius, each one a meaning:
-   *   sheet 2px    paper: the page, the composer field
-   *   control 6px  something you press: buttons, menu items, the file row; dialogs and menus
-   *   tag 999px    a label attached to something else: example chips, the recognised-link tag
-   *   overlay 14px the top corners of a sheet that slides over the page
+   *   sheet 16px    a panel: the composer, the map, a pane, an evidence card
+   *   control 10px  something you press: buttons, menu items, a node of the map; dialogs and menus
+   *   tag 999px     a label attached to something else: chips, the recognised-link tag
+   *   overlay 20px  the top corners of a sheet that slides over the page
    * Tailwind's own steps collapse onto these, so no component can invent a fifth.
    */
-  --radius-sheet: 2px;
-  --radius-control: 6px;
+  --radius-sheet: 16px;
+  --radius-control: 10px;
   --radius-tag: 999px;
-  --radius-overlay: 14px;
-  --radius-xs: 2px;
-  --radius-sm: 2px;
-  --radius-md: 6px;
-  --radius-lg: 6px;
-  --radius-xl: 6px;
-  --radius-2xl: 6px;
-  --radius-3xl: 6px;
+  --radius-overlay: 20px;
+  --radius-xs: 6px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 10px;
+  --radius-xl: 10px;
+  --radius-2xl: 16px;
+  --radius-3xl: 16px;
   --radius-4xl: 999px;
 
-  /* One shadow, for things that lie over the page (sheet, dialog, menu). Nothing in the flow has one. */
+  /* Two shadows: one for a panel in the flow, one for things that lie over the page. */
+  --shadow-panel: var(--panel-shadow);
+  --shadow-glow: var(--glow);
   --shadow-overlay: var(--overlay-shadow);
   --shadow-2xs: none;
   --shadow-xs: none;
@@ -199,22 +204,62 @@
       translate: 0 0;
     }
   }
+
+  /* v3 motion (§10): things arrive by rising 250ms; a pulse travels a link in 700ms. */
+  --ease-out-quint: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-rise: rise 250ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pulse-travel: pulse-travel 700ms linear infinite;
+  --animate-live: live 1400ms ease-in-out infinite;
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 8px;
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+  @keyframes pulse-travel {
+    from {
+      stroke-dashoffset: 1.2;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes live {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
 }
 
 :root {
   --font-ui: "IBM Plex Sans Arabic", "IBM Plex Sans", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --radius: 6px;
+  --radius: 10px;
 
-  --desk: #f5f8f7;
+  /* Light: a pale green-grey field, white panels, the brand's deep green. */
+  --desk: #f1f6f4;
   --paper: #ffffff;
+  --raised: #f5f9f7;
   --ink: #11221e;
-  --quiet: #4f615b;
-  --green: #1b6b5e;
+  --quiet: #4b5d57;
+  --green: #17685a;
   --green-fill: #1b6b5e;
   --on-fill: #ffffff;
-  --rule: #d3ddd9;
+  --rule: #d5e0db;
   --rule-strong: #7c8f88;
   --gold: #c9a227;
+  /* A key figure: gold's ink, dark enough to read on a panel. */
+  --figure: #7a5c00;
+  --grid-dot: rgb(27 107 94 / 0.16);
+  /* The mark's tile is the brand's own green in both themes. */
+  --logo-tile: #1b6b5e;
 
   --supported: #1b6b5e;
   --supported-ink: #14584d;
@@ -232,6 +277,8 @@
   --contra-ink: #73130f;
   --contra-soft: #f2d9d6;
 
+  --panel-shadow: 0 1px 2px rgb(17 34 30 / 0.05), 0 10px 28px -18px rgb(17 34 30 / 0.25);
+  --glow: 0 0 0 1px rgb(27 107 94 / 0.55), 0 0 26px -6px rgb(27 107 94 / 0.45);
   --overlay-shadow: 0 1px 2px rgb(17 34 30 / 0.06), 0 12px 32px -8px rgb(17 34 30 / 0.22);
 }
 
@@ -239,36 +286,41 @@ html[lang="en"] {
   --font-ui: "IBM Plex Sans", "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/* Dark is a deep green-black, not grey; its green is a muted sage, not a mint. */
+/* Dark, the first theme: a deep green-black field, raised panels, a luminous green, gold for what is live. */
 .dark {
-  --desk: #0b1a16;
-  --paper: #10231e;
-  --ink: #e7efeb;
-  --quiet: #9db1aa;
-  --green: #7dbfb0;
-  --green-fill: #1f7867;
-  --on-fill: #ffffff;
-  --rule: #24392f;
-  --rule-strong: #6a857a;
+  --desk: #07130f;
+  --paper: #0d1f1a;
+  --raised: #12281f;
+  --ink: #e9f1ee;
+  --quiet: #9fb3ac;
+  --green: #2fbf9f;
+  --green-fill: #2fbf9f;
+  --on-fill: #04130e;
+  --rule: #1d362d;
+  --rule-strong: #47796a;
   --gold: #d9b648;
+  --figure: #e2c25e;
+  --grid-dot: rgb(47 191 159 / 0.14);
 
-  --supported: #6fc3a9;
-  --supported-ink: #9ad9c5;
-  --supported-soft: #16332b;
+  --supported: #49c9a8;
+  --supported-ink: #8ee0c9;
+  --supported-soft: #12322a;
   --noted: #b3c25a;
   --noted-ink: #cbd784;
-  --noted-soft: #2a3219;
+  --noted-soft: #283119;
   --review: #e0a63a;
   --review-ink: #efc670;
-  --review-soft: #3a2e14;
+  --review-soft: #382c13;
   --missing: #e08a80;
   --missing-ink: #f0aca4;
-  --missing-soft: #3a2421;
+  --missing-soft: #382320;
   --contra: #e0605a;
   --contra-ink: #f4a29d;
-  --contra-soft: #3f1d1b;
+  --contra-soft: #3d1c1a;
 
-  --overlay-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 36px -10px rgb(0 0 0 / 0.7);
+  --panel-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035), 0 1px 2px rgb(0 0 0 / 0.35);
+  --glow: 0 0 0 1px rgb(47 191 159 / 0.6), 0 0 30px -6px rgb(47 191 159 / 0.5);
+  --overlay-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 18px 40px -10px rgb(0 0 0 / 0.75);
 }
 
 @layer base {
@@ -312,11 +364,8 @@ html[lang="en"] {
  */
 html[lang="en"] [data-shell-lang="ar"],
 html:not([lang="en"]) [data-shell-lang="en"],
-html[data-view="report"] [data-shell="headline"] {
+html[data-view="report"] [data-shell="hero"] {
   display: none;
-}
-html[data-view="report"] [data-shell="sheet"] {
-  max-width: 66rem;
 }
 
 /* ── Voices ──────────────────────────────────────────────────────────────────────────────── */
@@ -365,22 +414,6 @@ html[data-view="report"] [data-shell="sheet"] {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── The sheet ───────────────────────────────────────────────────────────────────────────── */
-
-/* Faint ruled lines, one per line of page text: the composer field and the waiting page. */
-@utility ruled {
-  --line: 2.375rem;
-  background-image: linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px));
-  background-size: 100% var(--line);
-  background-repeat: repeat-y;
-  background-origin: content-box;
-  background-clip: content-box;
-  background-attachment: local;
-  @media (min-width: 48rem) {
-    --line: 2.5rem;
-  }
-}
-
 /* ── A claim in the text ─────────────────────────────────────────────────────────────────── */
 
 /*
@@ -426,20 +459,85 @@ html[data-view="report"] [data-shell="sheet"] {
   }
 }
 
-/* The hairline that ties a note to its words. */
-.connector {
+/* ── v3: panels, the field, the map ───────────────────────────────────────────────────────── */
+
+/* A panel on the field: the composer, the map, a pane, an evidence card. */
+@utility panel {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sheet);
+  background: var(--paper);
+  box-shadow: var(--panel-shadow);
+}
+
+/* The faint field of points behind the workspace's first screen: atmosphere, not wallpaper. */
+@utility field-points {
+  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 1px, transparent 0);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 100% at 50% 0%, #000 0%, transparent 100%);
+}
+
+/*
+ * A node of the pipeline map. Its look is its real state: waiting (quiet), working (lit, with the
+ * glow), done (a calm green edge), not used (dashed — never lit), failed (the review's colour).
+ */
+.node {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-control);
+  background: var(--raised);
+  transition:
+    border-color 300ms var(--ease-out-quint),
+    box-shadow 300ms var(--ease-out-quint),
+    background-color 300ms var(--ease-out-quint);
+}
+.node[data-status="active"] {
+  border-color: var(--green);
+  box-shadow: var(--glow);
+}
+.node[data-status="done"] {
+  border-color: color-mix(in oklab, var(--green) 55%, var(--rule));
+}
+.node[data-status="skipped"] {
+  border-style: dashed;
+  background: transparent;
+}
+.node[data-status="warning"] {
+  border-color: var(--review);
+}
+
+/* A link between two nodes, and the pulse that travels it while the node it leads to works. */
+.link {
   fill: none;
   stroke: var(--rule);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-  transition: stroke 150ms ease-out;
+  stroke-width: 1.5;
+  transition: stroke 300ms var(--ease-out-quint);
 }
-.connector[data-active] {
-  stroke: var(--connector-active, var(--rule-strong));
+.link[data-lit] {
+  stroke: color-mix(in oklab, var(--green) 70%, var(--rule));
+}
+/* The link that leads to a working node is tinted, moving or not. */
+.link[data-pulsing] {
+  stroke: color-mix(in oklab, var(--gold) 55%, var(--rule));
+}
+.link-pulse {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 0.2 1;
+  stroke-dashoffset: 1.2;
+  opacity: 0;
+}
+.link-pulse[data-on] {
+  opacity: 1;
+  animation: var(--animate-pulse-travel);
 }
 
 /* Everything collapses to an instant change when the user asks for less motion. */
 @media (prefers-reduced-motion: reduce) {
+  /* A pulse that cannot travel is not drawn: the tinted link says the same thing, still. */
+  .link-pulse {
+    display: none;
+  }
   *,
   *::before,
   *::after {

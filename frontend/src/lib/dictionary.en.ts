@@ -29,6 +29,103 @@ export const en: Dictionary = {
   undo: 'Undo',
   opensInNewTab: 'Opens in a new tab',
 
+  shell: {
+    menu: 'Menu',
+    newVerification: 'New verification',
+    rail: 'Navigation and history',
+  },
+
+  hero: {
+    verses: (n: string) => `${n} verses`,
+    narrations: (n: string) => `${n} narrations`,
+    algorithmic: 'Algorithmic matching',
+    verbatim: 'Scholars’ gradings copied verbatim',
+    enginesTitle: 'What works behind this page',
+    mushaf: {
+      title: 'Mushaf matcher',
+      body: 'Matches the wording of every verse against the Madinah Mushaf text algorithmically; no model in the decision.',
+    },
+    index: {
+      title: 'Narration index',
+      body: (graded: string, books: string) =>
+        `${graded} narrations with their gradings from HadeethEnc, and ${books} from the hadith books.`,
+    },
+    models: {
+      title: 'Reading and extraction models',
+      extract: 'Extracting citations',
+      vision: 'Reading images',
+      audio: 'Transcribing audio',
+      none: 'Not enabled on this server: lexical checking only.',
+    },
+    gradings: {
+      title: 'Scholars’ gradings',
+      live: 'Fetched live from Dorar.net and copied verbatim; the model generates no grading.',
+      stored: 'Copied verbatim from HadeethEnc; the model generates no grading.',
+    },
+    rules: 'The model proposes and explains; the rules and the sources decide.',
+  },
+
+  pipeline: {
+    title: 'The investigation',
+    running: 'Investigation under way',
+    finished: 'Investigation complete',
+    replay: 'Replay the investigation',
+    hide: 'Hide the investigation',
+    log: 'Step log',
+    status: { waiting: 'waiting', active: 'working', done: 'done', skipped: 'not used', warning: 'failed' },
+    steps: { scan: 'Algorithmic scan', verify: 'Checking the sources', quranHits: 'Mushaf matches', narrationHits: 'narration matches' },
+    ms: (ms: number) =>
+      ms < 1
+        ? 'under 1 ms'
+        : ms < 1000
+          ? `${ms.toLocaleString('en-US')} ms`
+          : `${(ms / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })} s`,
+    input: {
+      title: 'Input',
+      kinds: { text: 'Text', article_url: 'Article link', video_url: 'Clip link', file: 'Audio or video file', image: 'Picture' },
+      characters: 'Characters',
+    },
+    read: {
+      title: 'Reading',
+      pasted: 'Text, read as it is',
+      article: 'Fetching the article’s text',
+      captions: 'The clip’s own captions',
+      stt: 'The audio model transcribes the clip',
+      image: 'The vision model read the picture',
+      segments: 'Segments',
+    },
+    mushaf: { title: 'Mushaf matcher', detail: 'Algorithmic, no model', verses: 'Verses', hits: 'Matches' },
+    narrations: { title: 'Narration index', detail: 'HadeethEnc and the hadith books', count: 'Narrations', hits: 'Matches', markers: 'Citation markers' },
+    model: { title: 'Extraction model', proposed: 'Proposed', unused: 'Lexical check only' },
+    gradings: { title: 'Scholars’ gradings', detail: 'Fetched live from Dorar.net', count: 'Gradings', unreachable: 'Dorar.net could not be reached', notCalled: 'Not needed' },
+    pointer: { title: 'Pointing model', detail: 'Points at the evidence; decides nothing', calls: 'Calls', selections: 'Picks for “reliably reported”' },
+    rules: { title: 'Rule engine', detail: 'The rules decide the state, not the model', notes: 'Notes' },
+    report: { title: 'Report', detail: 'Ready to read', elapsed: 'Time' },
+  },
+
+  verdict: {
+    tiles: 'The states and their counts',
+    enginesUsed: 'What worked in this verification',
+    elapsed: (seconds: string) => `${seconds} s`,
+    filterBy: (word: string) => `Show notes: ${word}`,
+  },
+
+  provenance: {
+    title: 'Verification trail',
+    matched: 'Match',
+    similarity: (value: string) => `similarity ${value}`,
+    source: 'Source',
+    grading: 'Grading',
+    rule: 'Rule',
+    action: 'Action',
+    none: 'No matching source',
+  },
+
+  panes: {
+    text: 'The text',
+    notes: 'Notes',
+  },
+
   header: {
     language: 'Interface language',
     arabic: 'عربي',

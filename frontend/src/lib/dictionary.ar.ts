@@ -74,6 +74,109 @@ export const ar = {
   undo: 'تراجع',
   opensInNewTab: 'يفتح في تبويب جديد',
 
+  // ── v3: the shell, the hero and the investigation (docs/DESIGN.md §10) ────────────────────────
+  // Everything the investigation shows is a number, a name or a time the server really sent
+  // (`trace` events, `meta.engines`); these strings only label them.
+  shell: {
+    menu: 'القائمة',
+    newVerification: 'تحقّق جديد',
+    rail: 'التنقّل والسجل',
+  },
+
+  hero: {
+    // The strip of what the tool really holds, from `meta.engines`.
+    verses: (n: string) => `${n} آية`,
+    narrations: (n: string) => `${n} رواية`,
+    algorithmic: 'مطابقة خوارزمية',
+    verbatim: 'أحكام المحدّثين منقولة حرفياً',
+    enginesTitle: 'ما يعمل خلف هذه الصفحة',
+    // TODO-SULAIMAN-REVIEW (wording of the four descriptions below).
+    mushaf: {
+      title: 'مطابق المصحف',
+      body: 'يطابق لفظ كل آية بنص مصحف المدينة النبوية خوارزمياً، ولا نموذج في القرار.',
+    },
+    index: {
+      title: 'فهرس الروايات',
+      body: (graded: string, books: string) =>
+        `${graded} رواية بأحكامها من موسوعة الأحاديث النبوية، و${books} رواية من كتب السنة.`,
+    },
+    models: {
+      title: 'نماذج القراءة والاستخراج',
+      extract: 'استخراج الاستشهادات',
+      vision: 'قراءة الصور',
+      audio: 'تفريغ الصوت',
+      none: 'غير مفعّلة على هذا الخادم: الفحص لفظي فقط.',
+    },
+    gradings: {
+      title: 'أحكام المحدّثين',
+      live: 'تُجلب حيّة من الدرر السنية وتُنقل بنصّها؛ لا يولّد النموذج حكماً.',
+      stored: 'تُنقل بنصّها من موسوعة الأحاديث النبوية؛ لا يولّد النموذج حكماً.',
+    },
+    rules: 'النموذج يقترح ويشرح، والقواعد والمصادر هي التي تقرّر.',
+  },
+
+  pipeline: {
+    title: 'التحرّي',
+    running: 'التحرّي جارٍ',
+    finished: 'اكتمل التحرّي',
+    replay: 'أعد عرض التحرّي',
+    hide: 'إخفاء التحرّي',
+    log: 'سجل الخطوات',
+    status: { waiting: 'ينتظر', active: 'يعمل', done: 'تمّ', skipped: 'لم يُستخدم', warning: 'تعذّر' },
+    steps: { scan: 'المطابقة الخوارزمية', verify: 'التحقق من المصادر', quranHits: 'في المصحف', narrationHits: 'في الروايات' },
+    // A time the server rounded down to nothing is said as it is: under a millisecond.
+    ms: (ms: number) =>
+      ms < 1
+        ? 'أقل من 1 مث'
+        : ms < 1000
+          ? `${ms.toLocaleString('en-US')} مث`
+          : `${(ms / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })} ث`,
+    input: {
+      title: 'المُدخل',
+      kinds: { text: 'نص', article_url: 'رابط مقال', video_url: 'رابط مقطع', file: 'ملف صوتي أو مرئي', image: 'صورة' },
+      characters: 'الأحرف',
+    },
+    read: {
+      title: 'القراءة',
+      pasted: 'نص يُقرأ كما هو',
+      article: 'جلب نص المقال',
+      captions: 'ترجمة المقطع المرفقة',
+      stt: 'النموذج الصوتي يفرّغ المقطع',
+      image: 'النموذج البصري قرأ الصورة',
+      segments: 'المقاطع',
+    },
+    mushaf: { title: 'مطابق المصحف', detail: 'خوارزمي، بلا نموذج', verses: 'الآيات', hits: 'المطابقات' },
+    narrations: { title: 'فهرس الروايات', detail: 'موسوعة الأحاديث وكتب السنة', count: 'الروايات', hits: 'المطابقات', markers: 'علامات الاستشهاد' },
+    model: { title: 'نموذج الاستخراج', proposed: 'المقترَح', unused: 'فحص لفظي فقط' },
+    gradings: { title: 'أحكام المحدّثين', detail: 'تُجلب حيّة من الدرر السنية', count: 'الأحكام', unreachable: 'تعذّر الوصول إلى الدرر السنية', notCalled: 'لم يُحتج إليها' },
+    pointer: { title: 'نموذج الإشارة', detail: 'يشير إلى الدليل ولا يحكم', calls: 'النداءات', selections: 'اختيار «الثابت في الباب»' },
+    rules: { title: 'محرّك القواعد', detail: 'القواعد تقرّر الحالة، لا النموذج', notes: 'الحواشي' },
+    report: { title: 'التقرير', detail: 'جاهز للقراءة', elapsed: 'المدة' },
+  },
+
+  verdict: {
+    tiles: 'الحالات بأعدادها',
+    enginesUsed: 'ما عمل في هذا التحقق',
+    elapsed: (seconds: string) => `${seconds} ث`,
+    filterBy: (word: string) => `عرض الحواشي: ${word}`,
+  },
+
+  provenance: {
+    title: 'مسار التحقق',
+    matched: 'المطابقة',
+    similarity: (value: string) => `التشابه ${value}`,
+    source: 'المصدر',
+    grading: 'الحكم',
+    rule: 'القاعدة',
+    action: 'الإجراء',
+    none: 'لا مصدر مطابق',
+  },
+
+  panes: {
+    text: 'النص',
+    notes: 'الحواشي',
+  },
+
   header: {
     language: 'لغة الواجهة',
     arabic: 'عربي',
