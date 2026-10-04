@@ -278,7 +278,11 @@ class OpenRouterLLM:
                 # same length again and is paid for twice (seen in the bake-off: 2 x 41 s, 2 x $0.0013).
                 truncated = isinstance(error, ValueError) and "truncated" in str(error)
                 limited = isinstance(error, openai.RateLimitError)
-                if limited:
+                # A model that did not answer within its limit is, like a rate-limited one, left alone
+                # for a minute when another measured model can take the work: the next statements of
+                # this report should not each wait out the same limit first.
+                stalled = isinstance(error, TimeoutError) and candidate is not order[-1]
+                if limited or stalled:
                     self._limited_until[candidate] = time.monotonic() + _RATE_LIMIT_PAUSE
                 hand_over = limited and candidate is not order[-1]  # another measured model is waiting: no second try here
                 retry = attempt == 1 and not truncated and not hand_over and (isinstance(error, _RETRYABLE) or isinstance(error, ValueError))

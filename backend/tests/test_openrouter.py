@@ -123,6 +123,24 @@ def test_a_rate_limited_primary_hands_over_to_the_measured_backup_at_once(llm, m
     assert [i.model for i in infos] == ["alpha/primary"]
 
 
+def test_a_primary_that_does_not_answer_in_time_is_also_left_alone_for_a_minute(llm, monkeypatch):
+    monkeypatch.setattr(settings, "model_extract_backup", "gamma/second")
+
+    class Slow(FakeCompletions):
+        async def create(self, **kwargs):
+            if kwargs["model"] == "alpha/primary":
+                self.requests.append(kwargs)
+                await asyncio.sleep(1)
+            return await super().create(**kwargs)
+
+    fake = Slow([reply(), reply()])
+    llm._client = SimpleNamespace(chat=SimpleNamespace(completions=fake))
+    _result, infos = call(llm, task="judge", timeout=0.05)
+    assert [i.model for i in infos] == ["alpha/primary", "gamma/second"] and not infos[-1].fallback
+    _result, infos = call(llm, task="judge", timeout=0.05)
+    assert [i.model for i in infos] == ["gamma/second"]  # no second wait on the stalled model
+
+
 def test_the_backup_serves_extraction_and_pointing_only(llm, monkeypatch):
     monkeypatch.setattr(settings, "model_extract_backup", "gamma/second")
     fake = llm.script(http_error(openai.RateLimitError, 429), http_error(openai.RateLimitError, 429))
