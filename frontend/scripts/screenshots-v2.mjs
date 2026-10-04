@@ -225,6 +225,31 @@ const STATES = {
     await session.context.close()
   },
 
+  // A question put to the tool: referred, never answered. Its note is open without a tap, with
+  // the search links on the approved scholars' sites right in it.
+  question: async (width, file) => {
+    const { context, page, sheet } = await open(width, { query: '&scenario=question&autorun=1&speed=10' })
+    await page.getByText('اكتمل التحقق').first().waitFor({ timeout: 30_000 })
+    await page.locator(sheet ? 'article[data-note][data-open]' : '[data-margin] [data-note][data-open]').waitFor()
+    await page.getByTestId('referral-links').waitFor()
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: file, fullPage: true })
+    await context.close()
+  },
+
+  // «إحالة إلى أهل العلم» on a disputed matter: the approved fatwa sites, each opened on its own
+  // search for the note's topic words.
+  referral: async (width, file) => {
+    const session = await openReport(width)
+    const { page } = session
+    await openNote(session, 'c7')
+    await page.locator('[data-note-sheet="c7"]').getByRole('button', { name: 'إحالة إلى أهل العلم' }).click()
+    await page.getByTestId('referral-dialog').waitFor()
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: file })
+    await session.context.close()
+  },
+
   // F2 «الثابت في الباب»: a hadith with no reference, and under its note the accepted narrations
   // retrieved on the same subject, each with its reference, its grading and a copy button.
   alternatives: async (width, file) => {
@@ -320,6 +345,8 @@ const ONLY_AT = {
   'share-dialog-text': [390],
   referenced: [390, 1440],
   legend: [390],
+  question: [390, 1440],
+  referral: [390],
   alternatives: [390, 1440],
   'report-error': [390],
   'gradings-folded': [390],

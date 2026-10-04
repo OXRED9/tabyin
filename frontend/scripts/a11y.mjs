@@ -116,6 +116,7 @@ function measureContrast() {
  *   report     every note open, every «لماذا هذا الحكم؟» open
  *   dialog     the referral dialog
  *   legend     «ما معنى هذه الحالات؟», opened from the report's head
+ *   question   a question put to the tool: its note open, with the search links in it
  *   report-error   «أبلغ عن خطأ» on a claim (from its sheet on a phone), with addresses to send to
  *   share      the share dialog on a claim (`card`: the state of the claim whose card is drawn)
  *   share-summary   the share dialog on the summary
@@ -142,12 +143,15 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
   const t = COPY[lang]
   const composer = ['empty', 'link', 'error', 'image', 'notice'].includes(state)
   const single = state === 'single' || state === 'single-ios'
+  const question = state === 'question'
   // Reports are reached through mock mode's own route: `scenario=<name>&autorun=1`.
   const route = composer
     ? state === 'notice'
       ? '&share=unavailable'
       : ''
-    : single
+    : question
+      ? '&scenario=question&autorun=1&speed=10'
+      : single
       ? `&scenario=fabrication&autorun=1&speed=10&install=${state === 'single-ios' ? 'ios' : '1'}`
       : `&scenario=video&autorun=1&speed=${state === 'running' ? 1 : 10}${state === 'report-error' ? '&feedback=1' : ''}`
   await page.goto(`${BASE}/?mock=1&theme=${theme}&lang=${lang}${route}`)
@@ -178,6 +182,10 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     await page.locator('[data-note][data-state="pending"]').first().waitFor({ timeout: 30_000 })
   } else {
     await page.getByText(t.done).first().waitFor({ timeout: 30_000 })
+    if (question) {
+      await page.locator('[data-note][data-open]').first().waitFor()
+      await page.getByTestId('referral-links').waitFor()
+    }
     if (single) {
       await page.locator('[data-note][data-open]').first().waitFor()
       await page.getByTestId('install-line').waitFor()
@@ -227,7 +235,8 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
       await page.getByTestId('legend').waitFor()
     }
     if (state === 'dialog') {
-      await page.locator('[data-note][data-state="not_found"]').first().getByRole('button', { name: t.referral }).click()
+      // The disputed matter's note: its referral links search the sites for its topic words.
+      await page.locator('[data-note="c7"]').first().getByRole('button', { name: t.referral }).click()
       await page.getByRole('dialog').waitFor()
     }
     await page.waitForTimeout(400)
@@ -284,7 +293,9 @@ for (const theme of ['light', 'dark']) {
 await audit('states legend · light · en · 390px', { lang: 'en', viewport: MOBILE, state: 'legend' })
 for (const theme of ['light', 'dark']) {
   await audit(`report an error · ${theme} · ar`, { theme, state: 'report-error' })
+  await audit(`a question, referred · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'question' })
 }
+await audit('a question, referred · light · en', { lang: 'en', state: 'question' })
 await audit('report an error · light · en · 390px', { lang: 'en', viewport: MOBILE, state: 'report-error' })
 await audit('share dialog, verse card · light · ar', { state: 'share', card: 'supported' })
 await audit('share dialog, contradicted card · dark · en', { state: 'share', card: 'contradicted', theme: 'dark', lang: 'en' })
