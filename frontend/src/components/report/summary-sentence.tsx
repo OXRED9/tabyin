@@ -16,11 +16,14 @@ export function SummarySentence({
   filter,
   onFilter,
   className,
+  clauses: withClauses = true,
 }: {
   tally: Tally
   filter: ClauseKind | null
   onFilter: (kind: ClauseKind | null) => void
   className?: string
+  /** False where the state tiles stand right under the sentence and say the same: only its head is set. */
+  clauses?: boolean
 }) {
   const { t } = useI18n()
   const { head, tail, clauses } = summaryParts(t, tally)
@@ -29,7 +32,7 @@ export function SummarySentence({
       <p aria-label={t.report.summaryLabel} className="text-lg text-ink">
         <span className="font-semibold">{head}</span>
         {tail}
-        {clauses.map((clause) => {
+        {(withClauses ? clauses : []).map((clause) => {
           const pressed = filter === clause.kind
           // A question is not one of the five states: it borrows the review's ring and ink.
           const state = clauseState(clause.kind)

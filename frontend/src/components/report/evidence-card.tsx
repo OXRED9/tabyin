@@ -1,5 +1,6 @@
 import { ChevronDown } from 'lucide-react'
 import { Suspense, memo, useId } from 'react'
+import type { CSSProperties } from 'react'
 
 import NoteBody from '@/components/report/lazy-note-body'
 import type { NoteBodyProps } from '@/components/report/note-body'
@@ -16,6 +17,8 @@ interface EvidenceCardProps extends Omit<NoteBodyProps, 'showQuoted' | 'card'> {
   /** Undefined while the claim is announced but not yet checked. */
   card: NoteBodyProps['card'] | undefined
   open: boolean
+  /** Its place in the list: cards that arrive together rise one after another. */
+  index: number
   /** Its passage in the text is hovered or focused, or the card itself is. */
   active: boolean
   onToggle: (cardId: string) => void
@@ -28,7 +31,9 @@ interface EvidenceCardProps extends Omit<NoteBodyProps, 'showQuoted' | 'card'> {
  * checked, so nothing moves when its verdict arrives. Open, it shows its trail (how it was
  * matched, the source, the grading, the rule, the action) and then everything the note says.
  */
-export const EvidenceCard = memo(function EvidenceCard({ claim, card, open, active, onToggle, onHover, ...body }: EvidenceCardProps) {
+export const EvidenceCard = memo(function EvidenceCard({ claim, card, open, index, active, onToggle, onHover, ...body }: EvidenceCardProps) {
+  // A short stagger, capped so a long report does not keep its last cards waiting.
+  const cascade = { '--i': Math.min(index, 12) } as CSSProperties
   const { t, pick } = useI18n()
   const bodyId = useId()
   const state = card?.state
@@ -51,13 +56,13 @@ export const EvidenceCard = memo(function EvidenceCard({ claim, card, open, acti
 
   if (!card) {
     return (
-      <li>
+      <li className="cascade" style={cascade}>
         <article
           id={`note-${claim.id}`}
           data-note={claim.id}
           data-state="pending"
           aria-busy="true"
-          className="panel flex animate-rise items-start gap-3 border-s-[3px] border-s-rule-strong p-4"
+          className="panel flex items-start gap-3 border-s-[3px] border-s-rule-strong p-4"
         >
           <StateGlyph state="pending" className="mt-1" />
           {lines}
@@ -68,7 +73,7 @@ export const EvidenceCard = memo(function EvidenceCard({ claim, card, open, acti
   }
 
   return (
-    <li>
+    <li className="cascade" style={cascade}>
       <article
         id={`note-${card.id}`}
         data-note={card.id}
