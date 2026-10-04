@@ -661,3 +661,48 @@ where it departs from the plan, and the two critique rounds are appended there.
     said 1.4 s): the team asked for the work to be felt. Nothing shown is invented, and no model id is
     shown anywhere — roles only, at the team's request.
 
+
+## v3.1 — layout and polish after the team's test (the frontend, 4 October 2026, night)
+
+Mock mode only; no paid call. The running stage is the lead's (item 140); these are the rest.
+
+141. **Light is the default theme**: the saved choice, else light — warm paper (`#fbf7ee`), green ink,
+     gold for figures, the headline's underline, the pin and the seal. A panel's edge is a breath of
+     warm shadow, not a grey line; depth comes from layered shadows. Dark stays complete. `theme-color`
+     and the manifest follow; the service worker's cache family is `tabayyun-v31-shell-<build>`.
+142. **No model id anywhere in the interface.** Model nodes carry a role («نموذج ذكاء اصطناعي يستخرج
+     الاستشهادات», «نموذج يقرأ الصور», «نموذج يفرّغ الصوت»); the first screen says how many models there
+     are and what they do; the verdict's chips name roles. The ids stay in `/api/meta` and in `trace`.
+143. **The first screen has three zones from 1280px**: the rail, a calm centre (the headline in the
+     display Naskh with an inked gold underline, and the composer), and a sticky column of four paper
+     notes for the engines — a figure, a title, one line each, from `meta.engines`. Two by two under
+     the composer from 768px; on a phone a row that scrolls sideways between the headline and the
+     composer, which sits low under the thumb, with the examples in one scrolling row under it.
+144. **The rail can be put away** (from 1280px): a button in its head closes it to nothing, a small
+     button at the top corner brings it back, focus follows, and the choice is kept in
+     `localStorage` (`tabayyun.rail`) and applied before the first paint.
+145. **Below 1024px a report shows one pane at a time**, behind a control that stays under the bar:
+     «الحواشي» | «النص». While a run is on the text is shown (it is being read); when the verdict
+     arrives the notes are — results first. «موضعه في النص» on a card brings the text forward at
+     that passage; tapping a passage brings its card forward, open. On a phone the verdict keeps the
+     sentence's head and lets the tiles say the states, and the list of what worked is in the replay.
+146. **The finish**: the tiles count up, the cards rise one after another (45 ms apart, capped), the
+     underlines ink in, and a gold ring with the tool's mark is drawn and stamped beside the sentence
+     — once, on a report that was just made; a reopened report carries the seal already made.
+147. **Less motion is not no life.** Under `prefers-reduced-motion` nothing travels, turns or changes
+     size, but colour and opacity still change: what would have moved into place fades into place, in
+     the same order; sheets and dialogs fade where they stand; the playhead keeps its hold, so steps
+     still appear one after another. Only colour and opacity may transition, so layout is never
+     measured mid-change.
+148. **The habit line and the install hint read a record of *when*, nothing else.** `lib/activity.ts`
+     keeps the times of finished verifications in this browser (about a month, cleared with the
+     history, restored by its undo). The rail says «تحقّقت من N نصاً هذا الأسبوع»; the offer to install
+     is made after the second report. Nothing leaves the browser.
+149. **The mock passes the same gate as the real stream.** `lib/api.ts` delivers every event — the
+     server's and the mock's — through one function that drops unknown event names and keeps only what
+     survives JSON, so an event the list forgets (as `trace` was) fails in mock checks too. The video
+     fixture has a narration cut over two caption lines (`spans`).
+150. **Measured** (built report page, mock): Lighthouse phone 92 / 100 / 100 (LCP 3.4 s, CLS 0.012),
+     desktop 100 / 100 / 100 (LCP 0.7 s, CLS 0.042). `npm run a11y`: 65 of 71 audits pass; the six that
+     fail are the mid-run states, on one thing — a waiting step in the stage is drawn at 55% opacity
+     (2.49:1 on light, 3.27:1 on dark), in `investigation/stage.css`.

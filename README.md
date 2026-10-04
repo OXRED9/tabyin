@@ -12,17 +12,17 @@
 مشاركة في **تحدي الذكاء الاصطناعي في خدمة المحتوى الإسلامي** (مؤسسة باذل الأهلية) — المسار الرابع:
 أدوات المعرفة والتحقق لتمكين المعرفين بالإسلام.
 
-| التحرّي معروضاً أثناء العمل: كل رقم واسم نموذج مما أرسله الخادم | الشاشة الأولى على الجوال |
+| التحرّي معروضاً أثناء العمل: كل رقم واسم نموذج مما أرسله الخادم | الشاشة الأولى |
 |---|---|
-| ![خريطة التحرّي أثناء العمل](docs/screenshots/v3/running-1440-dark.png) | ![الشاشة الأولى](docs/screenshots/v3/empty-390-dark.png) |
+| ![خريطة التحرّي أثناء العمل](docs/screenshots/v3/running-1440-light.png) | ![الشاشة الأولى](docs/screenshots/v3/empty-1440-light.png) |
 
 | التقرير: الخلاصة، النص بمواضعه، الحواشي | حاشية مفتوحة: مسار التحقق ثم نص المصدر والتخريج |
 |---|---|
-| ![تقرير التحقق](docs/screenshots/v3/report-1440-dark.png) | ![حاشية مفتوحة بمسار التحقق](docs/screenshots/v3/card-open-1440-light.png) |
+| ![تقرير التحقق](docs/screenshots/v3/report-1440-light.png) | ![حاشية مفتوحة بمسار التحقق](docs/screenshots/v3/card-open-1440-light.png) |
 
 | سؤال يُحال ولا يُجاب | بطاقة التثبّت | خلاصة التحقق |
 |---|---|---|
-| ![سؤال أُحيل إلى أهل العلم](docs/screenshots/v3/question-1440-dark.png) | ![بطاقة تثبّت](docs/screenshots/v2/card-server-contradicted-portrait-light-ar.png) | ![بطاقة الخلاصة](docs/screenshots/v2/card-server-summary-square-light-ar.png) |
+| ![سؤال أُحيل إلى أهل العلم](docs/screenshots/v3/question-1440-light.png) | ![بطاقة تثبّت](docs/screenshots/v2/card-server-contradicted-portrait-light-ar.png) | ![بطاقة الخلاصة](docs/screenshots/v2/card-server-summary-square-light-ar.png) |
 
 لقطات الواجهة في [`docs/screenshots/v3/`](docs/screenshots/v3/) مأخوذة من **وضع العرض التجريبي**
 (`?mock=1`) الذي يعيد تشغيل بيانات مولَّدة برمجياً من المصادر نفسها؛ وبطاقات `card-server-*` (في
