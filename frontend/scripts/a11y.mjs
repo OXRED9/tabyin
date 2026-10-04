@@ -116,7 +116,6 @@ function measureContrast() {
  *              a timeline below), the text on the page, evidence cards arriving
  *   drawer     (below 1280px) the rail as a drawer: new verification, history, legend, language, theme
  *   replay     a finished report with «أعد عرض التحرّي» open under its verdict
- *   text-pane  (below 1024px) a finished report with «النص» chosen in the pane switch
  *   rail-closed  (from 1280px) the first screen with the rail put away
  *   image      the composer after a picture was read: its text in the field, the unread word
  *              marked and counted, the uncertainty line, the removed items listed (opened)
@@ -199,9 +198,9 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
       await page.locator('[data-note][data-state]:not([data-state="pending"])').nth(1).waitFor({ timeout: 30_000 })
       await page.locator('[data-note][data-state="pending"]').first().waitFor({ timeout: 30_000 })
     } else {
-      // Below 1024px the text is the pane shown while a run is on: the stage's steps say how far it is.
+      // Below 1024px the cards stand under the text, off the first screen: the stage's steps say how far the run is.
       await page.locator('[data-node="model"][data-status="done"]').waitFor({ timeout: 30_000 })
-      await page.getByTestId('pane-switch').waitFor({ timeout: 30_000 })
+      await page.locator('[data-note]').first().waitFor({ state: 'attached', timeout: 30_000 })
     }
   } else {
     await page.getByTestId('verdict').waitFor({ timeout: 30_000 })
@@ -233,10 +232,6 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     // F5: open every «لماذا هذا الحكم؟» panel so its list, meter and labels are audited.
     const closedPanels = page.locator('[data-testid="explain"] > button[aria-expanded="false"]')
     for (let i = 0; i < 30 && (await closedPanels.count()) > 0; i++) await closedPanels.first().click()
-    if (state === 'text-pane') {
-      await page.locator('[data-pane="text"]').click()
-      await page.locator('[data-page]').first().waitFor()
-    }
     if (state === 'share-phone') {
       await page.locator('[data-note="c2"]').getByTestId('share-card').click()
       await page.getByTestId('share-targets').waitFor()
@@ -316,9 +311,7 @@ await audit('empty · light · ar · 820px', { viewport: TABLET })
 for (const theme of ['light', 'dark']) {
   await audit(`rail as a drawer · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'drawer' })
   await audit(`rail put away · ${theme} · ar`, { theme, state: 'rail-closed' })
-  await audit(`the text pane · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'text-pane' })
 }
-await audit('the text pane · light · ar · 820px', { viewport: TABLET, state: 'text-pane' })
 await audit('composer with a link · light · ar', { state: 'link' })
 await audit('composer with a link · dark · en', { state: 'link', theme: 'dark', lang: 'en' })
 await audit('picture read · light · ar', { state: 'image' })

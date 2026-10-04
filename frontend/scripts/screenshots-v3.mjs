@@ -87,8 +87,6 @@ const STATES = {
     const { context, page, shoot } = await open(width, theme)
     await page.getByTestId('capabilities').waitFor()
     await page.mouse.move(0, 0)
-    // The notes have dropped and settled.
-    await page.waitForTimeout(400)
     await shoot(file)
     await context.close()
   },
@@ -128,17 +126,6 @@ const STATES = {
   question: async (width, theme, file) => {
     const { context, page, shoot } = await openReport(width, theme, 'question')
     await page.getByTestId('referral-links').waitFor()
-    await page.waitForTimeout(300)
-    await shoot(file)
-    await context.close()
-  },
-
-  // Below 1024px one pane is shown at a time: the report with «النص» chosen.
-  'text-pane': async (width, theme, file) => {
-    if (width >= 1024) return false
-    const { context, page, shoot } = await openReport(width, theme)
-    await page.locator('[data-pane="text"]').click()
-    await page.locator('[data-page]').first().waitFor()
     await page.waitForTimeout(300)
     await shoot(file)
     await context.close()

@@ -2,7 +2,7 @@
 /**
  * Motion, looked at: frame sequences with motion ON (no reduced-motion emulation), because a
  * settled capture cannot show whether anything moves. About eight frames, 250 ms apart, of
- *   home     the first screen loading (the headline's underline, the notes dropping)
+ *   home     the first screen loading (the headline's underline, the engine cards rising)
  *   finish   a report's last moments (the stage giving way to the verdict, the tiles counting,
  *            the cards rising, the seal)
  * at 390 and 1440, laid side by side as one sheet per sequence in docs/screenshots/v3/frames/.
