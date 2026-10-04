@@ -1,5 +1,6 @@
 import { ChevronDown, Download, RotateCcw } from 'lucide-react'
 import { Suspense, lazy, useState } from 'react'
+import type { ReactNode } from 'react'
 
 import { LegendLink } from '@/components/legend-link'
 import { SummarySentence } from '@/components/report/summary-sentence'
@@ -108,6 +109,7 @@ export function VerdictHeader({
   elapsed,
   engines,
   sealing,
+  jump,
   onReplay,
   replayOpen,
   exportActions,
@@ -122,6 +124,8 @@ export function VerdictHeader({
   engines: PipelineNode[]
   /** The report was just made: the seal is drawn and stamped, once. */
   sealing: boolean
+  /** The link to the notes, where they stand under the text. */
+  jump: ReactNode
   onReplay: (() => void) | undefined
   replayOpen: boolean
   exportActions: ExportActions | undefined
@@ -130,8 +134,8 @@ export function VerdictHeader({
   const { t } = useI18n()
   const [exportArmed, setExportArmed] = useState(false)
   // The five states as tiles, once there is more than one thing to count. On a phone the tiles
-  // then carry the states by themselves — the sentence keeps only its head — so the cards
-  // start as high on the screen as they can: results first.
+  // then carry the states by themselves — the sentence keeps only its head — so the verdict
+  // stays short and the text and its notes start as high on the screen as they can.
   const tiles = tally.citations > 0 && tally.citations + tally.questions > 1
   const roomy = useMediaQuery('(min-width: 640px)')
 
@@ -237,6 +241,7 @@ export function VerdictHeader({
           )}
           <div className="flex flex-wrap items-center gap-x-4 print:hidden">
             {elapsed ? <span className="tabular font-semibold text-figure sm:hidden">{t.verdict.elapsed(elapsed)}</span> : null}
+            {jump}
             <LegendLink className="min-h-8 text-sm" />
             {onReplay ? (
               <Button type="button" variant="link" data-testid="replay" aria-expanded={replayOpen} onClick={onReplay} className="min-h-8 text-sm">

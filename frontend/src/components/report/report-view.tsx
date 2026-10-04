@@ -1,4 +1,4 @@
-import { History, RotateCcw, Share2 } from 'lucide-react'
+import { ChevronDown, History, RotateCcw, Share2 } from 'lucide-react'
 import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
@@ -11,7 +11,7 @@ import type { ExportActions } from '@/components/report/verdict-header'
 import type { ShareTarget } from '@/components/share/share-card-dialog'
 import { StateGlyph } from '@/components/state-glyph'
 import { Button } from '@/components/ui/button'
-import { prefersReducedMotion, useMediaQuery } from '@/hooks/use-media-query'
+import { prefersReducedMotion } from '@/hooks/use-media-query'
 import { usePlayhead } from '@/hooks/use-playhead'
 import type { VerifyState } from '@/hooks/use-verify'
 import { featuresOf } from '@/lib/features'
@@ -213,12 +213,6 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
     })
   })
 
-  // Below 1024px the two panes do not stack: one is shown, and a control that stays under the bar
-  // switches between them. While a run is on, the text is the one shown — it is being read —
-  // and when the verdict arrives the notes are: results first. A choice made by hand is kept.
-  const stacked = !useMediaQuery('(min-width: 1024px)')
-  const [paneChoice, setPaneChoice] = useState<'notes' | 'text' | null>(null)
-  const pane = paneChoice ?? (head === 'map' ? 'text' : 'notes')
   // This view saw the run happen (it was not reopened from history): its verdict is sealed once.
   const [live] = useState(running)
 
@@ -307,11 +301,12 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
       if (!cards[claimId]) return
       if (hidden.has(claimId)) setFilter(null)
       setOpenIds((current) => new Set(current).add(claimId))
-      // Where one pane is shown at a time, the notes come forward first.
-      setPaneChoice('notes')
       window.requestAnimationFrame(() => {
         const note = document.getElementById(`note-${claimId}`)
-        note?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' })
+        // Beside the text the card is brought into view; under the text (below 1024px) the page
+        // scrolls to it, its head just under the bar.
+        const beside = window.matchMedia('(min-width: 1024px)').matches
+        note?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: beside ? 'nearest' : 'start' })
         note?.querySelector('button')?.focus({ preventScroll: true })
       })
     },
@@ -320,13 +315,9 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
 
   /** A card → its words in the text, tinted for a moment so the eye finds them. */
   const locate = useCallback((claimId: string) => {
-    // Where one pane is shown at a time, the text comes forward, then the passage is found in it.
-    setPaneChoice('text')
-    window.requestAnimationFrame(() =>
-      document
-        .getElementById(`span-${claimId}`)
-        ?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' }),
-    )
+    document
+      .getElementById(`span-${claimId}`)
+      ?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' })
     setActiveId(claimId)
     if (flashTimer.current) window.clearTimeout(flashTimer.current)
     flashTimer.current = window.setTimeout(() => setActiveId(null), 1700)
@@ -501,6 +492,24 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
           elapsed={elapsed}
           engines={enginesUsed}
           sealing={live}
+          jump={
+            // Where the cards stand under the text (below 1024px), one tap takes the reader to them.
+            ordered.length > 1 ? (
+              <a
+                href="#notes-title"
+                data-testid="jump-notes"
+                onClick={(event) => {
+                  event.preventDefault()
+                  notesRef.current?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' })
+                  document.getElementById('notes-title')?.focus({ preventScroll: true })
+                }}
+                className="inline-flex min-h-8 items-center gap-1 text-sm text-green underline decoration-green/40 underline-offset-4 lg:hidden"
+              >
+                {t.notes.jump(ordered.length)}
+                <ChevronDown aria-hidden="true" className="size-4" />
+              </a>
+            ) : null
+          }
           onReplay={state.traces.length > 0 ? toggleReplay : undefined}
           replayOpen={replayOpen}
           exportActions={exportActions}
@@ -518,33 +527,6 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
       <div ref={belowRef} className="space-y-4">
       {error ? <div>{error}</div> : null}
 
-      {/* «الحواشي | النص»: under the bar wherever one pane is shown at a time. */}
-      {stacked && !noClaims && ordered.length > 0 ? (
-        <div
-          role="group"
-          aria-label={t.panes.switch}
-          data-testid="pane-switch"
-          className="sticky top-14 z-20 mx-auto flex w-full max-w-sm rounded-control border bg-paper p-1 shadow-panel print:hidden"
-        >
-          {(['notes', 'text'] as const).map((id) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={pane === id}
-              data-pane={id}
-              onClick={() => setPaneChoice(id)}
-              className={cn(
-                'min-h-10 flex-1 rounded-[7px] px-3 text-sm transition-colors duration-150',
-                pane === id ? 'bg-green-fill font-semibold text-primary-foreground' : 'text-quiet hover:text-ink',
-              )}
-            >
-              {id === 'notes' ? t.panes.notes : t.panes.text}
-              {id === 'notes' ? <span className="tabular ms-1.5 font-normal">{ordered.length}</span> : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
-
       {mapVisible || verdictVisible || hasText || ordered.length > 0 ? (
         <div
           data-inking={inking ? '' : undefined}
@@ -554,10 +536,7 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
           <section
             aria-label={t.panes.text}
             data-scanning={running ? '' : undefined}
-            className={cn(
-              'panel min-w-0 self-start p-4 md:p-6 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto',
-              stacked && !noClaims && ordered.length > 0 && pane !== 'text' && 'hidden print:block',
-            )}
+            className="panel min-w-0 self-start p-4 md:p-6 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto"
           >
             {hasText ? (
               <PageText
@@ -591,7 +570,7 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
             <section
               ref={notesRef}
               aria-labelledby="notes-title"
-              className={cn('min-w-0 scroll-mt-4 space-y-3', stacked && pane !== 'notes' && 'hidden print:block')}
+              className="min-w-0 scroll-mt-16 space-y-3 xl:scroll-mt-4"
             >
               <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-4">
                 <h2 id="notes-title" tabIndex={-1} className="text-base font-semibold text-ink">
