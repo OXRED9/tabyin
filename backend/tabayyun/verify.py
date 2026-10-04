@@ -105,7 +105,7 @@ def _lexical_floor(claim_text: str, source_text: str, minimum: float) -> bool:
     return _shared_vocabulary(claim_text, source_text)[1] >= minimum
 
 
-async def judge_relation(ctx: Context, task: str, claim_text: str, texts: list[str]) -> tuple[int, str] | None:
+async def judge_relation(ctx: Context, task: str, claim_text: str, texts: list[str], *, patient: bool = False) -> tuple[int, str] | None:
     """Ask the LLM which retrieved text (if any) corresponds to the claim, and how. Returns (index, relation) or None."""
     if not ctx.llm_enabled or not texts:
         return None
@@ -121,12 +121,13 @@ async def judge_relation(ctx: Context, task: str, claim_text: str, texts: list[s
             schema=JUDGEMENT_SCHEMA,
             model_cls=LLMJudgement,
             use_fallback=False,  # a pointer is only honoured from the model measured for it
-            # Evidence can give a ruling its reference, so it gets the time and the room to answer
-            # (measured: at 10 s / 900 tokens most of these calls were cut off and every settled
-            # ruling fell back to "needs review"). "Same narration?" can no longer make a claim
-            # supported and keeps the short defaults.
-            timeout=25.0 if task == "evidence" else None,
-            max_tokens=1500 if task == "evidence" else None,
+            # ``patient``: the evidence pointer for a settled (level A) statement can give it its
+            # reference, so it gets the time and the room to answer (measured: at 10 s / 900 tokens
+            # most of these calls were cut off and every settled ruling fell back to "needs review").
+            # Everywhere else the pointer can only show a text, never raise a state, and keeps the
+            # short defaults — a lecture's explanations must not hold its report for 25 s each.
+            timeout=25.0 if patient else None,
+            max_tokens=1500 if patient else None,
         )
     except LLMError as e:
         log.warning("judge unavailable: %s", e)
@@ -592,7 +593,7 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
     chosen: tuple[str, SourceRef, list[Grade]] | None = None
     referenced: tuple[str, SourceRef, list[Grade]] | None = None
     if level in (ContentLevel.A, ContentLevel.B, ContentLevel.C) and candidates:
-        hit = await judge_relation(ctx, "evidence", claim.quote, [c[0] for c in candidates])
+        hit = await judge_relation(ctx, "evidence", claim.quote, [c[0] for c in candidates], patient=level == ContentLevel.A)
         if hit is not None and hit[1] in ("explicit_support", "referenced"):
             idx, relation = hit
             shared, ratio = _shared_vocabulary(f"{claim.quote} {query}", candidates[idx][0])

@@ -14,7 +14,7 @@ from pathlib import Path
 
 from .config import settings
 from .evidence_rules.thresholds import THRESHOLDS as t
-from .extract import RawClaim, absorb_closed_quotes, keep_personal_cases, keep_questions, merge_claims, widen_scanned_verses
+from .extract import RawClaim, absorb_closed_quotes, drop_noise, keep_personal_cases, keep_questions, merge_claims, widen_scanned_verses
 from .extract.lexical import extract_by_markers, is_fabrication_request, looks_like_question, scan_hadith, scan_hadith_verbatim, scan_quran
 from .extract.llm_extractor import extract_with_llm
 from .ingest.document import Document, IngestError
@@ -142,7 +142,13 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         # The marked quotation replaces that fragment when the matcher finds it is the same verse.
         quick, _ = widen_scanned_verses(quick, [c for c in markers if not c.closed and c.type == ClaimType.ayah], quran, t.ayah_near)
 
+        # Every quotation found, including repeats and delimited quotations that get no note of their own.
+        seen_quotations: list[RawClaim] = [c for c in closed if c.type in (ClaimType.ayah, ClaimType.hadith)]
+
         async def announce_quick() -> None:
+            nonlocal quick
+            seen_quotations.extend(c for c in quick if c.type in (ClaimType.ayah, ClaimType.hadith))
+            quick = drop_noise(quick)  # a narration recited and then referred to again is one narration
             if quick:
                 await put(stage("match", "start", done=0, total=len(quick)))
                 await announce(quick)
@@ -185,7 +191,7 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
             rest = rest + await asyncio.to_thread(scan_hadith, doc, hadith, taken)
 
         merged = merge_claims(quick, rest)
-        new = [c for c in merged if all(c is not q for q in quick)][: max(0, settings.max_claims - len(quick))]
+        new = drop_noise([c for c in merged if all(c is not q for q in quick)], shown=quick, quotations=seen_quotations)[: max(0, settings.max_claims - len(quick))]
         t_extract = time.monotonic()
         await put(stage("extract", "done"))
 

@@ -5,6 +5,7 @@ citations, an index into retrieved texts). The tests check the plumbing and — 
 that nothing the "model" says can become a verdict without a retrieved source behind it.
 """
 import asyncio
+import re
 
 import pytest
 
@@ -179,6 +180,33 @@ def test_no_evidence_is_shown_for_a_personal_case_or_when_the_model_points_at_no
     nothing = [claim(quote=RULING.rstrip("."), search_query="وجوب صيام رمضان", content_level="C")]
     (card,) = run(RULING, ScriptedProvider(nothing, judge_index=-1))["cards"]
     assert card["source"] is None and card["match_kind"] == "none"
+
+
+def test_a_narration_recited_then_referred_to_again_is_one_note(run, matn):
+    """Seen on the example clip: the narration, then «رواه … حديث "…"، من أعظم الأحاديث» — which came back
+    as a second note for its opening words and a third, "needs review", for the remark about it."""
+    full = matn("4560")
+    body = re.split(r'[«"“]', full, maxsplit=1)[-1]  # past the chain of narration, into the wording itself
+    opening = " ".join(body.split()[:4]).strip("،,.؛ ")
+    remark = f'رواه مسلم حديث "{opening}"، من أعظم الأحاديث وبه بدأ المصنف كتابه'
+    text = f"قال رسول الله صلى الله عليه وسلم: «{full}».\nثم قال الخطيب: {remark}. وقالوا: ثلث العلم."
+    proposals = [
+        claim(type="fact", quote=remark, content_level="A"),  # what the model tends to add
+        claim(type="hadith", quote=opening),
+        claim(type="attributed_quote", quote="ثلث العلم", content_level="B"),
+    ]
+    for provider in (NoModel(), ScriptedProvider(proposals, judge_index=-1)):
+        cards = run(text, provider)["cards"]
+        assert [c["claim_type"] for c in cards] == ["hadith"], [(c["claim_type"], c["text_as_quoted"][:30]) for c in cards]
+        assert cards[0]["state"] in ("supported", "supported_with_note") and len(cards[0]["text_as_quoted"].split()) > 5  # the fullest occurrence
+
+
+def test_a_ruling_that_quotes_its_evidence_keeps_its_own_note(run, ayah):
+    verse = ayah(2, 183)[1]
+    ruling = "صيام شهر رمضان واجب على كل مسلم بالغ قادر"
+    text = f"{ruling}، لقوله تعالى: ﴿{verse}﴾."
+    cards = run(text, ScriptedProvider([claim(type="ruling", quote=f"{ruling}، لقوله تعالى: ﴿{verse}﴾", content_level="A", search_query="وجوب صيام رمضان")], judge_index=-1))["cards"]
+    assert sorted(c["claim_type"] for c in cards) == ["ayah", "ruling"]
 
 
 def test_sound_narration_attributed_to_someone_else_is_contradicted(run, matn):

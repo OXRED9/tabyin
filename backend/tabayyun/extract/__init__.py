@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from ..schemas import ContentLevel
-from ..schemas import ClaimType
+import re
+
+from ..normalize import normalize_ar
+from ..schemas import ClaimType, ContentLevel
 from .models import RawClaim
 
 _QUOTED = {ClaimType.ayah, ClaimType.hadith}
@@ -108,6 +110,45 @@ def keep_personal_cases(proposed: list[RawClaim], markers: list[RawClaim]) -> li
     return out
 
 
+_NOT_WORDS = re.compile(r"[^\w\s]|_")
+
+
+def _words(text: str) -> str:
+    return " ".join(_NOT_WORDS.sub(" ", normalize_ar(text)).split())
+
+
+def drop_noise(claims: list[RawClaim], shown: list[RawClaim] | None = None, quotations: list[RawClaim] | None = None) -> list[RawClaim]:
+    """What is not worth a note of its own (``shown`` are claims already announced; they stay;
+    ``quotations`` are every quotation seen in the text, including repeats that were dropped).
+
+    * A quotation repeated in the text is reported once, at its fullest occurrence: a lecture that
+      recites a narration and then refers to it by its opening words is about one narration.
+    * A statement that merely contains a quotation — introduces it, names its collector, praises it —
+      is not a claim: the quotation is, and it is verified. (Seen on the example clip: «رواه البخاري
+      حديث "…"، من أعظم الأحاديث …» came back "needs review" beside the narration it is about.)
+    * An attributed saying of one or two words cannot be checked against anything, and "no source"
+      on two words is noise.
+    A ruling that quotes its evidence keeps its own note, as do questions and personal cases.
+    """
+    shown = shown or []
+    quoted = [c for c in shown + claims if c.type in _QUOTED]
+    plain = {id(c): _words(c.quote) for c in quoted}
+    out: list[RawClaim] = []
+    for c in claims:
+        if c.type == ClaimType.attributed_quote and len(_words(c.quote).split()) < 3:
+            continue
+        if c.type == ClaimType.fact and not c.is_question and any(q is not c and overlap(q, c) >= 0.9 * (q.end - q.start) for q in quoted + (quotations or [])):
+            continue
+        if c.type in _QUOTED:
+            mine = plain[id(c)]
+            fuller = [q for q in quoted if q is not c and q.type == c.type and len(plain[id(q)]) > len(mine) and f" {mine} " in f" {plain[id(q)]} "]
+            same = [q for q in quoted if q is not c and q.type == c.type and plain[id(q)] == mine and (q in shown or q.start < c.start)]
+            if len(mine.split()) >= 3 and (fuller or same):
+                continue
+        out.append(c)
+    return out
+
+
 def keep_questions(proposed: list[RawClaim], markers: list[RawClaim], looks_like_question, is_fabrication_request) -> list[RawClaim]:
     """A question put to the tool is referred, whatever the model called it (it tends to call
     "ما حكم الزكاة؟" a request for evidence, which then reads "no source").
@@ -133,4 +174,4 @@ def keep_questions(proposed: list[RawClaim], markers: list[RawClaim], looks_like
     return out
 
 
-__all__ = ["RawClaim", "absorb_closed_quotes", "keep_personal_cases", "keep_questions", "merge_claims", "overlap", "widen_scanned_verses"]
+__all__ = ["RawClaim", "absorb_closed_quotes", "drop_noise", "keep_personal_cases", "keep_questions", "merge_claims", "overlap", "widen_scanned_verses"]
