@@ -1,61 +1,89 @@
 import { ChevronDown, History, RotateCcw, Share2 } from 'lucide-react'
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 
-import { ProgressPanel } from '@/components/progress-panel'
-import { LegendLink } from '@/components/legend-link'
+import { EvidenceCard } from '@/components/report/evidence-card'
 import LazyNoteBody from '@/components/report/lazy-note-body'
-import { MarginNote, PendingNote } from '@/components/report/note'
-import { NoteRow, OrderToggle } from '@/components/report/notes-list'
-import type { NoteOrder } from '@/components/report/notes-list'
 import { PageText } from '@/components/report/page-text'
 import { SourceLink } from '@/components/report/source-link'
-import { SummarySentence } from '@/components/report/summary-sentence'
-import { useMarginLayout } from '@/components/report/use-margin-layout'
+import { VerdictHeader } from '@/components/report/verdict-header'
+import type { ExportActions } from '@/components/report/verdict-header'
 import type { ShareTarget } from '@/components/share/share-card-dialog'
 import { StateGlyph } from '@/components/state-glyph'
 import { Button } from '@/components/ui/button'
-import { prefersReducedMotion, useMediaQuery } from '@/hooks/use-media-query'
+import { prefersReducedMotion } from '@/hooks/use-media-query'
+import { usePlayhead } from '@/hooks/use-playhead'
 import type { VerifyState } from '@/hooks/use-verify'
 import { featuresOf } from '@/lib/features'
-import type { ClauseKind } from '@/lib/summary'
 import type { ErrorTarget } from '@/lib/feedback'
 import { formatSeconds, safeHref } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
-import { lazyWithPreload } from '@/lib/lazy'
+import { STEPS, pipelineOf, stepsReached } from '@/lib/pipeline'
 import { sourcesUsed, tallyOf } from '@/lib/report'
-import { STATES_BY_RISK, STATE_STYLE, chronological } from '@/lib/states'
-import type { Card, ClaimStub, Meta } from '@/lib/types'
+import { byAttention, chronological } from '@/lib/states'
+import type { ClauseKind } from '@/lib/summary'
+import type { Card, Meta, StageId } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface ReportViewProps {
   state: VerifyState
-  /** The request is still running: the progress line stands where the summary will. */
+  /** The request is still running: the investigation stands where the verdict will. */
   running: boolean
   onCancel: (() => void) | undefined
   meta: Meta | null
   /** A failure that arrived after some notes did: shown above what was received. */
   error: ReactNode
+  /** Absent until there is a report to export. */
+  exportActions: ExportActions | undefined
   onVerifyAnother: () => void
 }
 
-/** The orchestrated moment lasts 600ms; the page stays in its "inking" state a little longer. */
+/** The underlines ink in along the text when a live run completes; the page stays "inking" this long. */
 const INKING_MS = 700
-/** Notes below an opening note glide for 180ms. */
-const GLIDE_MS = 220
-
-const NONE: ReadonlySet<string> = new Set()
-
-// Nothing that lies over the page is needed to draw it: each of these is fetched when first used.
-const InlineNote = lazyWithPreload(() => import('@/components/report/inline-note'))
-const NoteSheet = lazy(() => import('@/components/report/note-sheet'))
-const ReferralDialog = lazy(() => import('@/components/report/referral-dialog'))
-const ReportErrorDialog = lazy(() => import('@/components/report/report-error-dialog'))
-const ShareCardDialog = lazy(() => import('@/components/share/share-card-dialog'))
 /** How long after a report completes its on-demand parts are warmed up. */
 const WARM_UP_MS = 2500
 
-/** A calm remark at the top of the margin: reduced coverage, or a source that is unreachable. */
+const STAGES: StageId[] = ['ingest', 'extract', 'match', 'rules', 'report']
+
+// The investigation is its own piece of code, fetched the moment a run starts; what lies over the
+// page is fetched when first used.
+const loadInvestigation = () => import('@/components/investigation/investigation')
+const Investigation = lazy(loadInvestigation)
+const ReferralDialog = lazy(() => import('@/components/report/referral-dialog'))
+const ReportErrorDialog = lazy(() => import('@/components/report/report-error-dialog'))
+const ShareCardDialog = lazy(() => import('@/components/share/share-card-dialog'))
+
+type NoteOrder = 'order' | 'state'
+
+/** «حسب الترتيب / الأهم أولاً»: the evidence in the text's order, or what most needs attention first. */
+function OrderToggle({ value, onChange }: { value: NoteOrder; onChange: (order: NoteOrder) => void }) {
+  const { t } = useI18n()
+  const options: { value: NoteOrder; label: string }[] = [
+    { value: 'order', label: t.report.sortByOrder },
+    { value: 'state', label: t.report.sortByState },
+  ]
+  return (
+    <div role="group" aria-label={t.report.sortLabel} className="flex items-center">
+      {options.map((option, i) => (
+        <button
+          key={option.value}
+          type="button"
+          aria-pressed={value === option.value}
+          onClick={() => onChange(option.value)}
+          className={cn(
+            'min-h-10 px-2 text-sm transition-colors duration-150',
+            i > 0 && 'border-s',
+            value === option.value ? 'font-semibold text-ink' : 'text-quiet hover:text-ink',
+          )}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** A calm remark above the evidence: reduced coverage, or a source that is unreachable. */
 function Notice({ title, icon, children }: { title?: string; icon?: ReactNode; children: ReactNode }) {
   return (
     <p role="note" className="flex items-start gap-2 text-sm text-quiet">
@@ -68,51 +96,118 @@ function Notice({ title, icon, children }: { title?: string; icon?: ReactNode; c
   )
 }
 
+/** Seconds left, counted down locally between `stage` events so the number keeps moving. */
+function useEta(eta: VerifyState['eta']): number | null {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!eta) return
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [eta])
+  if (!eta) return null
+  return Math.max(0, Math.round(eta.seconds - (now - eta.at) / 1000))
+}
+
 /**
- * The page and its margin. The user's text is the interface: it is set as a page, each claim is
- * underlined in its state's ink, and its verdict is a note in the margin, level with the line it
- * is about and tied to it by a hairline. On a phone there is no margin: the notes follow the text
- * as a list, each beginning with its words, and open as a sheet from the bottom.
+ * Above the map while it runs: the stage in a sentence, how far the matching is, and a way out.
+ * It holds the same height from the first event to the last — two lines on a phone, the button's
+ * height above that — so the map under it never moves.
  */
-export function ReportView({
-  state,
-  running,
-  onCancel,
-  meta,
-  error,
-  onVerifyAnother,
-}: ReportViewProps) {
+function RunHead({ state, onCancel }: { state: VerifyState; onCancel: (() => void) | undefined }) {
+  const { t } = useI18n()
+  const remaining = useEta(state.eta)
+  const currentId = STAGES[Math.max(1, state.highestStage) - 1]
+  const current = state.stages[currentId]
+  const finished = state.phase === 'done'
+  return (
+    <div className="flex min-h-[3.4rem] items-start gap-4 sm:min-h-10">
+      <p className="min-w-0 flex-1 text-base sm:pt-1.5" aria-live="polite">
+        <span aria-hidden="true" className={cn('me-2 inline-block size-2.5 rounded-tag align-middle', finished ? 'bg-green' : 'animate-live bg-gold')} />
+        <span className="font-semibold text-ink">{finished ? t.pipeline.finished : t.progress.sentence(t.stages[currentId])}</span>
+        {finished ? null : current?.total ? (
+          <span className="tabular ms-2 whitespace-nowrap text-quiet">{t.progress.matched(current.done ?? 0, current.total)}</span>
+        ) : null}
+        {remaining === null || state.phase !== 'running' ? null : (
+          <span className="tabular ms-2 whitespace-nowrap text-quiet">
+            {remaining > 1 ? t.progress.eta(remaining) : t.progress.etaSoon}
+          </span>
+        )}
+      </p>
+      {onCancel && state.phase === 'running' ? (
+        <Button type="button" variant="outline" onClick={onCancel} className="shrink-0">
+          {t.input.cancel}
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+/**
+ * A verification, from its first event to its report (docs/DESIGN.md §10). While it runs, the
+ * investigation is the hero: a live map of what the server is really doing. When it is done the
+ * map gives way to the verdict. Under both, from the first card on: the text with its passages
+ * marked, and beside it (below it on a phone) the evidence, one card per citation.
+ */
+export function ReportView({ state, running, onCancel, meta, error, exportActions, onVerifyAnother }: ReportViewProps) {
   const { t, pick } = useI18n()
-  const hasMargin = useMediaQuery('(min-width: 768px)')
-  // A note opens in place only where the margin is wide enough to read in. Below that the margin
-  // keeps its notes collapsed and level, and a note opens as a sheet, as on a phone.
-  const inPlace = useMediaQuery('(min-width: 1024px)')
-  const gridRef = useRef<HTMLDivElement | null>(null)
   const notesRef = useRef<HTMLElement | null>(null)
-  const glideTimer = useRef<number | null>(null)
   const flashTimer = useRef<number | null>(null)
 
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(() => new Set())
   const [activeId, setActiveId] = useState<string | null>(null)
   const [filter, setFilter] = useState<ClauseKind | null>(null)
   const [order, setOrder] = useState<NoteOrder>('order')
-  const [sheetId, setSheetId] = useState<string | null>(null)
   const [referralOpen, setReferralOpen] = useState(false)
   // The dialog stays mounted once it has been opened, so it can close with its transition; it
   // keeps the topic words of the note it was opened from, which its links search for.
   const [referralFor, setReferralFor] = useState<{ query: string | null } | null>(null)
   const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null)
   const [errorTarget, setErrorTarget] = useState<ErrorTarget | null>(null)
-  const [glide, setGlide] = useState(false)
-  const [notesBelow, setNotesBelow] = useState(false)
-  // False only between the end of a live run and the end of its orchestrated moment.
+  const [replayOpen, setReplayOpen] = useState(false)
+  // False only between the end of a live run and the end of its inking.
   const [inked, setInked] = useState(!running)
 
   const done = state.phase === 'done'
   const { claims, cards, source, segments, summary } = state
   const features = useMemo(() => featuresOf(meta), [meta])
 
-  // Reading order; claims with no place in the text go at the end of the margin.
+  // The investigation: how far the server has really got, and how much of that the screen has shown.
+  const reached = stepsReached(state)
+  const { shown, replaying, replay } = usePlayhead(reached)
+  const { nodes, log } = useMemo(() => pipelineOf(state, meta, shown, t), [state, meta, shown, t])
+  // What really worked on this report, for the verdict: the nodes as they ended, whatever a replay
+  // is showing at the moment.
+  const finalNodes = useMemo(() => (done ? pipelineOf(state, meta, STEPS, t).nodes : []), [done, state, meta, t])
+  // A live run's map stays until its last step has been seen; then it gives way to the verdict.
+  const showTail = done && shown < STEPS && !replaying
+  const mapVisible = running || showTail
+  const verdictVisible = done && !showTail
+  useEffect(() => {
+    if (running) void loadInvestigation()
+  }, [running])
+
+  // When the map gives way to the verdict, what stands under it does not jump to its new place:
+  // it starts where it was and glides there (a transform, so the layout changes once and nothing
+  // is seen to leap). With reduced motion the change is instant.
+  const belowRef = useRef<HTMLDivElement | null>(null)
+  const below = useRef<{ head: string; top: number } | null>(null)
+  const head = running || showTail ? 'map' : verdictVisible ? 'verdict' : 'none'
+  useLayoutEffect(() => {
+    const element = belowRef.current
+    if (!element) return
+    const top = element.getBoundingClientRect().top + window.scrollY
+    const before = below.current
+    below.current = { head, top }
+    if (!before || before.head === head || before.head !== 'map') return
+    const moved = before.top - top
+    if (Math.abs(moved) < 2 || prefersReducedMotion()) return
+    element.animate([{ transform: `translateY(${moved}px)` }, { transform: 'translateY(0)' }], {
+      duration: 320,
+      easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+    })
+  })
+
+  // Reading order; claims with no place in the text go last.
   const ordered = useMemo(
     () => [...claims].sort((a, b) => Number(!a.span) - Number(!b.span) || chronological(a, b)),
     [claims],
@@ -141,30 +236,34 @@ export function ReportView({
     () => new Set(activeFilter ? ordered.filter((c) => kinds.get(c.id) !== activeFilter).map((c) => c.id) : []),
     [activeFilter, ordered, kinds],
   )
+  // The evidence can put what most needs attention first.
+  const listed = useMemo(
+    () =>
+      order === 'state' && done
+        ? [...visible].sort((a, b) => {
+            const cardA = cards[a.id]
+            const cardB = cards[b.id]
+            return cardA && cardB ? byAttention(cardA, cardB) : 0
+          })
+        : visible,
+    [cards, done, order, visible],
+  )
 
   const hasText = segments.some((s) => s.text.trim().length > 0)
   const noClaims = done && ordered.length === 0
 
-  // Exactly one claim: nobody should have to tap to read the answer. At 1024 and up its margin
-  // note opens by itself (once; it can be closed). Below that the note is set open, inline,
-  // directly under the text, with no margin and no one-item list. Only once the report is
-  // complete: while it streams, the page behaves as always.
-  // A question's note opens by itself in the same way, wherever notes open in place: its answer
-  // is where to look, and nobody should have to ask for that twice.
-  const single = done && ordered.length === 1 ? cards[ordered[0].id] : undefined
-  const singleInline = !!single && !inPlace
+  // Nobody should have to tap to read the answer: when the report completes, the card of a
+  // report's one citation opens by itself, and so does every question's (its answer is where to
+  // look). Once; they can be closed.
   const [openedAlone, setOpenedAlone] = useState(false)
-  if (done && inPlace && !openedAlone) {
+  if (done && !openedAlone) {
     setOpenedAlone(true)
-    const alone = single ? [single.id] : [...questions]
+    const alone = ordered.length === 1 ? [ordered[0].id] : [...questions]
     if (alone.length > 0) setOpenIds(new Set(alone))
   }
-  const withMargin = hasMargin && !singleInline
+
   const settled = !running
   const inking = settled && !inked
-
-  // The one orchestrated moment: when a live run completes, the underlines ink in along the text
-  // and the notes settle. It is a CSS animation keyed on `data-inking`; this only ends it.
   useEffect(() => {
     if (!inking) return
     const timer = window.setTimeout(() => setInked(true), prefersReducedMotion() ? 0 : INKING_MS)
@@ -173,103 +272,44 @@ export function ReportView({
 
   useEffect(
     () => () => {
-      if (glideTimer.current) window.clearTimeout(glideTimer.current)
       if (flashTimer.current) window.clearTimeout(flashTimer.current)
     },
     [],
   )
 
-  const ids = useMemo(() => visible.map((c) => c.id), [visible])
-  // Notes opened in place stay open only while the screen is wide enough for that.
-  const openInPlace = inPlace ? openIds : NONE
-  const signature = [
-    withMargin,
-    ids.join(','),
-    [...openInPlace].join(','),
-    readyCards.length,
-    segments.length,
-    state.notices.length,
-    summary ? 1 : 0,
-  ].join('|')
-  const layout = useMarginLayout(gridRef, ids, signature)
+  const toggleNote = useCallback((cardId: string) => {
+    setOpenIds((current) => {
+      const next = new Set(current)
+      if (next.has(cardId)) next.delete(cardId)
+      else next.add(cardId)
+      return next
+    })
+  }, [])
 
-  const toggleNote = useCallback(
-    (cardId: string) => {
-      if (!inPlace) {
-        setSheetId(cardId)
-        return
-      }
-      setOpenIds((current) => {
-        const next = new Set(current)
-        if (next.has(cardId)) next.delete(cardId)
-        else next.add(cardId)
-        return next
-      })
-      // The notes below make room: for this one change their move is a glide, not a jump.
-      setGlide(true)
-      if (glideTimer.current) window.clearTimeout(glideTimer.current)
-      glideTimer.current = window.setTimeout(() => setGlide(false), GLIDE_MS)
-    },
-    [inPlace],
-  )
-
-  /** A passage in the text was chosen: open its note (in the margin, or as a sheet on a phone). */
+  /** A passage in the text was chosen: open its card and go to it. */
   const selectPassage = useCallback(
     (claimId: string) => {
       if (!cards[claimId]) return
-      if (singleInline) {
-        // The note is already open under the text: go to it.
-        document
-          .getElementById(`note-${claimId}`)
-          ?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' })
-        return
-      }
-      if (!inPlace) {
-        setSheetId(claimId)
-        return
-      }
       if (hidden.has(claimId)) setFilter(null)
-      toggleNote(claimId)
+      setOpenIds((current) => new Set(current).add(claimId))
       window.requestAnimationFrame(() => {
         const note = document.getElementById(`note-${claimId}`)
         note?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' })
         note?.querySelector('button')?.focus({ preventScroll: true })
       })
     },
-    [cards, hidden, inPlace, singleInline, toggleNote],
+    [cards, hidden],
   )
 
-  /** A phone's note → its words in the text, tinted for a moment so the eye finds them. */
+  /** A card → its words in the text, tinted for a moment so the eye finds them. */
   const locate = useCallback((claimId: string) => {
-    setSheetId(null)
-    window.setTimeout(() => {
-      document
-        .getElementById(`span-${claimId}`)
-        ?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' })
-      setActiveId(claimId)
-      if (flashTimer.current) window.clearTimeout(flashTimer.current)
-      flashTimer.current = window.setTimeout(() => setActiveId(null), 1700)
-    }, 220)
+    document
+      .getElementById(`span-${claimId}`)
+      ?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' })
+    setActiveId(claimId)
+    if (flashTimer.current) window.clearTimeout(flashTimer.current)
+    flashTimer.current = window.setTimeout(() => setActiveId(null), 1700)
   }, [])
-
-  // Does the phone's list of notes start below the first screen? Asked again whenever the page's
-  // height changes (the text arrives, a note is added) or the window does — and already while the
-  // report streams, so that the link is in the head from the first frame of the finished report.
-  const listCount = ordered.length
-  useEffect(() => {
-    if (hasMargin || listCount < 2) return
-    const check = () => {
-      const section = notesRef.current
-      setNotesBelow(!!section && section.getBoundingClientRect().top + window.scrollY > window.innerHeight)
-    }
-    const observer = new ResizeObserver(check)
-    observer.observe(document.body)
-    window.addEventListener('resize', check)
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', check)
-    }
-  }, [hasMargin, listCount])
 
   const openReferral = useCallback(
     (cardId: string) => {
@@ -279,26 +319,21 @@ export function ReportView({
     [cards],
   )
 
-  // Once the report is complete and the page is quiet, fetch what a first tap on a note will
-  // need (its body, the sheet, the Mushaf face), so that opening a note is immediate.
+  // The body of a card is fetched when one is first opened; a report that will open one by itself
+  // (its only citation, or a question) fetches it just before it completes, and any finished
+  // report once the page is quiet, with the Mushaf's face.
+  const willOpen = running && state.stages.match?.status === 'done' && (claims.length === 1 || questions.size > 0)
+  useEffect(() => {
+    if (willOpen) void LazyNoteBody.preload()
+  }, [willOpen])
   useEffect(() => {
     if (!done) return
     const timer = window.setTimeout(() => {
       void LazyNoteBody.preload()
-      if (!inPlace) void import('@/components/report/note-sheet')
       void document.fonts?.load('26px "Amiri Quran"', 'ب').catch(() => undefined)
     }, WARM_UP_MS)
     return () => window.clearTimeout(timer)
-  }, [done, inPlace])
-
-  // A report that will have one claim opens its note when it completes (inline below 1024px, in
-  // the margin above). Once matching is over the claims are all known: if there is one, the
-  // note's code is fetched in the moment before the report completes, so the note is there with
-  // the rest of it and nothing under it is pushed down.
-  const loneClaim = running && claims.length === 1 && state.stages.match?.status === 'done'
-  useEffect(() => {
-    if (loneClaim) void (inPlace ? LazyNoteBody : InlineNote).preload()
-  }, [loneClaim, inPlace])
+  }, [done])
 
   // F3: which verdict card the share dialog is showing, if any.
   const shareClaim = useCallback(
@@ -317,6 +352,19 @@ export function ReportView({
     },
     [cards],
   )
+
+  // «أعد عرض التحرّي»: the map again under the verdict, walking the same steps with the figures
+  // and times the server reported. With reduced motion it opens complete, as a checklist.
+  const replayRef = useRef<HTMLDivElement | null>(null)
+  const toggleReplay = useCallback(() => {
+    if (!replayOpen) {
+      replay()
+      window.requestAnimationFrame(() =>
+        replayRef.current?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' }),
+      )
+    }
+    setReplayOpen(!replayOpen)
+  }, [replay, replayOpen])
 
   const lexicalNotice = state.notices.find((n) => n.code === 'llm_unavailable')
   const noClaimsNotice = state.notices.find((n) => n.code === 'no_claims')
@@ -365,33 +413,38 @@ export function ReportView({
     onReferral: openReferral,
     onShare: shareClaim,
     onReportError: reportError,
+    onLocate: locate,
   }
-
-  // Phone only: the list can put the notes that matter most first.
-  const listed =
-    order === 'state' && done
-      ? [...visible].sort((a, b) => {
-          const rank = (claim: ClaimStub) => {
-            const s = states.get(claim.id)
-            return s ? STATES_BY_RISK.indexOf(s) : STATES_BY_RISK.length
-          }
-          return rank(a) - rank(b) || chronological(a, b)
-        })
-      : visible
-  const sheetCard = sheetId ? cards[sheetId] : undefined
 
   // A pasted text is known before the server sends it back: it is set on the page at once, so
   // nothing moves when its segments arrive.
   const pastedText = state.input?.input_type === 'text' ? (state.input.text ?? '') : ''
+  const elapsed =
+    summary && summary.elapsed_seconds >= 0.05 && !state.restored ? formatSeconds(summary.elapsed_seconds) : null
+  // What really worked on this report: the nodes that ran, with their final figures.
+  const enginesUsed = finalNodes.filter(
+    (node) => node.id !== 'input' && node.id !== 'report' && node.id !== 'rules' && (node.status === 'done' || node.status === 'warning'),
+  )
+
+  const investigation = (head: ReactNode) => (
+    <Suspense
+      fallback={
+        <section className="panel p-4 md:p-5" aria-busy="true">
+          {head}
+        </section>
+      }
+    >
+      <Investigation nodes={nodes} log={log} head={head} />
+    </Suspense>
+  )
 
   return (
-    <section aria-label={t.report.title}>
-      {/* The head of the sheet: the progress line while running, then the report in one sentence.
-          Each takes the height it needs and no more: the answer starts at the top of the sheet. */}
-      {running ? (
-        <ProgressPanel state={state} onCancel={onCancel} />
+    <section aria-label={t.report.title} className="space-y-4">
+      {/* The head: the investigation while it runs, then the verdict. */}
+      {running || showTail ? (
+        investigation(<RunHead state={state} onCancel={onCancel} />)
       ) : noClaims ? (
-        <div className="flex flex-col items-start gap-3 border-b pb-5">
+        <header className="panel flex flex-col items-start gap-3 p-5">
           <div>
             <p className="text-lg font-semibold text-ink">
               {noClaimsNotice ? pick(noClaimsNotice.message_ar, noClaimsNotice.message_en) : t.report.noClaimsTitle}
@@ -400,24 +453,21 @@ export function ReportView({
               {(noClaimsNotice && pick(noClaimsNotice.hint_ar, noClaimsNotice.hint_en)) || t.report.noClaimsHint}
             </p>
           </div>
-          <Button type="button" variant="outline" size="touch" onClick={onVerifyAnother}>
+          <Button type="button" size="touch" onClick={onVerifyAnother}>
             <RotateCcw aria-hidden="true" />
-            {t.report.another}
+            {t.shell.newVerification}
           </Button>
           {missedLink}
-        </div>
-      ) : (
-        <div className="flex items-start gap-x-6 border-b pb-5">
-          <div className="min-w-0 flex-1">
-            <SummarySentence
-              tally={tally}
-              filter={activeFilter}
-              onFilter={setFilter}
-            />
-            {/* Two quiet links under the sentence: what the states mean, and, on a phone where the
-                notes follow the text and start below the first screen, the way to them. */}
-            <div className="flex flex-wrap items-center gap-x-5">
-            {notesBelow && !withMargin && !singleInline ? (
+        </header>
+      ) : verdictVisible ? (
+        <VerdictHeader
+          tally={tally}
+          filter={activeFilter}
+          onFilter={setFilter}
+          elapsed={elapsed}
+          engines={enginesUsed}
+          jump={
+            ordered.length > 1 ? (
               <a
                 href="#notes-title"
                 onClick={(event) => {
@@ -425,174 +475,113 @@ export function ReportView({
                   notesRef.current?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' })
                   document.getElementById('notes-title')?.focus({ preventScroll: true })
                 }}
-                className="inline-flex min-h-8 items-center gap-1 text-sm text-green underline decoration-green/40 underline-offset-4"
+                className="inline-flex min-h-8 items-center gap-1 text-sm text-green underline decoration-green/40 underline-offset-4 lg:hidden"
               >
                 {t.notes.jump(ordered.length)}
                 <ChevronDown aria-hidden="true" className="size-4" />
               </a>
-            ) : null}
-              <LegendLink className="min-h-8 text-sm" />
-            </div>
-          </div>
-          <Button type="button" variant="outline" size="touch" onClick={onVerifyAnother} className="shrink-0 max-md:hidden">
-            <RotateCcw aria-hidden="true" />
-            {t.report.another}
-          </Button>
-        </div>
-      )}
+            ) : null
+          }
+          onReplay={state.traces.length > 0 ? toggleReplay : undefined}
+          replayOpen={replayOpen}
+          exportActions={exportActions}
+          onVerifyAnother={onVerifyAnother}
+        />
+      ) : null}
 
-      {error ? <div className="mt-5">{error}</div> : null}
-
-      <div
-        ref={gridRef}
-        data-inking={inking ? '' : undefined}
-        className={cn(
-          'relative isolate mt-6',
-          withMargin && 'grid grid-cols-[minmax(0,1fr)_16rem] gap-x-6 lg:grid-cols-[minmax(0,36rem)_22rem] lg:gap-x-8',
-          // Without a margin beside it the text keeps the page's measure.
-          hasMargin && !withMargin && 'max-w-[36rem]',
-        )}
-      >
-        {withMargin ? (
-          <svg aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 size-full overflow-visible">
-            {/* At rest a note is tied to its line by a stub in the gutter, and a note that was
-                pushed away from its line by none. The note in hand (hovered, focused, open) gets
-                the full tie, from its words, in its state's colour. */}
-            {ids.map((id) => {
-              const noteState = states.get(id)
-              const lit = !!noteState && (activeId === id || openInPlace.has(id))
-              const d = lit ? layout.ties[id] : layout.stubs[id]
-              if (!d) return null
-              return (
-                <path
-                  key={id}
-                  d={d}
-                  className="connector"
-                  data-connector={id}
-                  data-active={lit ? '' : undefined}
-                  style={
-                    { '--connector-active': noteState ? STATE_STYLE[noteState].variable : undefined } as CSSProperties
-                  }
-                />
-              )
-            })}
-          </svg>
-        ) : null}
-
-        {hasText ? (
-          <PageText
-            source={source}
-            segments={segments}
-            claims={ordered}
-            states={states}
-            questions={questions}
-            settled={settled}
-            hidden={hidden}
-            activeId={activeId}
-            openIds={openInPlace}
-            onSelect={selectPassage}
-            onHover={setActiveId}
-          />
-        ) : running && pastedText ? (
-          <p data-page dir="auto" className="page-text min-w-0 break-words whitespace-pre-line text-ink">
-            {pastedText}
-          </p>
-        ) : running ? (
-          // A clip or an article is not known yet: still ruled lines down to the fold, so that
-          // what lies under the page is out of sight when the text takes its place.
-          <div data-page aria-hidden="true" className="ruled min-h-[calc(100dvh-15rem)]" />
-        ) : (
-          <p data-page className="text-sm text-quiet">
-            {t.transcript.empty}
-          </p>
-        )}
-
-        {withMargin ? (
-          <aside
-            data-margin
-            aria-label={t.notes.title}
-            className="relative"
-            style={{ minHeight: layout.height || undefined }}
-          >
-            {notices ? <div data-margin-head>{notices}</div> : null}
-            {visible.map((claim, i) => {
-              const card = cards[claim.id]
-              const top = layout.tops[claim.id]
-              if (!card) return <PendingNote key={claim.id} claim={claim} top={top} />
-              return (
-                <MarginNote
-                  key={claim.id}
-                  {...bodyProps}
-                  card={card}
-                  inPlace={inPlace}
-                  open={openInPlace.has(card.id)}
-                  active={activeId === card.id}
-                  top={top}
-                  glide={glide}
-                  delay={Math.round(i * Math.min(60, 360 / Math.max(1, visible.length - 1)))}
-                  onToggle={toggleNote}
-                  onHover={setActiveId}
-                />
-              )
-            })}
-          </aside>
-        ) : null}
-      </div>
-
-      {/* One boundary around the inline note and what follows it: the colophon is not set under
-          the text first and then pushed down when the note arrives. */}
-      <Suspense fallback={null}>
-      {singleInline && single ? (
-        <div className="mt-6 max-w-[36rem] space-y-4">
-          {notices}
-          <InlineNote {...bodyProps} card={single} />
+      {/* The investigation again, on request: the same steps, with the figures and times it reported. */}
+      {verdictVisible && replayOpen ? (
+        <div ref={replayRef} className="scroll-mt-16 print:hidden">
+          {investigation(<p className="text-base font-semibold text-ink">{t.pipeline.title}</p>)}
         </div>
       ) : null}
 
-      {withMargin || singleInline || (ordered.length === 0 && !notices) ? null : (
-        <section ref={notesRef} aria-labelledby="notes-title" className="mt-8 scroll-mt-16 border-t pt-4">
-          <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-4">
-            <h2 id="notes-title" tabIndex={-1} className="text-base font-semibold text-ink">
-              {t.notes.title}
-            </h2>
-            {done && ordered.length > 1 ? <OrderToggle value={order} onChange={setOrder} /> : null}
-          </div>
-          {notices ? <div className="py-2">{notices}</div> : null}
-          <ul className="divide-y">
-            {listed.map((claim) => (
-              <NoteRow
-                key={claim.id}
-                claim={claim}
-                card={cards[claim.id]}
-                onOpen={setSheetId}
+      <div ref={belowRef} className="space-y-4">
+      {error ? <div>{error}</div> : null}
+
+      {mapVisible || verdictVisible || hasText || ordered.length > 0 ? (
+        <div
+          data-inking={inking ? '' : undefined}
+          className={cn('grid gap-4', !noClaims && 'lg:grid-cols-[minmax(0,1fr)_minmax(0,27rem)] xl:grid-cols-[minmax(0,1fr)_30rem]')}
+        >
+          {/* The text, with each citation marked in its state's ink. */}
+          <section
+            aria-label={t.panes.text}
+            className="panel min-w-0 self-start p-4 md:p-6 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto"
+          >
+            {hasText ? (
+              <PageText
+                source={source}
+                segments={segments}
+                claims={ordered}
+                states={states}
+                questions={questions}
+                settled={settled}
+                hidden={hidden}
+                activeId={activeId}
+                openIds={openIds}
+                onSelect={selectPassage}
+                onHover={setActiveId}
               />
-            ))}
-          </ul>
-        </section>
-      )}
+            ) : pastedText ? (
+              <div data-page className="page-text whitespace-pre-line text-ink">
+                <p dir="auto" className="min-w-0 break-words">
+                  {pastedText}
+                </p>
+              </div>
+            ) : (
+              // A clip or an article is not read yet: the stage says so, and the pane keeps its place.
+              <p className="min-h-40 text-sm text-quiet">{t.stages.ingest}…</p>
+            )}
+          </section>
+
+          {/* The evidence: one card per citation, each with its trail. It takes its place when
+              the first claims are announced — after the text, so nothing it would push exists yet. */}
+          {noClaims || (ordered.length === 0 && !done) ? null : (
+            <section ref={notesRef} aria-labelledby="notes-title" className="min-w-0 scroll-mt-4 space-y-3">
+              <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-4">
+                <h2 id="notes-title" tabIndex={-1} className="text-base font-semibold text-ink">
+                  {t.panes.notes}
+                  {ordered.length > 0 ? <span className="tabular ms-2 font-normal text-quiet">{ordered.length}</span> : null}
+                </h2>
+                {done && ordered.length > 1 ? <OrderToggle value={order} onChange={setOrder} /> : null}
+              </div>
+              {notices}
+              {ordered.length === 0 ? null : (
+                <ul className="space-y-3">
+                  {listed.map((claim) => (
+                    <EvidenceCard
+                      key={claim.id}
+                      {...bodyProps}
+                      claim={claim}
+                      card={cards[claim.id]}
+                      open={openIds.has(claim.id)}
+                      active={activeId === claim.id}
+                      onToggle={toggleNote}
+                      onHover={setActiveId}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+        </div>
+      ) : null}
 
       {done && !noClaims && summary ? (
-        <div className="mt-10 space-y-3 text-sm">
-          <p>
-            <span className="text-ink">
-              {t.report.finished(
-                summary.elapsed_seconds >= 0.05 && !state.restored ? formatSeconds(summary.elapsed_seconds) : null,
-              )}
-            </span>
-            {used.length > 0 ? (
-              <span className="text-quiet">
-                {' '}
-                {t.report.sources}:{' '}
-                {used.map((s, i) => (
-                  <span key={s.name}>
-                    {i > 0 ? t.report.summary.comma : null}
-                    {safeHref(s.url) ? <SourceLink href={new URL(s.url).origin}>{s.name}</SourceLink> : s.name}
-                  </span>
-                ))}
-              </span>
-            ) : null}
-          </p>
-          <div className="flex flex-col gap-3 md:flex-row">
+        <footer className="panel space-y-3 p-4 text-sm md:p-5">
+          {used.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-quiet">{t.report.sources}:</span>
+              {/* Each source by its name, as a link to it. */}
+              {used.map((s) => (
+                <span key={s.name} className="inline-flex min-h-7 max-w-full items-center rounded-control border px-2.5 py-0.5">
+                  {safeHref(s.url) ? <SourceLink href={new URL(s.url).origin}>{s.name}</SourceLink> : s.name}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             {/* The summary card and the shared text are for citations: a report that holds only
                 questions has nothing to share. */}
             {features.share_card && tally.citations > 0 ? (
@@ -601,39 +590,19 @@ export function ReportView({
                 variant="outline"
                 size="touch"
                 data-testid="share-summary"
-                onClick={() =>
-                  setShareTarget({
-                    kind: 'summary',
-                    summary,
-                    cards: readyCards,
-                    title: source?.title ?? null,
-                  })
-                }
+                onClick={() => setShareTarget({ kind: 'summary', summary, cards: readyCards, title: source?.title ?? null })}
               >
                 <Share2 aria-hidden="true" />
                 {t.report.shareSummary}
               </Button>
             ) : null}
-            <Button type="button" size="xl" onClick={onVerifyAnother} className="md:hidden">
-              <RotateCcw aria-hidden="true" />
-              {t.report.another}
-            </Button>
+            {missedLink}
           </div>
-          {missedLink}
-        </div>
+        </footer>
       ) : null}
-      </Suspense>
+      </div>
 
       <Suspense fallback={null}>
-        {sheetCard ? (
-          <NoteSheet
-            {...bodyProps}
-            open
-            onClose={() => setSheetId(null)}
-            card={sheetCard}
-            onLocate={locate}
-          />
-        ) : null}
         {referralFor ? (
           <ReferralDialog open={referralOpen} onOpenChange={setReferralOpen} meta={meta} query={referralFor.query} />
         ) : null}
