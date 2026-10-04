@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "fixtures": "node scripts/build-fixtures.mjs",
     "screenshots": "node scripts/screenshots-v3.mjs",
+    "frames": "node scripts/frames-v3.mjs",
     "a11y": "node scripts/a11y.mjs",
     "icons": "node scripts/build-icons.mjs"
   },

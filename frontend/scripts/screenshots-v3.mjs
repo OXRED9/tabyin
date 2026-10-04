@@ -26,7 +26,7 @@ const BASE = process.env.BASE_URL ?? 'http://localhost:5173'
 const OUT = path.resolve(import.meta.dirname, '../../docs/screenshots/v3')
 const only = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null
 const WIDTHS = (process.env.WIDTHS ?? '390,820,1440').split(',').map(Number)
-const THEMES = (process.env.THEMES ?? 'dark,light').split(',')
+const THEMES = (process.env.THEMES ?? 'light,dark').split(',')
 const HEIGHTS = { 390: 844, 820: 1180, 1440: 900 }
 fs.mkdirSync(OUT, { recursive: true })
 
@@ -56,6 +56,15 @@ async function open(width, theme, query = '') {
   await page.goto(`${BASE}/?mock=1&theme=${theme}${query}`)
   await page.evaluate(() => document.fonts.ready)
   const shoot = async (file) => {
+    // Under reduced motion things still fade into place: a settled capture waits for them.
+    await page.evaluate(() =>
+      Promise.all(
+        document
+          .getAnimations()
+          .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+          .map((animation) => animation.finished.catch(() => undefined)),
+      ),
+    )
     // A whole-page capture is taken from the top, or the bar would be painted across the middle.
     if (width < 1280) await page.evaluate(() => window.scrollTo(0, 0))
     await page.screenshot({ path: file, fullPage: width < 1280 })
@@ -78,6 +87,8 @@ const STATES = {
     const { context, page, shoot } = await open(width, theme)
     await page.getByTestId('capabilities').waitFor()
     await page.mouse.move(0, 0)
+    // The notes have dropped and settled.
+    await page.waitForTimeout(400)
     await shoot(file)
     await context.close()
   },
@@ -122,6 +133,30 @@ const STATES = {
     await context.close()
   },
 
+  // Below 1024px one pane is shown at a time: the report with «النص» chosen.
+  'text-pane': async (width, theme, file) => {
+    if (width >= 1024) return false
+    const { context, page, shoot } = await openReport(width, theme)
+    await page.locator('[data-pane="text"]').click()
+    await page.locator('[data-page]').first().waitFor()
+    await page.waitForTimeout(300)
+    await shoot(file)
+    await context.close()
+  },
+
+  // From 1280px the rail can be put away: the first screen without it, re-centred.
+  'rail-closed': async (width, theme, file) => {
+    if (width < 1280) return false
+    const { context, page, shoot } = await open(width, theme)
+    await page.getByTestId('capabilities').waitFor()
+    await page.getByTestId('rail-close').click()
+    await page.getByTestId('rail-open').waitFor()
+    await page.waitForTimeout(500)
+    await page.mouse.move(0, 0)
+    await shoot(file)
+    await context.close()
+  },
+
   // A clip that cannot be downloaded: what happened, what to do, and the buttons that do it.
   error: async (width, theme, file) => {
     const { context, page, shoot } = await open(width, theme, '&scenario=tiktok&autorun=1&speed=10')
@@ -139,8 +174,8 @@ for (const [name, capture] of Object.entries(STATES)) {
       const label = `${name}-${width}-${theme}`
       const started = Date.now()
       try {
-        await capture(width, theme, path.join(OUT, `${label}.png`))
-        console.log(`✓ ${label} (${Date.now() - started} ms)`)
+        const taken = await capture(width, theme, path.join(OUT, `${label}.png`))
+        if (taken !== false) console.log(`✓ ${label} (${Date.now() - started} ms)`)
       } catch (error) {
         problems.push(`${label}: ${error.message.split('\n')[0]}`)
         console.log(`✗ ${label}: ${error.message.split('\n')[0]}`)

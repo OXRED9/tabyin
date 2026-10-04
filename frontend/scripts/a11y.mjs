@@ -116,6 +116,8 @@ function measureContrast() {
  *              a timeline below), the text on the page, evidence cards arriving
  *   drawer     (below 1280px) the rail as a drawer: new verification, history, legend, language, theme
  *   replay     a finished report with «أعد عرض التحرّي» open under its verdict
+ *   text-pane  (below 1024px) a finished report with «النص» chosen in the pane switch
+ *   rail-closed  (from 1280px) the first screen with the rail put away
  *   image      the composer after a picture was read: its text in the field, the unread word
  *              marked and counted, the uncertainty line, the removed items listed (opened)
  *   report     every evidence card open (its trail and its note), every «لماذا هذا الحكم؟» open
@@ -147,7 +149,7 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     })
   }
   const t = COPY[lang]
-  const composer = ['empty', 'link', 'error', 'image', 'notice', 'drawer'].includes(state)
+  const composer = ['empty', 'link', 'error', 'image', 'notice', 'drawer', 'rail-closed'].includes(state)
   const single = state === 'single' || state === 'single-ios'
   const question = state === 'question'
   // Reports are reached through mock mode's own route: `scenario=<name>&autorun=1`.
@@ -183,14 +185,24 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
       await page.getByText(t.removed).click()
     }
     if (state === 'empty') await page.getByTestId('capabilities').waitFor()
+    if (state === 'rail-closed') {
+      await page.getByTestId('rail-close').click()
+      await page.getByTestId('rail-open').waitFor()
+    }
     if (state === 'drawer') {
       await page.getByTestId('menu').click()
       await page.getByTestId('rail-drawer').waitFor()
     }
     await page.waitForTimeout(300)
   } else if (state === 'running') {
-    await page.locator('[data-note][data-state]:not([data-state="pending"])').nth(1).waitFor({ timeout: 30_000 })
-    await page.locator('[data-note][data-state="pending"]').first().waitFor({ timeout: 30_000 })
+    if (viewport === DESKTOP) {
+      await page.locator('[data-note][data-state]:not([data-state="pending"])').nth(1).waitFor({ timeout: 30_000 })
+      await page.locator('[data-note][data-state="pending"]').first().waitFor({ timeout: 30_000 })
+    } else {
+      // Below 1024px the text is the pane shown while a run is on: the stage's steps say how far it is.
+      await page.locator('[data-node="model"][data-status="done"]').waitFor({ timeout: 30_000 })
+      await page.getByTestId('pane-switch').waitFor({ timeout: 30_000 })
+    }
   } else {
     await page.getByTestId('verdict').waitFor({ timeout: 30_000 })
     if (question) {
@@ -212,6 +224,8 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     if (state === 'replay') {
       await page.getByTestId('replay').click()
       await page.getByTestId('investigation').waitFor()
+      // The replay walks its steps one by one, with reduced motion too: audit it once it has ended.
+      await page.locator('.orb[data-finished]').waitFor({ timeout: 20_000 })
     }
     // Several gradings are folded under one line: open them, so the full list is audited too.
     const foldedGrades = page.locator('[data-testid="grades"] > button[aria-expanded="false"]')
@@ -219,6 +233,10 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     // F5: open every «لماذا هذا الحكم؟» panel so its list, meter and labels are audited.
     const closedPanels = page.locator('[data-testid="explain"] > button[aria-expanded="false"]')
     for (let i = 0; i < 30 && (await closedPanels.count()) > 0; i++) await closedPanels.first().click()
+    if (state === 'text-pane') {
+      await page.locator('[data-pane="text"]').click()
+      await page.locator('[data-page]').first().waitFor()
+    }
     if (state === 'share-phone') {
       await page.locator('[data-note="c2"]').getByTestId('share-card').click()
       await page.getByTestId('share-targets').waitFor()
@@ -255,6 +273,16 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     await page.waitForTimeout(400)
   }
 
+  // Under reduced motion things still fade into place (v3.1): measure once they have, or a text
+  // caught half-way through its fade reads as low contrast. Looping marks (a live dot) are left out.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  )
   const contrast = await page.evaluate(measureContrast)
   failures += contrast.failures.length
 
@@ -287,7 +315,10 @@ await audit('empty · dark · ar · 390px', { theme: 'dark', viewport: MOBILE })
 await audit('empty · light · ar · 820px', { viewport: TABLET })
 for (const theme of ['light', 'dark']) {
   await audit(`rail as a drawer · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'drawer' })
+  await audit(`rail put away · ${theme} · ar`, { theme, state: 'rail-closed' })
+  await audit(`the text pane · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'text-pane' })
 }
+await audit('the text pane · light · ar · 820px', { viewport: TABLET, state: 'text-pane' })
 await audit('composer with a link · light · ar', { state: 'link' })
 await audit('composer with a link · dark · en', { state: 'link', theme: 'dark', lang: 'en' })
 await audit('picture read · light · ar', { state: 'image' })
