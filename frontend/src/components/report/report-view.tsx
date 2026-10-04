@@ -593,7 +593,9 @@ export function ReportView({
             ) : null}
           </p>
           <div className="flex flex-col gap-3 md:flex-row">
-            {features.share_card ? (
+            {/* The summary card and the shared text are for citations: a report that holds only
+                questions has nothing to share. */}
+            {features.share_card && tally.citations > 0 ? (
               <Button
                 type="button"
                 variant="outline"
