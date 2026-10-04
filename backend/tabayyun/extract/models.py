@@ -24,6 +24,7 @@ class RawClaim:
     evidence_ref: str = ""  # an LLM-*proposed* "surah:ayah" for a ruling; only ever used to look the text up
     origin: Literal["quran_scan", "marker", "hadith_scan", "llm"] = "llm"
     closed: bool = False  # a marker quotation delimited by quotation marks or Quranic brackets
+    is_question: bool = False  # a question put to the tool: referred, never answered
     level_reason_ar: str = ""  # one line: why this content level (the classifier's own words when origin == "model")
     level_reason_en: str = ""
     level_reason_origin: Literal["rule", "model"] = "rule"

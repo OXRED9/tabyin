@@ -65,6 +65,33 @@ _PERSONAL = re.compile(
     r"|is\s+it\s+(?:permissible|allowed|halal|haram)\s+for\s+me|in\s+my\s+(?:case|marriage|situation))[^.؟!\n]*",
     re.IGNORECASE,
 )
+# A question put to the tool ("ما حكم …؟", "هل يجوز …؟"). Tabayyun verifies what is quoted and does not
+# answer what is asked, so a question is referred to the approved scholars' sites. Matched on the
+# folded text. Only short inputs are treated this way: in a lecture or an article a question is the
+# speaker's own rhetoric, not something asked of the tool.
+_RULING_QUESTION = r"(?:ما\s+(?:هو\s+)?(?:ال)?حكم|هل\s+(?:يجوز|يحل|يصح|يجب|يحرم|يكره|يستحب|يشرع|يلزم|يشترط|تجوز|تصح|تجب))"
+_QUESTION = re.compile(
+    r"(?<![\u0621-\u064a])(?:"
+    + _RULING_QUESTION
+    + r"[^.؟?!\n]*[؟?]?"
+    + r"|(?:ما\s+(?:معني|المقصود|الفرق|الدليل|هو|هي)|كيف|متي|لماذا|اين|كم|من\s+(?:هو|هي)|هل)(?![\u0621-\u064a])[^.؟?!\n]*[؟?]"
+    + r"|(?:what|how|why|when|is\s+it|can\s+i|should\s+i|does|do)\b[^.?!\n]*\?"
+    + r")",
+    re.IGNORECASE,
+)
+QUESTION_MAX_CHARS = 400
+
+
+def looks_like_question(text: str) -> bool:
+    plain, _ = _plain(text)
+    return bool(_QUESTION.search(plain))
+
+
+def is_fabrication_request(text: str) -> bool:
+    plain, _ = _plain(text)
+    return bool(_REQUEST.search(plain))
+
+
 _OPENERS = {"«": "»", "“": "”", '"': '"', "'": "'", "‘": "’", "﴿": "﴾", "(": ")", "{": "}", "[": "]"}
 _SENTENCE_END = re.compile(r"[.؟!\n]|\.\.\.|…")
 _QURAN_BRACKETS = re.compile(r"﴿([^﴾]{3,2000})﴾")
@@ -181,6 +208,13 @@ def extract_by_markers(doc: Document) -> list[RawClaim]:
         add(ClaimType.request, m.start(), m.end(), content_level=ContentLevel.B)
     for m in _PERSONAL.finditer(plain):
         add(ClaimType.ruling, m.start(), m.end(), content_level=ContentLevel.D, certainty=Certainty.ijtihadi)
+    if len(text) <= QUESTION_MAX_CHARS:
+        taken = [(c.start, c.end) for c in claims]  # a request to fabricate or a personal case is not also "a question"
+        for m in _QUESTION.finditer(plain):
+            start, end = index[m.start()], index[min(m.end(), len(index) - 1)]
+            if any(s < end and start < e for s, e in taken):
+                continue
+            add(ClaimType.ruling, m.start(), m.end(), content_level=ContentLevel.B, certainty=Certainty.ijtihadi, is_question=True)
     return claims
 
 

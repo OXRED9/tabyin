@@ -17,12 +17,21 @@ MOTTO_VERSE = (49, 6, slice(0, 8))
 EXAMPLE_VERSE = (2, 153, slice(-4, None))  # words of the simple-clean text
 EXAMPLE_HADEETHENC_ID = "4560"
 
+# Where a question or a matter for the scholars is referred. Only the fatwa sites of the challenge's
+# approved package (docs/SOURCES.md, row 8) — no site outside it. `search_url` opens the site on a
+# search for the topic ("{q}" is replaced by the URL-encoded words); each pattern was checked in a
+# browser on 4 October 2026; `max_words` is how many topic words that site's search still answers
+# (Ibn Uthaymeen's site matches the phrase exactly: two words find results, four or more often none).
+# The order is the approved package's own. Links only: nothing is fetched from these sites and nothing is summarised.
 REFERRAL_LINKS = [
-    {"name_ar": "الإسلام سؤال وجواب", "name_en": "Islam Question & Answer", "url": "https://islamqa.info/ar"},
-    {"name_ar": "الموقع الرسمي للشيخ عبدالعزيز بن باز", "name_en": "Official site of Shaykh Ibn Baz", "url": "https://binbaz.org.sa"},
-    {"name_ar": "الموقع الرسمي للشيخ محمد بن صالح العثيمين", "name_en": "Official site of Shaykh Ibn Uthaymeen", "url": "https://binothaimeen.net"},
-    {"name_ar": "الدرر السنية", "name_en": "Dorar.net", "url": "https://dorar.net"},
-]
+    {"name_ar": "الإسلام سؤال وجواب", "name_en": "Islam Question & Answer", "kind": "fatwa",
+     "url": "https://islamqa.info/ar", "search_url": "https://islamqa.info/ar/search?q={q}", "max_words": 6},
+    {"name_ar": "الموقع الرسمي للشيخ عبدالعزيز بن باز", "name_en": "Official site of Shaykh Ibn Baz", "kind": "fatwa",
+     "url": "https://binbaz.org.sa", "search_url": "https://binbaz.org.sa/search?q={q}", "max_words": 6},
+    {"name_ar": "الموقع الرسمي للشيخ محمد بن صالح العثيمين", "name_en": "Official site of Shaykh Ibn Uthaymeen", "kind": "fatwa",
+     "url": "https://binothaimeen.net", "search_url": "https://binothaimeen.net/ar/Searchpage/{q}/0/0", "max_words": 2},
+    {"name_ar": "الدرر السنية", "name_en": "Dorar.net", "kind": "hadith", "url": "https://dorar.net", "search_url": None, "max_words": 0},
+]  # fmt: skip
 
 
 def _verse(ref: tuple[int, int, slice]) -> dict:

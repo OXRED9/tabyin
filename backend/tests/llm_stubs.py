@@ -51,7 +51,7 @@ class ScriptedLLM:
     def can(self, _task: str) -> bool:
         return True
 
-    async def complete_json(self, *, task, system, user, schema, model_cls, max_tokens=None, model=None, use_fallback=True):
+    async def complete_json(self, *, task, system, user, schema, model_cls, max_tokens=None, model=None, use_fallback=True, timeout=None):
         if self.fail:
             raise LLMError("scripted failure")
         if task == "extract":

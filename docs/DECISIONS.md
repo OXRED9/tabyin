@@ -506,3 +506,23 @@ gradings beside the state, verifying after «لصق»).
     the grading is shown verbatim as always. No state in the test set changed. The keyword lists
     themselves are still for the Sharia reviewer to confirm.
 
+## Questions are referred, not answered (the team's rule, 4 October 2026)
+
+112. **«تبيّن يتحقق مما يُنقل، ولا يجيب عما يُسأل».** A question put to the tool («ما حكم الزكاة؟») used to be
+    typed by the model as a request for evidence and answered "no source". It is now recognised — by
+    marker rules, without a model, and kept a question whatever the model calls it — and gets one
+    message: this is a question, Tabayyun does not answer or give fatwas, here is where to read the
+    answer. Nothing is retrieved for it and no text is offered. Only short inputs are treated this
+    way: a question inside a lecture or an article is the speaker's own. A request to produce
+    evidence is still refused, and a personal case keeps its own message.
+113. **Referral is a search link on the approved fatwa sites, and only those**: islamqa.info,
+    binbaz.org.sa, binothaimeen.net (the challenge's package; the team decided against any site outside
+    it). Each opens on a search for the topic words; the patterns were checked in a browser, and
+    Ibn Uthaymeen's site gets two words because its search matches the phrase exactly. Links only —
+    nothing is fetched or summarised, the order is the package's, and no scholar is preferred. For a
+    personal case only topic keywords are sent, never the asker's account; without keywords the link
+    opens the site's first page.
+114. **The curated list of settled rulings with their evidence was not built.** It was proposed and the
+    team chose referral instead: it needs no scholar's time and never puts the tool in the position of
+    arguing for a ruling.
+

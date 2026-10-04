@@ -173,6 +173,8 @@ class Card(BaseModel):
     note_en: str = ""
     ai_explanation: str | None = None  # optional LLM-written explanation, always labelled as AI text
     referral: bool = False  # show the "إحالة إلى أهل العلم" affordance
+    is_question: bool = False  # a question put to the tool: referred to the approved scholars' sites, never answered
+    referral_query: str | None = None  # the topic words a referral link searches for (never a personal account)
     personal_case: bool = False  # level D
     disagreement_noted: bool = False  # level C
 

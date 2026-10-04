@@ -322,6 +322,17 @@ def decide_request() -> Decision:
     )
 
 
+def decide_question() -> Decision:
+    """A question put to the tool. Tabayyun verifies what is quoted; it does not answer what is asked."""
+    return Decision(
+        S.needs_review,
+        "question.referral",
+        "هذا سؤال، وتبيّن يتحقق مما يُنقل ولا يجيب عما يُسأل. لا نفتي؛ راجع جواب مسألتك في مواقع أهل العلم المعتمدة.",
+        "This is a question. Tabayyun verifies what is quoted; it does not answer what is asked and gives no fatwa. Look the matter up on the approved scholars' sites.",
+        referral=True,
+    )
+
+
 def apply_level_caps(decision: Decision, level: ContentLevel) -> Decision:
     """Content-level ceilings from the scientific reference (levels C and D)."""
     if level == ContentLevel.D:

@@ -5,10 +5,12 @@ and unresolved as of 3 October 2026.
 
 ## What has not been verified
 
-- **Full mode has been measured once.** The 79-item evaluation ran one time in full mode: 88.6%,
-  no fabricated attribution, no wrongly endorsed item, every abstention correct. One run gives no
-  spread, and the model is not deterministic across days or providers. The general-chatbot baseline
-  ran once as well (77.2%).
+- **Full-mode accuracy moves between runs.** The 79-item evaluation was run in full mode about ten
+  times on 3–4 October as rules changed: 84.8% to 88.6%, the last run 87.3%. The model is not
+  deterministic, and the items that move are the settled rulings, which get their reference only when
+  the pointing call answers in time (two or three of five do). One run produced a fabricated
+  attribution — a no-source text accepted as a paraphrase — which is why a paraphrase can no longer be
+  "supported"; every run since has had none. The general-chatbot baseline ran once (77.2%).
 - **Only four of eight extraction candidates were measured**, on 20 items. Claude Sonnet 5.5, Gemini
   3.8 Flash, Qwen 3.7 Plus and DeepSeek V4 Pro 0813 were left out to save budget; so were four of the
   six image candidates and the other audio models (`docs/OPERATIONS.md` → Models).
@@ -43,6 +45,9 @@ and unresolved as of 3 October 2026.
 - **The evidence shown beside a ruling is the closest text, chosen by the model's pointer.** It can be a
   related narration that is not the one the speaker meant; the note says «أقرب نص». One text is shown,
   never a survey of the evidence, and the ruling itself is not judged.
+- **Questions are not answered.** A question is referred to the three approved fatwa sites by search
+  links; what those searches return is not controlled or checked by Tabayyun, and a long or unusual
+  topic may find nothing there. A question inside a long text is treated as the speaker's own.
 - **Rulings and facts** are only supported when a verse or a HadeethEnc narration explicitly states
   them and the LLM points at it. Fatwa sites (islamqa, binbaz, binothaimeen) are linked for
   referral but not searched, so many true level-A/B statements end as `needs_review`.

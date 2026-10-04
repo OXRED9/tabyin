@@ -24,6 +24,7 @@ from .evidence_rules import (
     decide_ayah,
     decide_hadith,
     decide_quote,
+    decide_question,
     decide_request,
     decide_ruling,
 )
@@ -108,7 +109,10 @@ async def judge_relation(ctx: Context, task: str, claim_text: str, texts: list[s
     """Ask the LLM which retrieved text (if any) corresponds to the claim, and how. Returns (index, relation) or None."""
     if not ctx.llm_enabled or not texts:
         return None
-    listing = "\n\n".join(f"[{i}] {t[:1800]}" for i, t in enumerate(texts))
+    # Evidence texts are cut shorter than narrations being matched: the pointer reasons over every text
+    # it is shown, and with long texts it ran past its time limit on settled rulings.
+    cut = 700 if task == "evidence" else 1800
+    listing = "\n\n".join(f"[{i}] {t[:cut]}" for i, t in enumerate(texts))
     try:
         result = await ctx.llm.complete_json(
             task="judge",
@@ -117,6 +121,12 @@ async def judge_relation(ctx: Context, task: str, claim_text: str, texts: list[s
             schema=JUDGEMENT_SCHEMA,
             model_cls=LLMJudgement,
             use_fallback=False,  # a pointer is only honoured from the model measured for it
+            # Evidence can give a ruling its reference, so it gets the time and the room to answer
+            # (measured: at 10 s / 900 tokens most of these calls were cut off and every settled
+            # ruling fell back to "needs review"). "Same narration?" can no longer make a claim
+            # supported and keeps the short defaults.
+            timeout=25.0 if task == "evidence" else None,
+            max_tokens=1500 if task == "evidence" else None,
         )
     except LLMError as e:
         log.warning("judge unavailable: %s", e)
@@ -568,7 +578,7 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
                     evidence_match = qm
                     candidates.append((clean, _quran_source(qm, ctx, None), []))
     accepted: list[bool] = [True] * len(candidates)  # the verse fetched by number
-    for c in await asyncio.to_thread(ctx.hadith.topic_search, f"{query} {claim.quote}", k=6):
+    for c in await asyncio.to_thread(ctx.hadith.topic_search, f"{query} {claim.quote}", k=5):
         if not c.grade_text:
             continue  # a narration is never shown as evidence without its grading
         g = Grade(text=c.grade_text, source_name=HADEETHENC_NAME_AR, source_url=c.url)
@@ -672,6 +682,11 @@ async def verify_quote(claim: RawClaim, cid: str, index: int, ctx: Context) -> C
 
 
 async def _dispatch(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card:
+    if claim.is_question and claim.type not in (ClaimType.ayah, ClaimType.hadith) and claim.content_level != ContentLevel.D:
+        # A question is referred, never answered: nothing is retrieved for it and no model is asked.
+        card = _base_card(claim, cid, index, decide_question(), ctx, certainty=Certainty.not_applicable)
+        card.is_question = True
+        return card
     if claim.type == ClaimType.ayah:
         return await verify_ayah(claim, cid, index, ctx)
     if claim.type == ClaimType.hadith:
@@ -681,6 +696,19 @@ async def _dispatch(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card
     if claim.type == ClaimType.request:
         return _base_card(claim, cid, index, decide_request(), ctx, certainty=Certainty.not_applicable)
     return await verify_statement(claim, cid, index, ctx)
+
+
+_QUESTION_WORDS = re.compile(r"[؟?!.،,:«»\"']")
+
+
+def _referral_query(claim: RawClaim, card: Card) -> str | None:
+    """The few topic words a referral link searches a scholar's site for. For a personal case only the
+    topic keywords the model named are used — never the asker's own account of his situation — and
+    when there are none the link opens the site's first page."""
+    words = (claim.search_query or "").split()
+    if not words and card.is_question:
+        words = _QUESTION_WORDS.sub(" ", claim.quote).split()
+    return " ".join(words[:6]) or None
 
 
 async def authentic_alternatives(card: Card, claim: RawClaim, ctx: Context) -> list[Alternative]:
@@ -742,6 +770,8 @@ async def verify_claim(claim: RawClaim, cid: str, index: int, ctx: Context) -> C
     started = time.perf_counter()
     card = await _dispatch(claim, cid, index, ctx)
     card.alternatives = await authentic_alternatives(card, claim, ctx)
+    if card.referral:
+        card.referral_query = _referral_query(claim, card)
     if card.explain is not None:
         card.explain.match_ms = int((time.perf_counter() - started) * 1000)
     return card

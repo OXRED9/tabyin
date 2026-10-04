@@ -248,6 +248,11 @@ def describe(rule_id: str, f: Facts, t: Thresholds = THRESHOLDS) -> RuleExplanat
             else "This saying was not found in the indexed sources.",
             "quote", t.quote_verbatim,
         ),
+        "question.referral": (
+            "النص سؤال لا نقلٌ يُتحقق منه؛ قاعدة ثابتة: تبيّن لا يجيب عن الأسئلة ولا يفتي، ويحيل إلى مواقع أهل العلم المعتمدة.",
+            "The text is a question, not a quotation to verify; fixed rule: Tabayyun does not answer questions or give fatwas, and refers to the approved scholars' sites.",
+            "request", None,
+        ),
         "request.no_fabrication": (
             "النص طلبٌ لدليل لا ادعاءٌ يُتحقق منه؛ قاعدة ثابتة: لا يُولَّد نص شرعي ولا يُنسب.",
             "The text is a request for evidence, not a claim to verify; fixed rule: no religious text is generated or attributed.",

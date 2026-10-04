@@ -108,4 +108,29 @@ def keep_personal_cases(proposed: list[RawClaim], markers: list[RawClaim]) -> li
     return out
 
 
-__all__ = ["RawClaim", "absorb_closed_quotes", "keep_personal_cases", "merge_claims", "overlap", "widen_scanned_verses"]
+def keep_questions(proposed: list[RawClaim], markers: list[RawClaim], looks_like_question, is_fabrication_request) -> list[RawClaim]:
+    """A question put to the tool is referred, whatever the model called it (it tends to call
+    "ما حكم الزكاة؟" a request for evidence, which then reads "no source").
+
+    Only where the marker rules saw a question (short inputs): a statement, ruling or request the
+    model proposed there becomes a question unless it is a personal case (level D keeps its own
+    message) or a request to produce evidence (which is refused, not referred). Quoted verses and
+    narrations inside the question are still verified. A question the model did not report is added.
+    """
+    out = list(proposed)
+    for m in markers:
+        if not m.is_question:
+            continue
+        hit = [c for c in out if overlap(c, m) >= 0.5 * min(c.end - c.start, m.end - m.start)]
+        for c in hit:
+            if c.type in _QUOTED or c.content_level == ContentLevel.D:
+                continue
+            if looks_like_question(c.quote) and not is_fabrication_request(c.quote):
+                c.is_question, c.type = True, ClaimType.ruling
+        if not hit:
+            out.append(m)
+    out.sort(key=lambda c: c.start)
+    return out
+
+
+__all__ = ["RawClaim", "absorb_closed_quotes", "keep_personal_cases", "keep_questions", "merge_claims", "overlap", "widen_scanned_verses"]

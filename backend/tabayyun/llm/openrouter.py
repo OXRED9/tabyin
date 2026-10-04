@@ -36,7 +36,10 @@ log = logging.getLogger("tabayyun.llm")
 # measured answers needed up to 460 tokens; the ones that ran away did so at 1200, 1500 and 2500 alike,
 # so a larger budget only makes the runaway dearer and slower.
 MAX_TOKENS = {"extract": 8000, "judge": 900, "select": 300, "vision": 4000, "audio": 12000, "cheap": 800, "baseline": 1200}
-# A pointing call that has not answered in 10 s is abandoned (the claim keeps its conservative state).
+# A pointing call that has not answered in time is abandoned (the claim keeps its conservative state).
+# 10 s is the default, used for "is this the same narration?", whose answer can no longer make a claim
+# supported; the evidence pointer for a ruling passes 20 s itself (verify.py), because at 10 s twelve of
+# thirty calls were cut off in an evaluation run and every settled ruling fell back to "needs review".
 # Answers that were used took 6-9 s; the ones that ran away held a report for 20-40 s, and the usual
 # victim was a text with no source — the case a daily user asks about most.
 TIMEOUT_SECONDS = {"audio": 240.0, "vision": 90.0, "judge": 10.0, "select": 6.0}
@@ -75,9 +78,9 @@ class LLMSession:
     def available(self) -> bool:
         return self.llm.available
 
-    async def complete_json(self, *, task: str, system: str, user: Any, schema: dict, model_cls: type[T], max_tokens: int | None = None, model: str | None = None, use_fallback: bool = True) -> T:
+    async def complete_json(self, *, task: str, system: str, user: Any, schema: dict, model_cls: type[T], max_tokens: int | None = None, model: str | None = None, use_fallback: bool = True, timeout: float | None = None) -> T:
         try:
-            result, infos = await self.llm.complete_json(task=task, system=system, user=user, schema=schema, model_cls=model_cls, max_tokens=max_tokens, model=model, use_fallback=use_fallback)
+            result, infos = await self.llm.complete_json(task=task, system=system, user=user, schema=schema, model_cls=model_cls, max_tokens=max_tokens, model=model, use_fallback=use_fallback, timeout=timeout)
         except LLMError as e:
             self.calls += e.calls
             raise
@@ -179,7 +182,7 @@ class OpenRouterLLM:
             body["extra_body"]["reasoning"] = {"effort": effort, "exclude": True}
         return body
 
-    async def _once(self, model: str, task: str, system: str, user: Any, schema: dict, model_cls: type[T], max_tokens: int, fallback: bool) -> tuple[T | None, CallInfo, Exception | None]:
+    async def _once(self, model: str, task: str, system: str, user: Any, schema: dict, model_cls: type[T], max_tokens: int, fallback: bool, timeout: float | None = None) -> tuple[T | None, CallInfo, Exception | None]:
         assert self._client is not None
         info = CallInfo(task=task, model=model, fallback=fallback)
         started = time.perf_counter()
@@ -187,7 +190,7 @@ class OpenRouterLLM:
         parsed: T | None = None
         try:
             body = self._request(model, task, system, user, schema, max_tokens)
-            limit = TIMEOUT_SECONDS.get(task, settings.llm_timeout_seconds)
+            limit = timeout or TIMEOUT_SECONDS.get(task, settings.llm_timeout_seconds)
             # A wall-clock limit: the HTTP read timeout alone does not bound a call, because keep-alive
             # bytes arrive while the model is still working (a "12 s" pointing call ran for 20 s).
             response = await asyncio.wait_for(self._client.chat.completions.create(**body, timeout=limit), timeout=limit)
@@ -221,7 +224,7 @@ class OpenRouterLLM:
         except (openai.APIError, ValueError) as e:
             error = e
         except asyncio.TimeoutError:
-            error = TimeoutError(f"no answer within {TIMEOUT_SECONDS.get(task, settings.llm_timeout_seconds):.0f} s")
+            error = TimeoutError(f"no answer within {(timeout or TIMEOUT_SECONDS.get(task, settings.llm_timeout_seconds)):.0f} s")
         info.latency_ms = int((time.perf_counter() - started) * 1000)
         if error is not None:
             status = getattr(error, "status_code", None)
@@ -232,7 +235,7 @@ class OpenRouterLLM:
         )  # fmt: skip
         return parsed, info, error
 
-    async def complete_json(self, *, task: str, system: str, user: Any, schema: dict, model_cls: type[T], max_tokens: int | None = None, model: str | None = None, use_fallback: bool = True) -> tuple[T, list[CallInfo]]:
+    async def complete_json(self, *, task: str, system: str, user: Any, schema: dict, model_cls: type[T], max_tokens: int | None = None, model: str | None = None, use_fallback: bool = True, timeout: float | None = None) -> tuple[T, list[CallInfo]]:
         """Returns (validated result, the calls made). Raises LLMError when primary and fallback both fail.
         ``use_fallback=False`` is for answers that are only honoured from the primary model (pointing)."""
         if self._client is None:
@@ -251,7 +254,7 @@ class OpenRouterLLM:
 
         if primary:
             for attempt in (1, 2):
-                parsed, info, error = await self._once(primary, task, system, user, schema, model_cls, budget, fallback=False)
+                parsed, info, error = await self._once(primary, task, system, user, schema, model_cls, budget, fallback=False, timeout=timeout)
                 infos.append(info)
                 if parsed is not None:
                     return parsed, infos
@@ -264,7 +267,7 @@ class OpenRouterLLM:
                     break
 
         if use_fallback and fallback_model and fallback_model != primary and self._fallback_fits(fallback_model, task):
-            parsed, info, _error = await self._once(fallback_model, task, system, user, schema, model_cls, budget, fallback=True)
+            parsed, info, _error = await self._once(fallback_model, task, system, user, schema, model_cls, budget, fallback=True, timeout=timeout)
             infos.append(info)
             if parsed is not None:
                 log.warning("task=%s served by the fallback model %s", task, fallback_model)

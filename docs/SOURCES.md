@@ -31,7 +31,7 @@ recorded here is what the call returned on **3 October 2026**.
 | 5 | Open-Hadith-Data | the Six Books, Muwatta, Musnad Ahmad — retrieval only | download + local FTS index | in use |
 | 6 | Challenge scientific package — terminology table | approved Arabic→English equivalents | static `data/terms.json` | in use |
 | 7 | mcp.islamiccontent.org | association's MCP server | explored; used in a test to fetch a recitation | fallback only |
-| 8 | islamqa.info, binbaz.org.sa, binothaimeen.net | rulings and fatwas | referral links only | **not integrated yet** |
+| 8 | islamqa.info, binbaz.org.sa, binothaimeen.net | rulings and fatwas | referral only: links that open each site on a search for the topic; nothing is fetched | **linked, not integrated** |
 | 9 | shamela.ws | attributed sayings | — | **not integrated yet** |
 
 ### 1. Quran text — Tanzil (Uthmani v1.1 and simple-clean)

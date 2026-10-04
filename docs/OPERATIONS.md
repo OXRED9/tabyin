@@ -159,7 +159,7 @@ credit was added (3 October 2026) these were run, once each, for $0.17 in total:
 | `scripts/check_models.py` (`eval/results/model_check.md`) | all six configured models pass | $0.005 |
 | Bake-off rows for the reasoning setting (20 items each) | extraction without reasoning + pointing with it: 85%, same as with reasoning everywhere, a third of the cost; without reasoning anywhere: 80% and one fabricated attribution | $0.009 |
 | `scripts/transcribe_sample.py --seconds 60` | first transcript through OpenRouter, with timestamps | $0.0013 |
-| `eval/run.py --runs 1` (79 items, three systems) | Tabayyun 88.6%, no fabricated attribution; baseline 77.2% | $0.17 ($0.14 of it the baseline) |
+| `eval/run.py --runs 1` (79 items, three systems) | Tabayyun 88.6% that day, no fabricated attribution; baseline 77.2%. Later runs after rule changes: 84.8–88.6%, last 87.3% (`eval/results/results.md` holds the latest) | $0.17 ($0.14 of it the baseline); $0.03 for Tabayyun alone |
 
 Left unmeasured because the answer would not change a decision at this budget (`make models-compare`
 runs them, about $0.11): the other extraction candidates (on the 20 items only one is left that any

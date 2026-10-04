@@ -76,7 +76,8 @@ Static content the UI must not hard-code (religious text always comes from sourc
   "terms": [ { "ar": "التوحيد", "en": "Tawhid / Oneness of God", "usage_ar": "…" }, … ],
   "abstention_verse": { "text": "…verbatim Uthmani text…", "ref": "النحل: 43", "ref_en": "An-Nahl 43", "url": "…" },
   "motto_verse": { "text": "…", "ref": "الحجرات: 6", "ref_en": "…", "url": "…" },
-  "referral_links": [ { "name_ar": "الإسلام سؤال وجواب", "name_en": "IslamQA", "url": "https://islamqa.info/ar" }, … ],
+  "referral_links": [ { "name_ar": "الإسلام سؤال وجواب", "name_en": "IslamQA", "kind": "fatwa | hadith", "url": "https://islamqa.info/ar",
+                        "search_url": "https://islamqa.info/ar/search?q={q}" /* or null */, "max_words": 6 }, … ],
   "examples": [
     { "id": "text", "input_type": "text", "label_ar": "نص فيه آية وحديث", "label_en": "Text with a verse and a hadith", "text": "…" },
     { "id": "video", "input_type": "video_url", "label_ar": "رابط مقطع يوتيوب", "label_en": "YouTube link", "url": "…" },
@@ -85,6 +86,10 @@ Static content the UI must not hard-code (religious text always comes from sourc
   "limits": { "max_text_chars": 60000, "max_upload_mb": 50, "max_media_minutes": 30 }
 }
 ```
+
+A referral link is opened as `search_url` with `{q}` replaced by the URL-encoded first `max_words` words of the card's
+`referral_query`; when either is missing it opens `url`. Only links of kind `fatwa` are offered for questions and rulings.
+Nothing is fetched from these sites.
 
 An example whose `url`/`text` is `null` is not configured and must be hidden. `terms` is the
 approved Arabic→English terminology list (`{ar, en, usage_ar}`) from the challenge's scientific
@@ -198,6 +203,8 @@ interface Card {
   ai_explanation: string | null;      // optional, must be labelled as AI-written
   referral: boolean;         // show "إحالة إلى أهل العلم"
   personal_case: boolean;    // level D: show "هذه حالة شخصية تستوجب فتوى من جهة مؤهلة"
+  is_question: boolean;      // a question put to the tool: referred, never answered (rule "question.referral")
+  referral_query: string | null; // topic words for the referral links' search; null = open the site's first page
   disagreement_noted: boolean; // level C
   timestamp: Timestamp | null; span: Span | null;
   position: number;          // chronological sort key (same as the stub's)

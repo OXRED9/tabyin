@@ -9,6 +9,7 @@ from .rules import (
     decide_ayah,
     decide_hadith,
     decide_quote,
+    decide_question,
     decide_request,
     decide_ruling,
 )
@@ -29,6 +30,7 @@ __all__ = [
     "decide_ayah",
     "decide_hadith",
     "decide_quote",
+    "decide_question",
     "decide_request",
     "decide_ruling",
 ]
