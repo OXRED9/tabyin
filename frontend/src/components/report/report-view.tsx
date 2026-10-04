@@ -603,19 +603,23 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
       ) : null}
 
       {done && !noClaims && summary ? (
-        <footer className="panel space-y-3 p-4 text-sm md:p-5">
+        <footer className="space-y-4 text-sm">
           {used.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-quiet">{t.report.sources}:</span>
+            // Set apart from the notes above: a section of its own, with its own heading, so the
+            // sources consulted are never read as one more note.
+            <section aria-labelledby="sources-title" className="mt-6 space-y-3 rounded-sheet border-t-2 border-green/30 bg-raised p-4 md:p-5">
+              <h2 id="sources-title" className="text-base font-semibold text-ink">{t.report.sources}</h2>
+              <div className="flex flex-wrap items-center gap-2">
               {/* Each source by its name, as a link to it. */}
               {used.map((s) => (
                 <span key={s.name} className="inline-flex min-h-7 max-w-full items-center rounded-control border px-2.5 py-0.5">
                   {safeHref(s.url) ? <SourceLink href={new URL(s.url).origin}>{s.name}</SourceLink> : s.name}
                 </span>
               ))}
-            </div>
+              </div>
+            </section>
           ) : null}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="panel flex flex-wrap items-center gap-x-4 gap-y-2 p-4 md:p-5">
             {/* The summary card and the shared text are for citations: a report that holds only
                 questions has nothing to share. */}
             {features.share_card && tally.citations > 0 ? (

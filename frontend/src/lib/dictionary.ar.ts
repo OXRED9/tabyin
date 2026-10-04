@@ -483,7 +483,7 @@ export const ar = {
     finishTitle: 'اكتمل التحقق',
     finishBody: (seconds: string) => `استغرق التحقق ${seconds} ث`,
     finished: (seconds: string | null) => (seconds ? `اكتمل التحقق في ${seconds} ث.` : 'اكتمل التحقق.'),
-    sources: 'المصادر المستخدمة',
+    sources: 'المصادر التي رُجع إليها في هذا التقرير',
     another: 'تحقّق من نص آخر',
     restored: 'تقرير محفوظ في هذا المتصفح.',
     shareSummary: 'بطاقة خلاصة التحقق',
@@ -509,6 +509,12 @@ export const ar = {
     // not something it quotes, and showing it raises no state.
     referencedSource: 'الدليل المشار إليه في المصادر',
     referencedShort: 'الدليل المشار إليه',
+    nearbyLine: 'لم يُطابَق بلفظه في المصادر — أقرب نص معروض للمقارنة',
+    nearbyTitle: 'نص قريب في المصادر — للمقارنة فقط',
+    nearbyHint: 'ليس بالضرورة هو ما ورد في النص، ولا يُنسب إليه حكمه.',
+    nearbyShort: 'أقرب نص',
+    sourceBefore: 'ما قبله في المصدر',
+    showWhole: 'عرض النص كاملاً',
     // Beside the state of a hadith that has gradings and is not «له مرجعية»: the sources' own
     // words, every distinct one, so that «مخالف للمصدر» is read with what the sources say.
     gradedAs: (wordings: string[]) => `حكمه في المصادر: ${wordings.map((w) => `«${w}»`).join('، ')}`,

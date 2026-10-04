@@ -3,6 +3,18 @@ import { distinctGradings, gradedBesideState } from './grades'
 import type { Card } from './types'
 
 /**
+ * The source is the quotation's own (found word for word, or with a slight difference) — or only a
+ * nearby text: a partial match, a report by meaning, the evidence a statement points at. A nearby
+ * text — one that did not give the claim a reference — is never presented as the source of what was quoted (the team, 4 Oct 2026): it is shown in a
+ * section of its own, for comparison.
+ */
+export const isNearbyOnly = (card: Card): boolean =>
+  !!card.source &&
+  card.state !== 'supported' &&
+  card.state !== 'supported_with_note' &&
+  ['partial', 'paraphrase', 'referenced', 'topic'].includes(card.match_kind)
+
+/**
  * The one line beside a note's state: its reference as a phrase. With a single grading the
  * grading follows; with several only their count, so that none is singled out.
  *
@@ -15,6 +27,7 @@ export function referenceLine(card: Card, t: Dictionary, note: string): string {
   // A question is not a claim with a state to explain: the line says where it was sent.
   if (card.is_question) return t.question.referred
   // The sources' own words on a narration that is not «له مرجعية», every distinct one.
+  if (isNearbyOnly(card)) return t.card.nearbyLine
   if (gradedBesideState(card)) return t.card.gradedAs(distinctGradings(card.grades))
   if (card.source) {
     const grade =

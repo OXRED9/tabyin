@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { SourceLink } from '@/components/report/source-link'
 import { formatPercent } from '@/lib/format'
 import { distinctGradings } from '@/lib/grades'
+import { isNearbyOnly } from '@/lib/reference-line'
 import { useI18n } from '@/lib/i18n'
 import type { Card } from '@/lib/types'
 
@@ -33,7 +34,7 @@ export function Provenance({ card }: { card: Card }) {
     ...(source
       ? [
           {
-            label: t.provenance.source,
+            label: isNearbyOnly(card) ? t.card.nearbyShort : t.provenance.source,
             body: (
               <span className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1">
                 <span dir="auto">{source.ref}</span>

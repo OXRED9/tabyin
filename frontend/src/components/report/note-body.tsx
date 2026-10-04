@@ -10,10 +10,11 @@ import { SourceLink } from '@/components/report/source-link'
 import { StateGlyph } from '@/components/state-glyph'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { diffCoversSource, hasDifferences, hasUnquoted } from '@/lib/diff'
+import { diffCoversSource, hasDifferences, hasUnquoted, sourceWindow } from '@/lib/diff'
 import { formatClock, formatPercent, safeHref } from '@/lib/format'
 import { distinctGradings } from '@/lib/grades'
 import { useI18n } from '@/lib/i18n'
+import { isNearbyOnly } from '@/lib/reference-line'
 import type {
   Alternative,
   Card,
@@ -97,12 +98,30 @@ function SourceWords({
   title?: string
 }) {
   const { t } = useI18n()
+  const [whole, setWhole] = useState(false)
   const voice = source.kind === 'quran' ? 'quran-text' : 'naskh-quote'
+  // The whole source, with only the compared words marked (the team: not a window that starts in
+  // the middle of a sentence). A long chain before them is folded until asked for.
+  const around = marked ? sourceWindow(marked, source.text) : null
+  const fold = !!around && !whole && around.before.length > 260
   return (
     <figure aria-label={title ?? t.notes.sourceWords}>
       {title ? <figcaption className="pb-1 text-sm text-quiet">{title}</figcaption> : null}
       <div className="border-y py-2">
-      {marked ? (
+      {marked && around ? (
+        <>
+          <blockquote lang="ar" dir="rtl" className={voice}>
+            {fold ? <span className="text-quiet">… {around.before.slice(-140)} </span> : around.before ? <span className="text-quiet">{around.before} </span> : null}
+            <MarkedSource diff={marked} state={state} />
+            {around.after ? <span className="text-quiet">{around.after}</span> : null}
+          </blockquote>
+          {fold ? (
+            <Button type="button" variant="link" onClick={() => setWhole(true)}>
+              {t.card.showWhole}
+            </Button>
+          ) : null}
+        </>
+      ) : marked ? (
         <blockquote lang="ar" dir="rtl" className={voice}>
           <MarkedSource diff={marked} state={state} />
         </blockquote>
@@ -350,7 +369,10 @@ export default function NoteBody({
   const referenced = card.match_kind === 'referenced'
   const showDiff = !referenced && hasDifferences(card.diff)
   // When the comparison already prints the source text word for word, do not print it twice.
-  const markedSource = showDiff && card.source && diffCoversSource(card.diff!, card.source.text) ? card.diff : null
+  const markedSource =
+    showDiff && card.source && (diffCoversSource(card.diff!, card.source.text) || sourceWindow(card.diff!, card.source.text)) ? card.diff : null
+  // A nearby text is not the quotation's source: it has a section of its own, after the verdict.
+  const nearby = isNearbyOnly(card)
   const verse = meta?.abstention_verse ?? null
   const showReferral = card.referral || card.personal_case || card.disagreement_noted || state === 'not_found'
   const copyable = features.copy && card.copy_text ? card.copy_text : null
@@ -419,14 +441,9 @@ export default function NoteBody({
       ) : null}
       {card.disagreement_noted && !note ? <Remark state="needs_review">{t.card.disagreement}</Remark> : null}
 
-      {card.source ? (
+      {card.source && !nearby ? (
         <>
-          <SourceWords
-            source={card.source}
-            marked={markedSource}
-            state={state}
-            title={referenced ? t.card.referencedSource : undefined}
-          />
+          <SourceWords source={card.source} marked={markedSource} state={state} />
           {markedSource && hasUnquoted(markedSource) ? (
             <p className="text-sm text-quiet">{t.diff.partial}</p>
           ) : null}
@@ -434,7 +451,7 @@ export default function NoteBody({
         </>
       ) : null}
 
-      <Grades grades={card.grades} unavailable={card.grade_unavailable} />
+      {nearby ? null : <Grades grades={card.grades} unavailable={card.grade_unavailable} />}
 
       {state === 'not_found' ? (
         <div className="space-y-1">
@@ -457,7 +474,7 @@ export default function NoteBody({
         </div>
       ) : null}
 
-      {showDiff && card.diff ? (
+      {showDiff && card.diff && !nearby ? (
         <section className="space-y-1">
           <h4 className="text-sm text-quiet">
             {t.diff.title}
@@ -470,7 +487,7 @@ export default function NoteBody({
             sourceShownAbove={!!markedSource}
           />
         </section>
-      ) : card.source && card.match_kind === 'exact' ? (
+      ) : nearby ? null : card.source && card.match_kind === 'exact' ? (
         <p className="text-sm text-supported-ink">{t.diff.exact}</p>
       ) : card.source && card.match_kind !== 'none' && !referenced ? (
         <p className="text-sm text-quiet">{t.matchKinds[card.match_kind]}</p>
@@ -494,6 +511,26 @@ export default function NoteBody({
           </p>
         ) : null}
       </div>
+
+      {nearby && card.source ? (
+        <section data-testid="nearby-text" className="space-y-3 rounded-control border border-dashed border-rule-strong p-3">
+          <div>
+            <h4 className="text-sm font-semibold text-ink">{referenced ? t.card.referencedSource : t.card.nearbyTitle}</h4>
+            <p className="text-sm text-quiet">{t.card.nearbyHint}</p>
+          </div>
+          <SourceWords source={card.source} marked={markedSource} state={state} />
+          <Takhrij source={card.source} />
+          <Grades grades={card.grades} unavailable={card.grade_unavailable} />
+          {showDiff && card.diff ? (
+            <section className="space-y-1">
+              <h4 className="text-sm text-quiet">
+                {t.diff.title} ({t.matchKinds[card.match_kind]})
+              </h4>
+              <DiffView diff={card.diff} state={state} quranSource={card.source.kind === 'quran'} sourceShownAbove={!!markedSource} />
+            </section>
+          ) : null}
+        </section>
+      ) : null}
 
       {features.alternatives && card.alternatives && card.alternatives.length > 0 ? (
         <Alternatives items={card.alternatives} />
