@@ -47,8 +47,12 @@ const ICONS: Record<NodeId, typeof FileText> = {
   report: TextSearch,
 }
 
-/** The engines on the orbit, in the order the work reaches them, clockwise from the top. */
-const ORBIT: NodeId[] = ['read', 'mushaf', 'narrations', 'model', 'gradings', 'pointer', 'rules']
+/**
+ * The engines on the orbit, in the order the work reaches them, clockwise from the top. Five, not
+ * seven: the team asked for fewer steps (4 Oct 2026). The pointer and the rules still run; the
+ * rules' decision is what the report shows, and the pointer only adds to it.
+ */
+const ORBIT: NodeId[] = ['read', 'mushaf', 'narrations', 'model', 'gradings']
 /** The step of the log whose measured time is printed on a row: one time per step the server timed. */
 const TIMED: Partial<Record<NodeId, LogLine['id']>> = { read: 'read', mushaf: 'scan', model: 'model', gradings: 'verify' }
 /** Radius of the orbit in the dial's drawing (its box is 200 wide, centred on 0,0). */
@@ -85,7 +89,7 @@ function useSpotlight(count: number): number {
   const [turn, setTurn] = useState(0)
   useEffect(() => {
     if (count < 2) return
-    const timer = window.setInterval(() => setTurn((n) => n + 1), 450)
+    const timer = window.setInterval(() => setTurn((n) => n + 1), 280)
     return () => window.clearInterval(timer)
   }, [count])
   return count < 2 ? 0 : turn % count
