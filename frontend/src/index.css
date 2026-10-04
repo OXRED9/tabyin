@@ -261,16 +261,6 @@
   --grid-dot: rgb(160 124 20 / 0.2);
   /* A panel's edge: a breath of warm shadow rather than a grey line. */
   --panel-edge: rgb(88 66 14 / 0.1);
-  /* The four sticky notes of the first screen, and what holds them. */
-  --note-mint: #dcf1e6;
-  --note-gold: #fbecb4;
-  --note-sage: #e4ead0;
-  --note-paper: #fffaf0;
-  --note-ink: #12261f;
-  --note-quiet: #46534b;
-  --tape: rgb(255 255 255 / 0.62);
-  --note-shadow: 0 1px 1px rgb(74 54 8 / 0.1), 0 6px 10px -6px rgb(74 54 8 / 0.28), 0 22px 26px -20px rgb(74 54 8 / 0.42);
-  --note-shadow-lifted: 0 1px 1px rgb(74 54 8 / 0.1), 0 14px 18px -10px rgb(74 54 8 / 0.3), 0 34px 36px -24px rgb(74 54 8 / 0.5);
   /* The mark's tile is the brand's own green in both themes. */
   --logo-tile: #1b6b5e;
 
@@ -302,15 +292,6 @@ html[lang="en"] {
 /* Dark, complete: a deep green-black field, raised panels, a luminous green, gold for what is live. */
 .dark {
   --panel-edge: var(--rule);
-  --note-mint: #16392f;
-  --note-gold: #3b3216;
-  --note-sage: #28331d;
-  --note-paper: #1c2c26;
-  --note-ink: #e9f1ee;
-  --note-quiet: #b4c4be;
-  --tape: rgb(255 255 255 / 0.14);
-  --note-shadow: 0 1px 1px rgb(0 0 0 / 0.4), 0 10px 14px -8px rgb(0 0 0 / 0.6), 0 24px 28px -22px rgb(0 0 0 / 0.8);
-  --note-shadow-lifted: 0 1px 1px rgb(0 0 0 / 0.4), 0 16px 20px -10px rgb(0 0 0 / 0.7), 0 36px 38px -24px rgb(0 0 0 / 0.9);
   --desk: #07130f;
   --paper: #0d1f1a;
   --raised: #12281f;
@@ -556,72 +537,7 @@ html[data-rail="closed"] [data-shell="rail"] {
   animation: var(--animate-pulse-travel);
 }
 
-/* ── v3.1: the sticky notes of the first screen ─────────────────────────────────────────────── */
-
-/*
- * A paper note: nearly square corners, a tint, a tilt of a degree or two, a strip of tape or a
- * pin, and a shadow that is darkest where the paper lifts. Notes drop and settle one after
- * another on load; the one under the pointer (or holding the focus) straightens and lifts.
- */
-.sticky-note {
-  position: relative;
-  background: var(--note-tint);
-  color: var(--note-ink);
-  border-radius: 3px 3px 3px 12px / 3px 3px 3px 5px;
-  box-shadow: var(--note-shadow);
-  rotate: var(--tilt, 0deg);
-  transition:
-    rotate 320ms var(--ease-out-quint),
-    translate 320ms var(--ease-out-quint),
-    box-shadow 320ms var(--ease-out-quint);
-  animation: note-drop 620ms cubic-bezier(0.3, 1.35, 0.5, 1) both;
-  animation-delay: calc(var(--i, 0) * 120ms + 180ms);
-}
-.sticky-note:hover,
-.sticky-note:focus-visible {
-  rotate: 0deg;
-  translate: 0 -5px;
-  box-shadow: var(--note-shadow-lifted);
-}
-/* The tape: a translucent strip across the top edge, a little askew. */
-.sticky-note[data-held="tape"]::before {
-  content: "";
-  position: absolute;
-  top: -0.6rem;
-  left: 50%;
-  width: 4.75rem;
-  height: 1.3rem;
-  translate: -50% 0;
-  rotate: calc(var(--tilt, 0deg) * -1.6 - 2deg);
-  background: var(--tape);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
-  backdrop-filter: blur(1px);
-}
-/* The pin: a gold head with its highlight, and the small shadow it casts on the paper. */
-.sticky-note[data-held="pin"]::before {
-  content: "";
-  position: absolute;
-  top: -0.35rem;
-  left: 50%;
-  width: 0.95rem;
-  height: 0.95rem;
-  translate: -50% 0;
-  border-radius: 999px;
-  background: radial-gradient(circle at 35% 30%, #f6e39a 0 18%, var(--gold) 46%, #8f6f10 100%);
-  box-shadow: 1px 3px 3px rgb(0 0 0 / 0.28);
-}
-@keyframes note-drop {
-  from {
-    opacity: 0;
-    translate: 0 -26px;
-    rotate: calc(var(--tilt, 0deg) * 3.5);
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-    rotate: var(--tilt, 0deg);
-  }
-}
+/* ── v3.1: the finish, the headline, the scrolling rows ─────────────────────────────────────── */
 
 /* Things that arrive together arrive one after another: a short stagger by their place. */
 .cascade {
@@ -733,14 +649,6 @@ html[data-rail="closed"] [data-shell="rail"] {
       opacity: 1;
     }
   }
-  @keyframes note-drop {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
   @keyframes stamp {
     from {
       opacity: 0;
@@ -754,12 +662,6 @@ html[data-rail="closed"] [data-shell="rail"] {
   [data-sealing] .seal-ring {
     stroke-dashoffset: 0;
     animation: rise 500ms 250ms both;
-  }
-  /* A note under the pointer lifts by its shadow alone. */
-  .sticky-note:hover,
-  .sticky-note:focus-visible {
-    rotate: var(--tilt, 0deg);
-    translate: 0 0;
   }
   .animate-spin {
     animation: none;

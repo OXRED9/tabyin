@@ -39,10 +39,6 @@ export const en: Dictionary = {
   },
 
   hero: {
-    verses: (n: string) => `${n} verses`,
-    narrations: (n: string) => `${n} narrations`,
-    algorithmic: 'Algorithmic matching',
-    verbatim: 'Scholars’ gradings copied verbatim',
     enginesTitle: 'What works behind this page',
     mushaf: {
       title: 'Mushaf matcher',
@@ -71,7 +67,6 @@ export const en: Dictionary = {
       live: 'Fetched live from Dorar.net and copied verbatim; the model generates no grading.',
       stored: 'Copied verbatim from HadeethEnc; the model generates no grading.',
     },
-    rules: 'The model proposes and explains; the rules and the sources decide.',
   },
 
   pipeline: {
@@ -133,7 +128,6 @@ export const en: Dictionary = {
   panes: {
     text: 'The text',
     notes: 'Notes',
-    switch: 'What is shown: the notes or the text',
   },
 
   header: {

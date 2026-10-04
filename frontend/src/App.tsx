@@ -4,7 +4,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useS
 import { Composer } from '@/components/composer'
 import type { AttachKind } from '@/components/composer'
 import { InlineError } from '@/components/inline-error'
-import { EngineNotes, Headline } from '@/components/home/hero'
+import { EngineCards, Headline } from '@/components/home/hero'
 import { InstallLine } from '@/components/install-line'
 import { ReportView } from '@/components/report/report-view'
 import { BrandLink, Rail } from '@/components/shell/rail'
@@ -581,10 +581,10 @@ function Shell() {
                 </div>
               ) : (
                 // The first screen, in three zones from 1280px: the rail, a calm centre (the headline
-                // and the composer, with room around them), and on the far side the engines as
-                // sticky notes. Narrower, the notes go under the composer two by two; on a phone
-                // they are a row between the headline and the composer, which sits low, under
-                // the thumb.
+                // and the composer, with room around them), and on the far side the engines as a
+                // column of cards. Narrower, the cards go under the composer two by two; on a
+                // phone they are a row between the headline and the composer, which sits low,
+                // under the thumb.
                 <div className="mx-auto flex w-full max-w-[44rem] flex-col gap-5 max-md:min-h-[calc(100dvh-5.5rem)] md:gap-8 md:pt-[6vh] xl:grid xl:max-w-[78rem] xl:grid-cols-[minmax(0,1fr)_17rem] xl:grid-rows-[auto_1fr] xl:gap-x-14 xl:gap-y-9 xl:pt-0">
                   <Headline className="xl:col-start-1 xl:mx-auto xl:w-full xl:max-w-[44rem] xl:pt-[13vh]" />
                   <div className="max-md:order-3 max-md:mt-auto xl:col-start-1 xl:mx-auto xl:w-full xl:max-w-[44rem]">
@@ -612,9 +612,9 @@ function Shell() {
                       pickerRef={pickerRef}
                     />
                   </div>
-                  <EngineNotes
+                  <EngineCards
                     engines={meta?.engines}
-                    className="max-md:order-2 xl:sticky xl:top-0 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-start xl:pt-[clamp(1.5rem,6vh,4rem)]"
+                    className="max-md:order-2 xl:sticky xl:top-0 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-start xl:pt-[13vh]"
                   />
                 </div>
               )}

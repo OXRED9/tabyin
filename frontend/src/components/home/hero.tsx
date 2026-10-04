@@ -1,5 +1,7 @@
+import { BookOpenText, Library, ScrollText, Sparkles } from 'lucide-react'
 import type { CSSProperties } from 'react'
 
+import { useMediaQuery } from '@/hooks/use-media-query'
 import { useI18n } from '@/lib/i18n'
 import type { Engines } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -35,11 +37,9 @@ export function Headline({ className }: { className?: string }) {
   )
 }
 
-interface Note {
+interface Engine {
   id: string
-  tint: string
-  tilt: number
-  held: 'tape' | 'pin'
+  icon: typeof BookOpenText
   figure: string
   unit: string | null
   title: string
@@ -47,29 +47,31 @@ interface Note {
 }
 
 /**
- * What really works behind the page, as four paper notes: the Mushaf text, the narration index,
- * the models (by their roles and their number — never their names), and where gradings come from.
- * Every figure is read from `meta.engines`; nothing is drawn until the server has answered.
+ * What really works behind the page, as four cards in the product's own style — the same panel
+ * as the composer: an icon, one loud figure, a title, one quiet line. The Mushaf text, the
+ * narration index, the models (by their roles and their number — never their names), and where
+ * gradings come from. Every figure is read from `meta.engines`; nothing is drawn until the server
+ * has answered.
  *
  * A sticky column beside the centre from 1280px, two by two under the composer on a tablet, and
- * on a phone a row that scrolls sideways with the next note peeking.
+ * on a phone a row that scrolls sideways with the next card peeking.
  */
-export function EngineNotes({ engines, className }: { engines: Engines | undefined; className?: string }) {
+export function EngineCards({ engines, className }: { engines: Engines | undefined; className?: string }) {
   const { t } = useI18n()
+  // On a phone the row scrolls, so it must be reachable by keyboard; wider, it is plain content.
+  const scrolls = !useMediaQuery('(min-width: 768px)')
   const h = t.hero
-  if (!engines) return <div aria-hidden="true" className={cn('min-h-[11.5rem] md:min-h-[22rem] xl:min-h-0', className)} />
+  if (!engines) return <div aria-hidden="true" className={cn('min-h-[10rem] md:min-h-[17rem] xl:min-h-0', className)} />
 
   const roles = [
     engines.models.extract ? h.models.extractVerb : null,
     engines.models.vision ? h.models.visionVerb : null,
     engines.models.audio ? h.models.audioVerb : null,
   ].filter((role): role is string => !!role)
-  const notes: Note[] = [
+  const cards: Engine[] = [
     {
       id: 'mushaf',
-      tint: 'var(--note-mint)',
-      tilt: -2,
-      held: 'tape',
+      icon: BookOpenText,
       figure: count(engines.quran_verses),
       unit: h.units.verse,
       title: h.mushaf.title,
@@ -77,9 +79,7 @@ export function EngineNotes({ engines, className }: { engines: Engines | undefin
     },
     {
       id: 'index',
-      tint: 'var(--note-gold)',
-      tilt: 1.5,
-      held: 'pin',
+      icon: Library,
       figure: count(engines.graded_narrations + engines.book_narrations),
       unit: h.units.narration,
       title: h.index.title,
@@ -87,9 +87,7 @@ export function EngineNotes({ engines, className }: { engines: Engines | undefin
     },
     {
       id: 'models',
-      tint: 'var(--note-sage)',
-      tilt: -1,
-      held: 'tape',
+      icon: Sparkles,
       figure: String(roles.length),
       unit: h.models.unit(roles.length),
       title: h.models.title,
@@ -97,9 +95,7 @@ export function EngineNotes({ engines, className }: { engines: Engines | undefin
     },
     {
       id: 'gradings',
-      tint: 'var(--note-paper)',
-      tilt: 2,
-      held: 'pin',
+      icon: ScrollText,
       figure: engines.live_gradings ? h.gradings.liveWord : h.gradings.storedWord,
       unit: null,
       title: h.gradings.title,
@@ -109,25 +105,35 @@ export function EngineNotes({ engines, className }: { engines: Engines | undefin
 
   return (
     <section aria-label={h.enginesTitle} data-testid="capabilities" className={className}>
-      <ul className="scroll-row -mx-4 flex snap-x snap-mandatory gap-5 px-5 pt-4 pb-7 md:mx-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-9 md:overflow-visible md:px-3 xl:flex xl:flex-col xl:gap-[clamp(1.1rem,3.2vh,2.25rem)] xl:px-1 xl:pb-4">
-        {notes.map((note, i) => (
-          <li
-            key={note.id}
-            // Reachable by keyboard: the row scrolls on a phone, and a note that takes the focus lifts.
-            tabIndex={0}
-            data-note-id={note.id}
-            data-held={note.held}
-            style={{ '--tilt': `${note.tilt}deg`, '--i': i, '--note-tint': note.tint } as CSSProperties}
-            className="sticky-note w-[74%] shrink-0 snap-center px-4 pt-6 pb-4 focus-visible:outline-offset-4 md:w-auto xl:pt-5 xl:pb-3.5"
-          >
-            <p className="flex items-baseline gap-2">
-              <span className={cn('tabular leading-none font-semibold', note.unit ? 'text-[2.1rem]' : 'naskh-display text-[2.3rem]')}>{note.figure}</span>
-              {note.unit ? <span className="text-sm text-(--note-quiet)">{note.unit}</span> : null}
-            </p>
-            <p className="pt-2 text-base font-semibold">{note.title}</p>
-            <p className="text-sm text-(--note-quiet)">{note.line}</p>
-          </li>
-        ))}
+      <ul
+        tabIndex={scrolls ? 0 : undefined}
+        aria-label={scrolls ? h.enginesTitle : undefined}
+        className="scroll-row -mx-4 flex snap-x snap-mandatory gap-3 px-4 pb-3 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 md:pb-0 xl:flex xl:flex-col xl:gap-4"
+      >
+        {cards.map((card, i) => {
+          const Icon = card.icon
+          return (
+            <li
+              key={card.id}
+              data-engine={card.id}
+              style={{ '--i': i * 2 } as CSSProperties}
+              className="panel cascade flex w-[78%] shrink-0 snap-center gap-3 p-4 md:w-auto"
+            >
+              <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-control bg-raised text-green">
+                <Icon className="size-[18px]" />
+              </span>
+              <div className="min-w-0">
+                {/* The figure is the one loud thing on the card. */}
+                <p className="flex items-baseline gap-1.5">
+                  <span className="tabular text-[1.75rem] leading-none font-semibold text-figure">{card.figure}</span>
+                  {card.unit ? <span className="text-sm text-quiet">{card.unit}</span> : null}
+                </p>
+                <p className="pt-1.5 text-base font-semibold text-ink">{card.title}</p>
+                <p className="text-sm text-quiet">{card.line}</p>
+              </div>
+            </li>
+          )
+        })}
       </ul>
     </section>
   )

@@ -95,11 +95,6 @@ export const ar = {
   },
 
   hero: {
-    // The strip of what the tool really holds, from `meta.engines`.
-    verses: (n: string) => `${n} آية`,
-    narrations: (n: string) => `${n} رواية`,
-    algorithmic: 'مطابقة خوارزمية',
-    verbatim: 'أحكام المحدّثين منقولة حرفياً',
     enginesTitle: 'ما يعمل خلف هذه الصفحة',
     // TODO-SULAIMAN-REVIEW (wording of the four descriptions below).
     mushaf: {
@@ -130,7 +125,6 @@ export const ar = {
       live: 'تُجلب حيّة من الدرر السنية وتُنقل بنصّها؛ لا يولّد النموذج حكماً.',
       stored: 'تُنقل بنصّها من موسوعة الأحاديث النبوية؛ لا يولّد النموذج حكماً.',
     },
-    rules: 'النموذج يقترح ويشرح، والقواعد والمصادر هي التي تقرّر.',
   },
 
   pipeline: {
@@ -193,7 +187,6 @@ export const ar = {
   panes: {
     text: 'النص',
     notes: 'الحواشي',
-    switch: 'ما يُعرض: الحواشي أو النص',
   },
 
   header: {
