@@ -70,9 +70,9 @@ for (const [width, height] of [
   await sequence('home', width, height, '', async (page) => {
     await page.waitForSelector('#root', { state: 'attached' })
   })
-  // A report's finish: from the moment the rules begin to decide.
+  // A report's finish: from the moment the last step on the stage has run.
   await sequence('finish', width, height, '&scenario=text&autorun=1&speed=3', async (page) => {
-    await page.locator('[data-node="rules"]:not([data-status="waiting"])').first().waitFor({ timeout: 30_000 })
+    await page.locator('[data-node="gradings"]:not([data-status="waiting"]):not([data-status="active"])').first().waitFor({ timeout: 30_000 })
   })
 }
 
