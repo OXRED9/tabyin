@@ -28,6 +28,14 @@ export default function StatesLegend({ open, onOpenChange }: { open: boolean; on
               <dd className="ps-7 text-sm text-ink">{t.legend.states[state]}</dd>
             </div>
           ))}
+          {/* Not a sixth state: a question borrows the review's ring, and is counted apart. */}
+          <div className="py-3">
+            <dt className={cn('flex items-center gap-2 text-base font-semibold', STATE_STYLE.needs_review.ink)}>
+              <StateGlyph state="needs_review" />
+              {t.question.word}
+            </dt>
+            <dd className="ps-7 text-sm text-ink">{t.question.legend}</dd>
+          </div>
         </dl>
         <p className="text-sm text-ink">{t.legend.notDone}</p>
         <p className="text-sm text-quiet">{t.transparency}</p>

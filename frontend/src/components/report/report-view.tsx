@@ -18,13 +18,14 @@ import { Button } from '@/components/ui/button'
 import { prefersReducedMotion, useMediaQuery } from '@/hooks/use-media-query'
 import type { VerifyState } from '@/hooks/use-verify'
 import { featuresOf } from '@/lib/features'
+import type { ClauseKind } from '@/lib/summary'
 import type { ErrorTarget } from '@/lib/feedback'
 import { formatSeconds, safeHref } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import { lazyWithPreload } from '@/lib/lazy'
-import { countStates, sourcesUsed } from '@/lib/report'
+import { sourcesUsed, tallyOf } from '@/lib/report'
 import { STATES_BY_RISK, STATE_STYLE, chronological } from '@/lib/states'
-import type { Card, ClaimStub, EvidenceState, Meta } from '@/lib/types'
+import type { Card, ClaimStub, Meta } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface ReportViewProps {
@@ -93,12 +94,13 @@ export function ReportView({
 
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(() => new Set())
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<EvidenceState | null>(null)
+  const [filter, setFilter] = useState<ClauseKind | null>(null)
   const [order, setOrder] = useState<NoteOrder>('order')
   const [sheetId, setSheetId] = useState<string | null>(null)
   const [referralOpen, setReferralOpen] = useState(false)
-  // The dialog stays mounted once it has been opened, so it can close with its transition.
-  const [referralSeen, setReferralSeen] = useState(false)
+  // The dialog stays mounted once it has been opened, so it can close with its transition; it
+  // keeps the topic words of the note it was opened from, which its links search for.
+  const [referralFor, setReferralFor] = useState<{ query: string | null } | null>(null)
   const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null)
   const [errorTarget, setErrorTarget] = useState<ErrorTarget | null>(null)
   const [glide, setGlide] = useState(false)
@@ -117,18 +119,27 @@ export function ReportView({
   )
   const readyCards = useMemo(() => ordered.map((c) => cards[c.id]).filter((c): c is Card => !!c), [ordered, cards])
   const states = useMemo(() => new Map(readyCards.map((card) => [card.id, card.state])), [readyCards])
-  const counts = useMemo(() => countStates(readyCards), [readyCards])
+  // A question put to the tool is not a citation: it is counted, and filtered, apart from the states.
+  const questions = useMemo(
+    () => new Set(readyCards.filter((card) => card.is_question).map((card) => card.id)),
+    [readyCards],
+  )
+  const kinds = useMemo(
+    () => new Map<string, ClauseKind>(readyCards.map((card) => [card.id, card.is_question ? 'question' : card.state])),
+    [readyCards],
+  )
+  const tally = useMemo(() => tallyOf(readyCards), [readyCards])
   const used = useMemo(() => sourcesUsed(readyCards), [readyCards])
 
   // A filter that matches nothing lets go.
-  const activeFilter = filter && counts[filter] > 0 ? filter : null
+  const activeFilter = filter && (filter === 'question' ? tally.questions : tally.counts[filter]) > 0 ? filter : null
   const visible = useMemo(
-    () => (activeFilter ? ordered.filter((c) => states.get(c.id) === activeFilter) : ordered),
-    [activeFilter, ordered, states],
+    () => (activeFilter ? ordered.filter((c) => kinds.get(c.id) === activeFilter) : ordered),
+    [activeFilter, ordered, kinds],
   )
   const hidden = useMemo(
-    () => new Set(activeFilter ? ordered.filter((c) => states.get(c.id) !== activeFilter).map((c) => c.id) : []),
-    [activeFilter, ordered, states],
+    () => new Set(activeFilter ? ordered.filter((c) => kinds.get(c.id) !== activeFilter).map((c) => c.id) : []),
+    [activeFilter, ordered, kinds],
   )
 
   const hasText = segments.some((s) => s.text.trim().length > 0)
@@ -138,12 +149,15 @@ export function ReportView({
   // note opens by itself (once; it can be closed). Below that the note is set open, inline,
   // directly under the text, with no margin and no one-item list. Only once the report is
   // complete: while it streams, the page behaves as always.
+  // A question's note opens by itself in the same way, wherever notes open in place: its answer
+  // is where to look, and nobody should have to ask for that twice.
   const single = done && ordered.length === 1 ? cards[ordered[0].id] : undefined
   const singleInline = !!single && !inPlace
   const [openedAlone, setOpenedAlone] = useState(false)
-  if (single && inPlace && !openedAlone) {
+  if (done && inPlace && !openedAlone) {
     setOpenedAlone(true)
-    setOpenIds(new Set([single.id]))
+    const alone = single ? [single.id] : [...questions]
+    if (alone.length > 0) setOpenIds(new Set(alone))
   }
   const withMargin = hasMargin && !singleInline
   const settled = !running
@@ -257,10 +271,13 @@ export function ReportView({
     }
   }, [hasMargin, listCount])
 
-  const openReferral = useCallback(() => {
-    setReferralSeen(true)
-    setReferralOpen(true)
-  }, [])
+  const openReferral = useCallback(
+    (cardId: string) => {
+      setReferralFor({ query: cards[cardId]?.referral_query ?? null })
+      setReferralOpen(true)
+    },
+    [cards],
+  )
 
   // Once the report is complete and the page is quiet, fetch what a first tap on a note will
   // need (its body, the sheet, the Mushaf face), so that opening a note is immediate.
@@ -393,8 +410,7 @@ export function ReportView({
         <div className="flex items-start gap-x-6 border-b pb-5">
           <div className="min-w-0 flex-1">
             <SummarySentence
-              total={ordered.length}
-              counts={counts}
+              tally={tally}
               filter={activeFilter}
               onFilter={setFilter}
             />
@@ -469,6 +485,7 @@ export function ReportView({
             segments={segments}
             claims={ordered}
             states={states}
+            questions={questions}
             settled={settled}
             hidden={hidden}
             activeId={activeId}
@@ -586,8 +603,6 @@ export function ReportView({
                   setShareTarget({
                     kind: 'summary',
                     summary,
-                    counts,
-                    total: ordered.length,
                     cards: readyCards,
                     title: source?.title ?? null,
                   })
@@ -617,7 +632,9 @@ export function ReportView({
             onLocate={locate}
           />
         ) : null}
-        {referralSeen ? <ReferralDialog open={referralOpen} onOpenChange={setReferralOpen} meta={meta} /> : null}
+        {referralFor ? (
+          <ReferralDialog open={referralOpen} onOpenChange={setReferralOpen} meta={meta} query={referralFor.query} />
+        ) : null}
         {shareTarget ? <ShareCardDialog target={shareTarget} meta={meta} onClose={() => setShareTarget(null)} /> : null}
         {errorTarget ? (
           <ReportErrorDialog

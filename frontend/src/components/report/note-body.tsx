@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { CopySourceButton } from '@/components/report/copy-source-button'
 import { DiffView, MarkedSource } from '@/components/report/diff-view'
 import { ExplainPanel } from '@/components/report/explain-panel'
+import { ReferralLinks } from '@/components/report/referral-links'
 import { SourceLink } from '@/components/report/source-link'
 import { StateGlyph } from '@/components/state-glyph'
 import { Button } from '@/components/ui/button'
@@ -313,7 +314,8 @@ export interface NoteBodyProps {
   stageSeconds: StageSeconds | undefined
   /** Print the words as quoted first: on a phone, and for a claim with no place in the text. */
   showQuoted: boolean
-  onReferral: () => void
+  /** «إحالة إلى أهل العلم»: the approved sites, searched for this note's topic words. */
+  onReferral: (cardId: string) => void
   onShare: (cardId: string) => void
   /** "Show in the text", where the note is not already beside its words. */
   onLocate?: (cardId: string) => void
@@ -353,6 +355,48 @@ export default function NoteBody({
   const explain = features.explain && card.explain ? card.explain : null
   const clock = card.timestamp ? formatClock(card.timestamp.start) : null
   const timeHref = card.timestamp ? timestampLink(source, card.timestamp.start) : null
+  const reportError = (
+    <Button
+      type="button"
+      variant="link"
+      data-testid="report-error"
+      aria-haspopup="dialog"
+      className="text-sm text-quiet decoration-rule-strong"
+      onClick={() => onReportError(card.id)}
+    >
+      {t.feedback.action}
+    </Button>
+  )
+
+  // A question put to the tool is referred, never answered: the note's own sentence, then the
+  // search links, right there. Nothing is collated, graded, offered beside it or shared.
+  if (card.is_question) {
+    return (
+      <div data-testid="question-note" className="space-y-4">
+        {showQuoted ? (
+          <div>
+            <p className="text-sm text-quiet">{t.notes.quotedWords}</p>
+            <p lang="ar" dir="rtl" className="page-text">
+              {card.text_as_quoted}
+            </p>
+          </div>
+        ) : null}
+        {note ? <p className="text-base text-ink">{note}</p> : null}
+        <ReferralLinks meta={meta} query={card.referral_query} />
+        {clock ? (
+          <p className="text-sm text-quiet">
+            {timeHref ? <SourceLink href={timeHref}>{t.card.occurredAt(clock)}</SourceLink> : t.card.occurredAt(clock)}
+          </p>
+        ) : null}
+        {explain ? (
+          <div className="border-b">
+            <ExplainPanel card={card} explain={explain} stageSeconds={stageSeconds} />
+          </div>
+        ) : null}
+        {reportError}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -478,7 +522,7 @@ export default function NoteBody({
 
       <div className="flex flex-wrap items-center gap-2">
         {showReferral ? (
-          <Button type="button" size="touch" onClick={onReferral}>
+          <Button type="button" size="touch" onClick={() => onReferral(card.id)}>
             <GraduationCap aria-hidden="true" />
             {t.card.referral}
           </Button>
@@ -538,16 +582,7 @@ export default function NoteBody({
         )}
       </div>
 
-      <Button
-        type="button"
-        variant="link"
-        data-testid="report-error"
-        aria-haspopup="dialog"
-        className="text-sm text-quiet decoration-rule-strong"
-        onClick={() => onReportError(card.id)}
-      >
-        {t.feedback.action}
-      </Button>
+      {reportError}
     </div>
   )
 }

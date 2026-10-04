@@ -51,7 +51,7 @@ interface Scenario {
   cards: Record<UiLang, Card[]>
 }
 
-const scenarios = fixtures.scenarios as unknown as Record<'video' | 'text' | 'fabrication', Scenario>
+const scenarios = fixtures.scenarios as unknown as Record<'video' | 'text' | 'fabrication' | 'question', Scenario>
 
 const params = () => new URLSearchParams(window.location.search)
 
@@ -103,7 +103,7 @@ const ERRORS: Record<string, ApiError> = {
   },
 }
 
-type ScenarioName = 'video' | 'text' | 'fabrication' | 'lexical' | 'no_claims' | 'error' | 'tiktok'
+type ScenarioName = 'video' | 'text' | 'fabrication' | 'question' | 'lexical' | 'no_claims' | 'error' | 'tiktok'
 
 function chooseScenario(input: VerifyInput): ScenarioName {
   const forced = params().get('scenario') as ScenarioName | null
@@ -113,6 +113,8 @@ function chooseScenario(input: VerifyInput): ScenarioName {
   if (input.input_type === 'article_url') return /fail|error/i.test(input.url) ? 'error' : 'text'
   const fabrication = scenarios.fabrication.segments[0]?.text ?? ''
   if (fabrication && input.text.trim().startsWith(fabrication.slice(0, 20))) return 'fabrication'
+  // A question put to the tool, typed or pasted: it is referred, never answered.
+  if (input.text.trim() === (scenarios.question.segments[0]?.text ?? '').trim()) return 'question'
   return 'text'
 }
 
@@ -268,6 +270,8 @@ export function mockAutorunInput(): VerifyInput | null {
       return { input_type: 'article_url', url: 'https://example.com/fail' }
     case 'fabrication':
       return { input_type: 'text', text: textOf(scenarios.fabrication) }
+    case 'question':
+      return { input_type: 'text', text: textOf(scenarios.question) }
     case 'no_claims':
       return { input_type: 'text', text: NO_CLAIMS_TEXT }
     default:
@@ -325,7 +329,13 @@ export async function mockVerify(
   }
 
   const base =
-    name === 'video' ? scenarios.video : name === 'fabrication' ? scenarios.fabrication : scenarios.text
+    name === 'video'
+      ? scenarios.video
+      : name === 'fabrication'
+        ? scenarios.fabrication
+        : name === 'question'
+          ? scenarios.question
+          : scenarios.text
   const lexical = name === 'lexical'
   const empty = name === 'no_claims'
   // In lexical-only mode only verbatim verses and hadith are caught.

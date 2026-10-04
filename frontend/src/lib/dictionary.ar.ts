@@ -571,6 +571,30 @@ export const ar = {
     title: 'إحالة إلى أهل العلم',
     description: 'تبيّن لا يفتي ولا يرجّح. هذه جهات يمكنك الرجوع إليها:',
     empty: 'تعذّر تحميل روابط الإحالة الآن.',
+    // TODO-SULAIMAN-REVIEW (wording).
+    searchNote:
+      'روابط بحث في مواقع أهل العلم المعتمدة؛ تبيّن لا يجلب منها شيئاً ولا يرجّح بينها، والنتائج نتائج بحث تلك المواقع.',
+    searchFor: (words: string, site: string) => `ابحث عن «${words}» في ${site}`,
+  },
+
+  // «تبيّن يتحقق مما يُنقل، ولا يجيب عما يُسأل»: a question put to the tool is referred, never
+  // answered. It is counted apart from the five states. TODO-SULAIMAN-REVIEW (wording of `only`
+  // and `legend`; the note's own sentence comes from the backend).
+  question: {
+    word: 'سؤال',
+    referred: 'أُحيل إلى أهل العلم',
+    clause: (n: number): string =>
+      n === 1
+        ? 'سؤال واحد أُحيل إلى أهل العلم'
+        : n === 2
+          ? 'سؤالان أُحيلا إلى أهل العلم'
+          : n <= 10
+            ? `${arWord(n)} أسئلة أُحيلت إلى أهل العلم`
+            : `${n} سؤالاً أُحيلت إلى أهل العلم`,
+    only: (n: number): string =>
+      `${n === 1 ? 'سؤال واحد' : n === 2 ? 'سؤالان' : n <= 10 ? `${arWord(n)} أسئلة` : `${n} سؤالاً`}: تبيّن يتحقق مما يُنقل ولا يجيب عما يُسأل.`,
+    legend:
+      'سؤال وُجّه إلى تبيّن. تبيّن يتحقق مما يُنقل ولا يجيب عما يُسأل: يحيلك بروابط بحث إلى مواقع أهل العلم المعتمدة، ولا يجلب منها جواباً. ليس حكماً في المسألة.',
   },
 
   transcript: {

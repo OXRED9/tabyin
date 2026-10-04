@@ -474,6 +474,19 @@ export const en: Dictionary = {
     title: 'Refer to scholars',
     description: 'Tabayyun issues no fatwa and prefers no opinion. You can consult these bodies:',
     empty: 'The referral links could not be loaded right now.',
+    searchNote:
+      'Search links on the approved scholars’ sites; Tabayyun fetches nothing from them and prefers none; the results are those sites’ own.',
+    searchFor: (words: string, site: string) => `Search ${site} for “${words}”`,
+  },
+
+  question: {
+    word: 'A question',
+    referred: 'referred to the scholars',
+    clause: (n: number) => `${enWord(n)} ${n === 1 ? 'question' : 'questions'} referred to the scholars`,
+    only: (n: number) =>
+      `${capital(enWord(n))} ${n === 1 ? 'question' : 'questions'}: Tabayyun verifies what is quoted; it does not answer what is asked.`,
+    legend:
+      'A question put to Tabayyun. Tabayyun verifies what is quoted and does not answer what is asked: it sends you, by search links, to the approved scholars’ sites, and fetches no answer from them. It is not a ruling on the matter.',
   },
 
   transcript: {

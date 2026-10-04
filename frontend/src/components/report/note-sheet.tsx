@@ -29,10 +29,12 @@ export default function NoteSheet({
       >
         <SheetHeader className="border-b py-4">
           <SheetTitle className="mx-auto flex w-full max-w-[36rem] items-center gap-2">
-            <StateWord state={state} className="text-base" />
-            <span className="text-sm font-normal text-quiet">— {t.claimTypes[card.claim_type]}</span>
+            <StateWord state={state} word={card.is_question ? t.question.word : undefined} className="text-base" />
+            <span className="text-sm font-normal text-quiet">
+              — {card.is_question ? t.question.referred : t.claimTypes[card.claim_type]}
+            </span>
           </SheetTitle>
-          <SheetDescription className="sr-only">{t.states[state]}</SheetDescription>
+          <SheetDescription className="sr-only">{card.is_question ? t.question.referred : t.states[state]}</SheetDescription>
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto max-w-[36rem]">

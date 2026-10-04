@@ -30,11 +30,24 @@ export const emptyCounts = (): Record<EvidenceState, number> => ({
   contradicted: 0,
 })
 
-/** How many cards there are in each state. */
-export function countStates(cards: Card[]): Record<EvidenceState, number> {
+/**
+ * What a report holds: its citations by state, and, apart from them, the questions that were put
+ * to the tool (a question is referred, never verified: it is not a citation and has no state to count).
+ */
+export interface Tally {
+  citations: number
+  counts: Record<EvidenceState, number>
+  questions: number
+}
+
+export function tallyOf(cards: Card[]): Tally {
   const counts = emptyCounts()
-  for (const card of cards) counts[card.state] += 1
-  return counts
+  let questions = 0
+  for (const card of cards) {
+    if (card.is_question) questions += 1
+    else counts[card.state] += 1
+  }
+  return { citations: cards.length - questions, counts, questions }
 }
 
 export const stubFromCard = (card: Card): ClaimStub => ({

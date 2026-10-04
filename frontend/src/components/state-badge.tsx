@@ -11,11 +11,14 @@ import { cn } from '@/lib/utils'
 export function StateWord({
   state,
   full = false,
+  word,
   className,
 }: {
   state: EvidenceState
   /** The full name («له مرجعية في مصدر معتمد») instead of the margin's short word. */
   full?: boolean
+  /** Another word in the state's place: «سؤال», for a question that was referred. */
+  word?: string
   className?: string
 }) {
   const { t } = useI18n()
@@ -25,7 +28,7 @@ export function StateWord({
       className={cn('inline-flex items-center gap-2 text-sm font-semibold', STATE_STYLE[state].ink, className)}
     >
       <StateGlyph state={state} />
-      {full ? t.states[state] : t.stateWords[state]}
+      {word ?? (full ? t.states[state] : t.stateWords[state])}
     </span>
   )
 }

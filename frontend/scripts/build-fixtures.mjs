@@ -316,6 +316,8 @@ function card(partial) {
     action: ACTION[partial.state],
     similarity: null,
     match_kind: 'none',
+    is_question: false,
+    referral_query: null,
     alternatives: [],
     source: null,
     other_sources: [],
@@ -346,6 +348,8 @@ const STAND_IN = {
 }
 // Not religious texts: a pillar named in the pitch deck's own mock, a personal question, a request.
 const PLAIN = {
+  // A question put to the tool: not a religious text. It is referred, never answered.
+  question: 'ما حكم الزكاة؟',
   ruling: 'صيام رمضان واجب على كل مسلم',
   personal: 'طلّقت زوجتي وأنا غاضب، فهل يقع الطلاق؟',
   request: 'أعطني حديثاً يثبت أن من أكل التفاح على الريق دخل الجنة',
@@ -459,6 +463,8 @@ function buildCards(lang) {
       state: 'needs_review',
       rule_id: 'level_c.cap_needs_review',
       referral: true,
+      // Topic words for the referral links' search (the clip is about fasting): not a religious text.
+      referral_query: 'أحكام الصيام',
       disagreement_noted: true,
       // The backend's own sentence for a disputed matter (evidence_rules/rules.py, `ruling.disputed`).
       note_ar: DISPUTED_NOTE.ar,
@@ -479,6 +485,7 @@ function buildCards(lang) {
       source: hadithSource(hB, lang),
       grades: [hadithGrade(hB)],
       referral: true,
+      referral_query: 'أحكام الصيام',
       disagreement_noted: true,
       note_ar: `${DISPUTED_NOTE.ar} أقرب نص في المصادر لما أُشير إليه معروض مع حكمه؛ عرضه لا يعني ترجيحاً ولا حكماً من تبيّن.`,
       note_en: `${DISPUTED_NOTE.en} The closest text in the sources to what is referred to is shown with its grading; showing it is neither a preference nor a ruling by Tabayyun.`,
@@ -526,6 +533,22 @@ function buildCards(lang) {
       alternatives: [alternativeOf(hPartial), alternativeOf(hB)],
       note_ar: 'لم يُعثر على هذا الحديث في المصادر المعتمدة المتاحة.',
       note_en: 'This hadith was not found in the approved sources available.',
+    }),
+    // «تبيّن يتحقق مما يُنقل، ولا يجيب عما يُسأل»: a question is referred to the approved scholars'
+    // sites and never answered. Nothing is retrieved for it. The note is the backend's sentence
+    // for `question.referral` (evidence_rules/rules.py), and the query its topic words.
+    question: card({
+      claim_type: 'ruling',
+      content_level: 'B',
+      text_as_quoted: PLAIN.question,
+      state: 'needs_review',
+      rule_id: 'question.referral',
+      referral: true,
+      is_question: true,
+      referral_query: 'حكم الزكاة',
+      note_ar: 'هذا سؤال، وتبيّن يتحقق مما يُنقل ولا يجيب عما يُسأل. لا نفتي؛ راجع جواب مسألتك في مواقع أهل العلم المعتمدة.',
+      note_en:
+        "This is a question. Tabayyun verifies what is quoted; it does not answer what is asked and gives no fatwa. Look the matter up on the approved scholars' sites.",
     }),
     request: card({
       claim_type: 'request',
@@ -883,6 +906,11 @@ const fabrication = scenario({
   parts: [{ card: 'request', before: '', after: '.' }],
 })
 
+const question = scenario({
+  source: { input_type: 'text', title: null, url: null, duration: null, transcript_origin: null, language: null },
+  parts: [{ card: 'question', before: '', after: '' }],
+})
+
 // ── /api/meta ─────────────────────────────────────────────────────────────────────────────────
 function closingClause(a, marker) {
   // The clause is located by a word of the simple text; the Uthmani words at the same positions
@@ -911,9 +939,13 @@ const meta = {
     ref_en: `${motto.name_en} ${motto.surah}:${motto.number}`,
     url: quranUrl(motto, 'ar'),
   },
+  // The same sites, search addresses and word limits as backend/tabayyun/meta.py: the approved
+  // package's fatwa sites, then the hadith one (which is not offered for questions and rulings).
   referral_links: [
-    { name_ar: 'الإسلام سؤال وجواب', name_en: 'Islam Question & Answer', url: 'https://islamqa.info/ar' },
-    { name_ar: 'الموقع الرسمي للشيخ عبدالعزيز بن باز', name_en: 'Official site of Shaykh Ibn Baz', url: 'https://binbaz.org.sa' },
+    { name_ar: 'الإسلام سؤال وجواب', name_en: 'Islam Question & Answer', kind: 'fatwa', url: 'https://islamqa.info/ar', search_url: 'https://islamqa.info/ar/search?q={q}', max_words: 6 },
+    { name_ar: 'الموقع الرسمي للشيخ عبدالعزيز بن باز', name_en: 'Official site of Shaykh Ibn Baz', kind: 'fatwa', url: 'https://binbaz.org.sa', search_url: 'https://binbaz.org.sa/search?q={q}', max_words: 6 },
+    { name_ar: 'الموقع الرسمي للشيخ محمد بن صالح العثيمين', name_en: 'Official site of Shaykh Ibn Uthaymeen', kind: 'fatwa', url: 'https://binothaimeen.net', search_url: 'https://binothaimeen.net/ar/Searchpage/{q}/0/0', max_words: 2 },
+    { name_ar: 'الدرر السنية', name_en: 'Dorar.net', kind: 'hadith', url: 'https://dorar.net', search_url: null, max_words: 0 },
   ],
   examples: [
     {
@@ -957,7 +989,7 @@ const fixtures = {
     picks: PICK,
   },
   meta,
-  scenarios: { video, text, fabrication },
+  scenarios: { video, text, fabrication, question },
 }
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true })

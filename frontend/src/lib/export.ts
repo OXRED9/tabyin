@@ -6,7 +6,7 @@ import { ApiFailure, requestExportHtml } from './api'
 import type { Dictionary } from './dictionary'
 import { formatClock, formatDateTime, formatPercent, safeHref } from './format'
 import { formatDuration, formatSimilarity, stageTimingLine } from './markdown'
-import { countStates, sourcesUsed } from './report'
+import { sourcesUsed, tallyOf } from './report'
 import { STATES_FOR_SUMMARY } from './states'
 import type { Card, Explain, Meta, Report, SourceRef, UiLang } from './types'
 
@@ -193,8 +193,8 @@ function cardBlock(card: Card, report: Report, ctx: { t: Dictionary; lang: UiLan
   return `<article class="card state-${esc(state)}">
     <header>
       <span class="index">${card.index}</span>
-      <span class="badge">${esc(t.states[state])}</span>
-      <span class="muted">${esc(t.claimTypes[card.claim_type])}</span>
+      <span class="badge">${esc(card.is_question ? t.question.word : t.states[state])}</span>
+      <span class="muted">${esc(card.is_question ? t.question.referred : t.claimTypes[card.claim_type])}</span>
       ${card.timestamp ? `<span class="muted time">${esc(t.card.occurredAt(formatClock(card.timestamp.start)))}</span>` : ''}
     </header>
     <p class="quoted" lang="ar" dir="rtl">${esc(card.text_as_quoted)}</p>
@@ -230,10 +230,11 @@ export function buildPrintableHtml(
 ): string {
   const { t, lang, meta } = ctx
   const dir = lang === 'ar' ? 'rtl' : 'ltr'
-  const counts = countStates(report.cards)
+  const { citations, counts, questions } = tallyOf(report.cards)
   const summary = [
-    t.report.citations(report.cards.length),
+    ...(citations > 0 || questions === 0 ? [t.report.citations(citations)] : []),
     ...STATES_FOR_SUMMARY.filter((s) => counts[s] > 0).map((s) => `${counts[s]} ${t.statesShort[s]}`),
+    ...(questions > 0 ? [t.question.clause(questions)] : []),
   ].join(' · ')
   const sourceLine =
     report.source.title || report.source.url || t.input.tabs[report.source.input_type]

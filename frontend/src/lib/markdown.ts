@@ -4,7 +4,7 @@
  */
 import type { Dictionary } from './dictionary'
 import { formatClock, formatDateTime, formatSeconds, safeHref } from './format'
-import { countStates, sourcesUsed } from './report'
+import { sourcesUsed, tallyOf } from './report'
 import { STATES_FOR_SUMMARY } from './states'
 import type { Card, Explain, Grade, Meta, Report, StageSeconds, UiLang } from './types'
 
@@ -105,7 +105,9 @@ function cardBlock(card: Card, report: Report, ctx: Context): string {
   const state = card.state
   const note = lang === 'ar' ? card.note_ar || card.note_en : card.note_en || card.note_ar
   const lines: string[] = [
-    `## ${card.index}. ${t.states[state]} — ${t.claimTypes[card.claim_type]}`,
+    card.is_question
+      ? `## ${card.index}. ${t.question.word} — ${t.question.referred}`
+      : `## ${card.index}. ${t.states[state]} — ${t.claimTypes[card.claim_type]}`,
     '',
     quote(card.text_as_quoted),
     '',
@@ -157,10 +159,11 @@ function cardBlock(card: Card, report: Report, ctx: Context): string {
 
 export function buildMarkdownReport(report: Report, ctx: Context): string {
   const { t, lang } = ctx
-  const counts = countStates(report.cards)
+  const { citations, counts, questions } = tallyOf(report.cards)
   const summary = [
-    t.report.citations(report.cards.length),
+    ...(citations > 0 || questions === 0 ? [t.report.citations(citations)] : []),
     ...STATES_FOR_SUMMARY.filter((s) => counts[s] > 0).map((s) => `${counts[s]} ${t.statesShort[s]}`),
+    ...(questions > 0 ? [t.question.clause(questions)] : []),
   ].join(' · ')
 
   const head = [`# ${t.appName} — ${t.report.title}`, '', `**${summary}**`, '']

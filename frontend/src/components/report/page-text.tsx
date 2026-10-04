@@ -16,6 +16,8 @@ interface PageTextProps {
   claims: ClaimStub[]
   /** The state each claim shows once its verdict is in; absent while it is still being checked. */
   states: ReadonlyMap<string, EvidenceState>
+  /** Claims that are questions put to the tool: named «سؤال», not by the state they borrow. */
+  questions: ReadonlySet<string>
   /** While the request runs every passage keeps a plain hairline: the ink comes when it is done. */
   settled: boolean
   /** Notes hidden by the summary's filter: their passages go back to a plain hairline. */
@@ -68,6 +70,7 @@ export const PageText = memo(function PageText({
   segments,
   claims,
   states,
+  questions,
   settled,
   hidden,
   activeId,
@@ -170,7 +173,11 @@ export const PageText = memo(function PageText({
                       data-state={state ?? 'pending'}
                       aria-label={t.transcript.passage(
                         piece.text,
-                        known && settled ? t.stateWords[known] : t.transcript.pendingState,
+                        known && settled
+                          ? questions.has(claim.id)
+                            ? t.question.word
+                            : t.stateWords[known]
+                          : t.transcript.pendingState,
                       )}
                       onClick={(event) => select(event, claim.id)}
                       onMouseEnter={() => onHover(claim.id)}

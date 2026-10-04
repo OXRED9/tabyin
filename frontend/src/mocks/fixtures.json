@@ -47,12 +47,34 @@
    {
     "name_ar": "الإسلام سؤال وجواب",
     "name_en": "Islam Question & Answer",
-    "url": "https://islamqa.info/ar"
+    "kind": "fatwa",
+    "url": "https://islamqa.info/ar",
+    "search_url": "https://islamqa.info/ar/search?q={q}",
+    "max_words": 6
    },
    {
     "name_ar": "الموقع الرسمي للشيخ عبدالعزيز بن باز",
     "name_en": "Official site of Shaykh Ibn Baz",
-    "url": "https://binbaz.org.sa"
+    "kind": "fatwa",
+    "url": "https://binbaz.org.sa",
+    "search_url": "https://binbaz.org.sa/search?q={q}",
+    "max_words": 6
+   },
+   {
+    "name_ar": "الموقع الرسمي للشيخ محمد بن صالح العثيمين",
+    "name_en": "Official site of Shaykh Ibn Uthaymeen",
+    "kind": "fatwa",
+    "url": "https://binothaimeen.net",
+    "search_url": "https://binothaimeen.net/ar/Searchpage/{q}/0/0",
+    "max_words": 2
+   },
+   {
+    "name_ar": "الدرر السنية",
+    "name_en": "Dorar.net",
+    "kind": "hadith",
+    "url": "https://dorar.net",
+    "search_url": null,
+    "max_words": 0
    }
   ],
   "examples": [
@@ -196,6 +218,8 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "quran",
@@ -309,6 +333,8 @@
       "action": "correct_wording",
       "similarity": 1,
       "match_kind": "partial",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -446,6 +472,8 @@
       "action": "adopt",
       "similarity": null,
       "match_kind": "topic",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "quran",
@@ -539,6 +567,8 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -678,6 +708,8 @@
       "action": "refer_to_scholars",
       "similarity": 0.82,
       "match_kind": "near",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -812,6 +844,8 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": null,
       "other_sources": [],
@@ -865,6 +899,8 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": "أحكام الصيام",
       "alternatives": [],
       "source": null,
       "other_sources": [],
@@ -918,6 +954,8 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "referenced",
+      "is_question": false,
+      "referral_query": "أحكام الصيام",
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -999,6 +1037,8 @@
       "action": "remove_and_warn",
       "similarity": 1,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -1120,6 +1160,8 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": null,
       "other_sources": [],
@@ -1173,6 +1215,8 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [
        {
         "text": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم : «إن أَحَبَّ الصيام إلى الله صِيَامُ داود، وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا».",
@@ -1247,6 +1291,8 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "quran",
@@ -1360,6 +1406,8 @@
       "action": "correct_wording",
       "similarity": 1,
       "match_kind": "partial",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -1502,6 +1550,8 @@
       "action": "adopt",
       "similarity": null,
       "match_kind": "topic",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "quran",
@@ -1595,6 +1645,8 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -1739,6 +1791,8 @@
       "action": "refer_to_scholars",
       "similarity": 0.82,
       "match_kind": "near",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -1873,6 +1927,8 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": null,
       "other_sources": [],
@@ -1926,6 +1982,8 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": "أحكام الصيام",
       "alternatives": [],
       "source": null,
       "other_sources": [],
@@ -1979,6 +2037,8 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "referenced",
+      "is_question": false,
+      "referral_query": "أحكام الصيام",
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -2065,6 +2125,8 @@
       "action": "remove_and_warn",
       "similarity": 1,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -2191,6 +2253,8 @@
       "action": "refer_to_scholars",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": null,
       "other_sources": [],
@@ -2244,6 +2308,8 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [
        {
         "text": "عن عبد الله بن عمرو بن العاص رضي الله عنهما قال: قال رسول الله صلى الله عليه وسلم : «إن أَحَبَّ الصيام إلى الله صِيَامُ داود، وأحب الصلاة إلى الله صلاة داود، كان يَنَامُ نِصْفَ اللَّيْلِ، وَيَقُومُ ثُلُثَهُ، وَيَنَامُ سُدُسَهُ، وكان يصوم يومًا ويُفطِرُ يومًا».",
@@ -2351,6 +2417,8 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "quran",
@@ -2461,6 +2529,8 @@
       "action": "correct_wording",
       "similarity": 1,
       "match_kind": "partial",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -2595,6 +2665,8 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": null,
       "other_sources": [],
@@ -2647,6 +2719,8 @@
       "action": "adopt",
       "similarity": 1,
       "match_kind": "exact",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "quran",
@@ -2757,6 +2831,8 @@
       "action": "correct_wording",
       "similarity": 1,
       "match_kind": "partial",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": {
        "kind": "hadith",
@@ -2896,6 +2972,8 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": null,
       "other_sources": [],
@@ -2969,6 +3047,8 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": null,
       "other_sources": [],
@@ -3052,6 +3132,8 @@
       "action": "remove_or_request_source",
       "similarity": null,
       "match_kind": "none",
+      "is_question": false,
+      "referral_query": null,
       "alternatives": [],
       "source": null,
       "other_sources": [],
@@ -3122,6 +3204,109 @@
       "text_as_quoted": "أعطني حديثاً يثبت أن من أكل التفاح على الريق دخل الجنة",
       "state": "not_found",
       "rule_id": "request.no_fabrication",
+      "position": 0
+     }
+    ]
+   },
+   "llm": true
+  },
+  "question": {
+   "source": {
+    "input_type": "text",
+    "title": null,
+    "url": null,
+    "duration": null,
+    "transcript_origin": null,
+    "language": null
+   },
+   "segments": [
+    {
+     "id": 0,
+     "text": "ما حكم الزكاة؟",
+     "start": null,
+     "end": null
+    }
+   ],
+   "cards": {
+    "ar": [
+     {
+      "id": "c1",
+      "index": 1,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "refer_to_scholars",
+      "similarity": null,
+      "match_kind": "none",
+      "is_question": true,
+      "referral_query": "حكم الزكاة",
+      "alternatives": [],
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "هذا سؤال، وتبيّن يتحقق مما يُنقل ولا يجيب عما يُسأل. لا نفتي؛ راجع جواب مسألتك في مواقع أهل العلم المعتمدة.",
+      "note_en": "This is a question. Tabayyun verifies what is quoted; it does not answer what is asked and gives no fatwa. Look the matter up on the approved scholars' sites.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": null,
+      "span": {
+       "segment_id": 0,
+       "start": 0,
+       "end": 14
+      },
+      "warnings": [],
+      "copy_text": null,
+      "explain": null,
+      "claim_type": "ruling",
+      "content_level": "B",
+      "text_as_quoted": "ما حكم الزكاة؟",
+      "state": "needs_review",
+      "rule_id": "question.referral",
+      "position": 0
+     }
+    ],
+    "en": [
+     {
+      "id": "c1",
+      "index": 1,
+      "certainty": "not_applicable",
+      "attributed_to": null,
+      "explicit_attribution": false,
+      "action": "refer_to_scholars",
+      "similarity": null,
+      "match_kind": "none",
+      "is_question": true,
+      "referral_query": "حكم الزكاة",
+      "alternatives": [],
+      "source": null,
+      "other_sources": [],
+      "grades": [],
+      "grade_unavailable": false,
+      "diff": null,
+      "note_ar": "هذا سؤال، وتبيّن يتحقق مما يُنقل ولا يجيب عما يُسأل. لا نفتي؛ راجع جواب مسألتك في مواقع أهل العلم المعتمدة.",
+      "note_en": "This is a question. Tabayyun verifies what is quoted; it does not answer what is asked and gives no fatwa. Look the matter up on the approved scholars' sites.",
+      "ai_explanation": null,
+      "referral": true,
+      "personal_case": false,
+      "disagreement_noted": false,
+      "timestamp": null,
+      "span": {
+       "segment_id": 0,
+       "start": 0,
+       "end": 14
+      },
+      "warnings": [],
+      "copy_text": null,
+      "explain": null,
+      "claim_type": "ruling",
+      "content_level": "B",
+      "text_as_quoted": "ما حكم الزكاة؟",
+      "state": "needs_review",
+      "rule_id": "question.referral",
       "position": 0
      }
     ]

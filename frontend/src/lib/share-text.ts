@@ -6,14 +6,15 @@
  */
 import type { Dictionary } from './dictionary'
 import { distinctGradings, gradedBesideState } from './grades'
+import { tallyOf } from './report'
 import { truncateClaim } from './share-card'
 import { byAttention } from './states'
 import { summarySentence } from './summary'
-import type { Card, EvidenceState } from './types'
+import type { Card } from './types'
 
 export type ShareSubject =
   | { kind: 'claim'; card: Card }
-  | { kind: 'summary'; total: number; counts: Record<EvidenceState, number>; title: string | null; cards: Card[] }
+  | { kind: 'summary'; title: string | null; cards: Card[] }
 
 /**
  * A citation's reference and what its source says of it: one grading in the source's own word (a
@@ -62,10 +63,13 @@ function lines(subject: ShareSubject, t: Dictionary, shape: Shape): string[] {
   const rest = cards.length - shown.length
   return [
     subject.title ? `${t.share.summaryLabel} — ${truncateClaim(subject.title, 80)}` : t.share.summaryLabel,
-    summarySentence(t, subject.total, subject.counts),
+    summarySentence(t, tallyOf(subject.cards)),
     ...shown.map((card) => {
+      const quoted = `«${truncateClaim(card.text_as_quoted, shape.quoted)}»`
+      // A question has no state to name and nothing beside it but where it was sent.
+      if (card.is_question) return `• ${t.question.word}: ${quoted} (${t.question.referred})`
       const reference = shape.reference ? referenceWithGrade(card, t) : ''
-      return `• ${t.stateWords[card.state]}: «${truncateClaim(card.text_as_quoted, shape.quoted)}»${reference ? ` (${reference})` : ''}`
+      return `• ${t.stateWords[card.state]}: ${quoted}${reference ? ` (${reference})` : ''}`
     }),
     ...(rest > 0 && shown.length > 0 ? [t.share.moreCitations(rest)] : []),
   ]

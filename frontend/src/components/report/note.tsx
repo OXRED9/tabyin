@@ -56,6 +56,8 @@ export const MarginNote = memo(function MarginNote({
   const reference = referenceLine(card, t, pick(card.note_ar, card.note_en))
   const openReference = referenceWhenOpen(card, t)
   const graded = gradedBesideState(card)
+  // A question borrows the review's ring and ink, and is named for what it is.
+  const word = card.is_question ? t.question.word : t.stateWords[state]
 
   return (
     <div
@@ -73,7 +75,8 @@ export const MarginNote = memo(function MarginNote({
         data-note={card.id}
         data-state={state}
         data-open={open || undefined}
-        aria-label={`${t.stateWords[state]}: ${card.text_as_quoted}`}
+        data-question={card.is_question ? '' : undefined}
+        aria-label={`${word}: ${card.text_as_quoted}`}
         onMouseEnter={() => onHover(card.id)}
         onMouseLeave={() => onHover(null)}
         // The bar bounds an open note, which has no box. A collapsed note needs none: its ring
@@ -97,12 +100,18 @@ export const MarginNote = memo(function MarginNote({
         >
           <span className="flex h-7 items-center gap-2 text-sm">
             <StateGlyph state={state} />
-            <span className={cn('shrink-0 font-semibold', style.ink)}>{t.stateWords[state]}</span>
-            {/* Where the margin is narrow the claim type gives way to the reference, unless there is none. */}
-            <span className={cn('shrink-0 text-ink', reference && 'max-lg:hidden')}>— {t.claimTypes[card.claim_type]}</span>
-            <span className="min-w-0 flex-1 truncate text-quiet">
-              {open ? null : graded ? <span className="max-lg:hidden">· </span> : null}
-              {open ? null : reference}
+            <span className={cn('shrink-0 font-semibold', style.ink)}>{word}</span>
+            {/* Where the margin is narrow the claim type gives way to the reference, unless there is none.
+                A question has no claim type to name: it says where it was sent. */}
+            {card.is_question || graded ? (
+              // A question says where it was sent; a graded narration gives the line to its
+              // gradings, which a claim type before them would push past the cut.
+              <span className="shrink-0 text-ink">—</span>
+            ) : (
+              <span className={cn('shrink-0 text-ink', reference && 'max-lg:hidden')}>— {t.claimTypes[card.claim_type]}</span>
+            )}
+            <span className={cn('min-w-0 flex-1 truncate', card.is_question ? 'text-ink' : 'text-quiet')}>
+              {open && !card.is_question ? null : reference}
             </span>
             {inPlace ? (
               <ChevronDown

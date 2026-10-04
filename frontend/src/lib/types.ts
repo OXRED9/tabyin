@@ -153,6 +153,13 @@ export interface Card {
   similarity: number | null
   match_kind: MatchKind
   /**
+   * A question put to the tool: referred to the approved scholars' sites, never answered (rule
+   * `question.referral`). Its state is `needs_review`, but it is shown as a question, not as that.
+   */
+  is_question?: boolean
+  /** Topic words for the referral links' search; null opens each site's first page. */
+  referral_query?: string | null
+  /**
    * F2 «الثابت في الباب»: up to three accepted narrations on the same subject, for a hadith with
    * no reference or a weak or rejected one. Retrieved, never generated. Absent on a report saved
    * before the feature.
@@ -249,6 +256,12 @@ export interface ReferralLink {
   name_ar: string
   name_en: string
   url: string
+  /** Only `fatwa` sites are offered for questions and rulings. Absent on an older backend. */
+  kind?: 'fatwa' | 'hadith'
+  /** The site's own search, with `{q}` for the words; null when it has none to link to. */
+  search_url?: string | null
+  /** How many topic words that site's search still answers. */
+  max_words?: number
 }
 
 export interface MetaExample {

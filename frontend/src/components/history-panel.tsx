@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { formatDateTime, truncate } from '@/lib/format'
 import type { HistoryEntry } from '@/lib/history'
 import { useI18n } from '@/lib/i18n'
-import { countStates } from '@/lib/report'
+import { tallyOf } from '@/lib/report'
 import { summarySentence } from '@/lib/summary'
 
 /**
@@ -39,7 +39,7 @@ export default function HistoryPanel({
         ) : (
           <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
             {entries.map((entry) => {
-              const counts = countStates(entry.report.cards)
+              const tally = tallyOf(entry.report.cards)
               return (
                 <li key={entry.id}>
                   <button
@@ -51,7 +51,7 @@ export default function HistoryPanel({
                       {truncate(entry.title || t.history.untitled, 60)}
                     </span>
                     <span className="block text-sm text-ink">
-                      {summarySentence(t, entry.report.cards.length, counts)}
+                      {summarySentence(t, tally)}
                     </span>
                     <span className="tabular block text-sm text-quiet">{formatDateTime(entry.saved_at, lang)}</span>
                   </button>

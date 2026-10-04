@@ -28,7 +28,7 @@ import type { CardSize, CardTheme } from '@/lib/share-card'
 import { shareLink, shareText } from '@/lib/share-text'
 import type { ShareApp, ShareSubject } from '@/lib/share-text'
 import { readStored, writeStored } from '@/lib/storage'
-import type { Card, EvidenceState, Meta, Summary } from '@/lib/types'
+import type { Card, Meta, Summary } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 export type ShareTarget =
@@ -36,8 +36,6 @@ export type ShareTarget =
   | {
       kind: 'summary'
       summary: Summary
-      counts: Record<EvidenceState, number>
-      total: number
       /** The report's citations, for the card's rows. */
       cards: Card[]
       /** The title of what was checked, when the report has one. */
@@ -190,7 +188,7 @@ export default function ShareCardDialog({
   const subject: ShareSubject =
     target.kind === 'claim'
       ? { kind: 'claim', card: target.card }
-      : { kind: 'summary', total: target.total, counts: target.counts, title: target.title, cards: target.cards }
+      : { kind: 'summary', title: target.title, cards: target.cards }
   // The text as it will be sent, and as it is shown.
   const text = shareText(subject, t, { address: appUrl })
   const asText = shareAs === 'text'
@@ -209,7 +207,7 @@ export default function ShareCardDialog({
               size,
               theme,
               lang,
-              summary: { ...target.summary, total: target.total, by_state: target.counts },
+              summary: target.summary,
               // What the contract allows: at most 60 cards, a title of at most 300 characters.
               cards: target.cards.slice(0, 60),
               title: target.title ? Array.from(target.title).slice(0, 300).join('') : null,
@@ -335,7 +333,7 @@ export default function ShareCardDialog({
                   {target.kind === 'claim' ? (
                     <ClaimCardImage {...shell} card={target.card} verse={meta?.abstention_verse ?? null} />
                   ) : (
-                    <SummaryCardImage {...shell} total={target.total} counts={target.counts} cards={target.cards} title={target.title} />
+                    <SummaryCardImage {...shell} cards={target.cards} title={target.title} />
                   )}
                 </div>
               </div>

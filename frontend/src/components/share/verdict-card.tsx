@@ -17,7 +17,8 @@ import {
 import type { CardPalette as Palette, CardSize, CardTheme } from '@/lib/share-card'
 import { referenceWithGrade } from '@/lib/share-text'
 import { byAttention } from '@/lib/states'
-import { summaryParts } from '@/lib/summary'
+import { tallyOf } from '@/lib/report'
+import { clauseState, summaryParts } from '@/lib/summary'
 import type { Card, EvidenceState, UiLang, VerseRef } from '@/lib/types'
 
 /*
@@ -587,8 +588,6 @@ export function ClaimCardImage({ card, verse, ...shell }: ClaimCardImageProps) {
 // ── The summary card ──────────────────────────────────────────────────────────────────────────
 
 export interface SummaryCardImageProps extends Shell {
-  total: number
-  counts: Record<EvidenceState, number>
   /** The report's citations: each gets a row, as many as fit. */
   cards: Card[]
   /** The title of what was checked, when the report has one. */
@@ -623,17 +622,21 @@ const MOST_ROWS = 12
  * reference and the grading word. What most needs attention comes first; as many rows as fit
  * above the footer are drawn, whole, and the rest are counted in a closing line.
  */
-export function SummaryCardImage({ total, counts, cards, title, ...shell }: SummaryCardImageProps) {
+export function SummaryCardImage({ cards, title, ...shell }: SummaryCardImageProps) {
   const { size, theme, lang, t } = shell
   const palette = CARD_PALETTE[theme]
   const k = scaleOf(size)
   const align = lang === 'ar' ? 'right' : 'left'
-  const { head, tail, clauses } = summaryParts(t, total, counts)
+  const { head, tail, clauses } = summaryParts(t, tallyOf(cards))
   const rows = useMemo(
     () =>
-      [...cards]
-        .sort(byAttention)
-        .map((card) => ({ card, words: squash(card.text_as_quoted).split(' '), under: referenceWithGrade(card, t) })),
+      [...cards].sort(byAttention).map((card) => ({
+        card,
+        words: squash(card.text_as_quoted).split(' '),
+        // A question's row says where it was sent, with no grading and no reference.
+        word: card.is_question ? t.question.word : t.stateWords[card.state],
+        under: card.is_question ? t.question.referred : referenceWithGrade(card, t),
+      })),
     [cards, t],
   )
 
@@ -684,11 +687,11 @@ export function SummaryCardImage({ total, counts, cards, title, ...shell }: Summ
         {head}
         {tail}
         {clauses.map((clause) => (
-          <span key={clause.state}>
+          <span key={clause.kind}>
             {clause.lead}
-            <span style={{ color: palette.states[clause.state].ink, whiteSpace: 'nowrap' }}>
+            <span style={{ color: palette.states[clauseState(clause.kind)].ink, whiteSpace: 'nowrap' }}>
               <StateGlyph
-                state={clause.state}
+                state={clauseState(clause.kind)}
                 style={{ display: 'inline-block', width: glyph, height: glyph, verticalAlign: '-0.14em', marginInlineEnd: whole(8 * k) }}
               />
               {clause.joiner}
@@ -710,13 +713,13 @@ export function SummaryCardImage({ total, counts, cards, title, ...shell }: Summ
             paddingTop: whole(14 * k),
           }}
         >
-          {rows.slice(0, shown).map(({ card, words, under }) => {
+          {rows.slice(0, shown).map(({ card, words, word, under }) => {
             const count = Math.min(kept[card.id] ?? words.length, words.length)
             return (
               <div key={card.id} style={{ display: 'contents' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: whole(10 * k), height: whole(54 * k), color: palette.states[card.state].ink }}>
                   <Glyph state={card.state} size={glyph} />
-                  <span style={{ fontSize: whole(26 * k), fontWeight: 600, lineHeight: 1.4, whiteSpace: 'nowrap' }}>{t.stateWords[card.state]}</span>
+                  <span style={{ fontSize: whole(26 * k), fontWeight: 600, lineHeight: 1.4, whiteSpace: 'nowrap' }}>{word}</span>
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div

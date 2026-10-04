@@ -22,12 +22,13 @@ export default function InlineNote(body: Omit<NoteBodyProps, 'showQuoted'>) {
       data-note={card.id}
       data-state={state}
       data-open=""
-      aria-label={`${t.stateWords[state]}: ${card.text_as_quoted}`}
+      data-question={card.is_question ? '' : undefined}
+      aria-label={`${card.is_question ? t.question.word : t.stateWords[state]}: ${card.text_as_quoted}`}
       className={cn('scroll-mt-16 border-s-2 ps-3', STATE_STYLE[state].tick)}
     >
       <p className="flex flex-wrap items-center gap-x-2">
-        <StateWord state={state} className="text-base" />
-        <span className="text-sm text-ink">— {t.claimTypes[card.claim_type]}</span>
+        <StateWord state={state} word={card.is_question ? t.question.word : undefined} className="text-base" />
+        <span className="text-sm text-ink">— {card.is_question ? t.question.referred : t.claimTypes[card.claim_type]}</span>
       </p>
       {reference ? <p className="text-sm text-quiet">{reference}</p> : null}
       <div className="h-3" />

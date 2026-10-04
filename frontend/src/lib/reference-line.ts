@@ -12,6 +12,8 @@ import type { Card } from './types'
  * the start of its note, which an open note then drops from its head (`referenceWhenOpen`).
  */
 export function referenceLine(card: Card, t: Dictionary, note: string): string {
+  // A question is not a claim with a state to explain: the line says where it was sent.
+  if (card.is_question) return t.question.referred
   // The sources' own words on a narration that is not «له مرجعية», every distinct one.
   if (gradedBesideState(card)) return t.card.gradedAs(distinctGradings(card.grades))
   if (card.source) {
@@ -32,4 +34,4 @@ export function referenceLine(card: Card, t: Dictionary, note: string): string {
 
 /** Under an open note's head: a reference, never the note's own sentence a second time. */
 export const referenceWhenOpen = (card: Card, t: Dictionary): string =>
-  card.source || card.state === 'not_found' || gradedBesideState(card) ? referenceLine(card, t, '') : ''
+  card.is_question ? '' : card.source || card.state === 'not_found' || gradedBesideState(card) ? referenceLine(card, t, '') : ''
