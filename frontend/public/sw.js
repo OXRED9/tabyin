@@ -16,9 +16,9 @@
  * deletes the caches of older builds: no stale shell.
  */
 const BUILD = new URL(self.location.href).searchParams.get('v') || 'dev'
-// v3: a new cache family. A worker of this version deletes every older shell cache, whatever its
-// name was, so a phone that kept the v2 shell cannot serve it again.
-const SHELL = `tabayyun-v3-shell-${BUILD}`
+// v3.1: a new cache family. A worker of this version deletes every older shell cache, whatever its
+// name was, so a phone that kept an earlier shell (v2's sheet, v3's dark field) cannot serve it again.
+const SHELL = `tabayyun-v31-shell-${BUILD}`
 const SHARE = 'tabayyun-share'
 const SHARE_PAYLOAD = '/__share__/payload'
 

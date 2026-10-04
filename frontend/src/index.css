@@ -243,21 +243,34 @@
   --font-ui: "IBM Plex Sans Arabic", "IBM Plex Sans", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
   --radius: 10px;
 
-  /* Light: a pale green-grey field, white panels, the brand's deep green. */
-  --desk: #f1f6f4;
-  --paper: #ffffff;
-  --raised: #f5f9f7;
-  --ink: #11221e;
-  --quiet: #4b5d57;
+  /* Light, the first theme (v3.1): bright warm paper, green ink, gold used with confidence. Depth
+     comes from soft layered shadows; a panel's edge is barely there. */
+  --desk: #fbf7ee;
+  --paper: #fffdf8;
+  --raised: #f6f0e2;
+  --ink: #12261f;
+  --quiet: #4f5c53;
   --green: #17685a;
   --green-fill: #1b6b5e;
   --on-fill: #ffffff;
-  --rule: #d5e0db;
-  --rule-strong: #7c8f88;
+  --rule: #e6ddc9;
+  --rule-strong: #827f6c;
   --gold: #c9a227;
   /* A key figure: gold's ink, dark enough to read on a panel. */
   --figure: #7a5c00;
-  --grid-dot: rgb(27 107 94 / 0.16);
+  --grid-dot: rgb(160 124 20 / 0.2);
+  /* A panel's edge: a breath of warm shadow rather than a grey line. */
+  --panel-edge: rgb(88 66 14 / 0.1);
+  /* The four sticky notes of the first screen, and what holds them. */
+  --note-mint: #dcf1e6;
+  --note-gold: #fbecb4;
+  --note-sage: #e4ead0;
+  --note-paper: #fffaf0;
+  --note-ink: #12261f;
+  --note-quiet: #46534b;
+  --tape: rgb(255 255 255 / 0.62);
+  --note-shadow: 0 1px 1px rgb(74 54 8 / 0.1), 0 6px 10px -6px rgb(74 54 8 / 0.28), 0 22px 26px -20px rgb(74 54 8 / 0.42);
+  --note-shadow-lifted: 0 1px 1px rgb(74 54 8 / 0.1), 0 14px 18px -10px rgb(74 54 8 / 0.3), 0 34px 36px -24px rgb(74 54 8 / 0.5);
   /* The mark's tile is the brand's own green in both themes. */
   --logo-tile: #1b6b5e;
 
@@ -277,17 +290,27 @@
   --contra-ink: #73130f;
   --contra-soft: #f2d9d6;
 
-  --panel-shadow: 0 1px 2px rgb(17 34 30 / 0.05), 0 10px 28px -18px rgb(17 34 30 / 0.25);
-  --glow: 0 0 0 1px rgb(27 107 94 / 0.55), 0 0 26px -6px rgb(27 107 94 / 0.45);
-  --overlay-shadow: 0 1px 2px rgb(17 34 30 / 0.06), 0 12px 32px -8px rgb(17 34 30 / 0.22);
+  --panel-shadow: 0 1px 1px rgb(74 54 8 / 0.04), 0 3px 8px -2px rgb(74 54 8 / 0.07), 0 18px 34px -20px rgb(74 54 8 / 0.24);
+  --glow: 0 0 0 1px rgb(27 107 94 / 0.5), 0 0 0 5px rgb(201 162 39 / 0.16), 0 18px 36px -20px rgb(27 107 94 / 0.45);
+  --overlay-shadow: 0 1px 2px rgb(74 54 8 / 0.08), 0 14px 34px -8px rgb(74 54 8 / 0.26);
 }
 
 html[lang="en"] {
   --font-ui: "IBM Plex Sans", "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/* Dark, the first theme: a deep green-black field, raised panels, a luminous green, gold for what is live. */
+/* Dark, complete: a deep green-black field, raised panels, a luminous green, gold for what is live. */
 .dark {
+  --panel-edge: var(--rule);
+  --note-mint: #16392f;
+  --note-gold: #3b3216;
+  --note-sage: #28331d;
+  --note-paper: #1c2c26;
+  --note-ink: #e9f1ee;
+  --note-quiet: #b4c4be;
+  --tape: rgb(255 255 255 / 0.14);
+  --note-shadow: 0 1px 1px rgb(0 0 0 / 0.4), 0 10px 14px -8px rgb(0 0 0 / 0.6), 0 24px 28px -22px rgb(0 0 0 / 0.8);
+  --note-shadow-lifted: 0 1px 1px rgb(0 0 0 / 0.4), 0 16px 20px -10px rgb(0 0 0 / 0.7), 0 36px 38px -24px rgb(0 0 0 / 0.9);
   --desk: #07130f;
   --paper: #0d1f1a;
   --raised: #12281f;
@@ -364,7 +387,8 @@ html[lang="en"] {
  */
 html[lang="en"] [data-shell-lang="ar"],
 html:not([lang="en"]) [data-shell-lang="en"],
-html[data-view="report"] [data-shell="hero"] {
+html[data-view="report"] [data-shell="hero"],
+html[data-rail="closed"] [data-shell="rail"] {
   display: none;
 }
 
@@ -463,7 +487,7 @@ html[data-view="report"] [data-shell="hero"] {
 
 /* A panel on the field: the composer, the map, a pane, an evidence card. */
 @utility panel {
-  border: 1px solid var(--rule);
+  border: 1px solid var(--panel-edge);
   border-radius: var(--radius-sheet);
   background: var(--paper);
   box-shadow: var(--panel-shadow);
@@ -532,7 +556,136 @@ html[data-view="report"] [data-shell="hero"] {
   animation: var(--animate-pulse-travel);
 }
 
-/* Everything collapses to an instant change when the user asks for less motion. */
+/* ── v3.1: the sticky notes of the first screen ─────────────────────────────────────────────── */
+
+/*
+ * A paper note: nearly square corners, a tint, a tilt of a degree or two, a strip of tape or a
+ * pin, and a shadow that is darkest where the paper lifts. Notes drop and settle one after
+ * another on load; the one under the pointer (or holding the focus) straightens and lifts.
+ */
+.sticky-note {
+  position: relative;
+  background: var(--note-tint);
+  color: var(--note-ink);
+  border-radius: 3px 3px 3px 12px / 3px 3px 3px 5px;
+  box-shadow: var(--note-shadow);
+  rotate: var(--tilt, 0deg);
+  transition:
+    rotate 320ms var(--ease-out-quint),
+    translate 320ms var(--ease-out-quint),
+    box-shadow 320ms var(--ease-out-quint);
+  animation: note-drop 620ms cubic-bezier(0.3, 1.35, 0.5, 1) both;
+  animation-delay: calc(var(--i, 0) * 120ms + 180ms);
+}
+.sticky-note:hover,
+.sticky-note:focus-visible {
+  rotate: 0deg;
+  translate: 0 -5px;
+  box-shadow: var(--note-shadow-lifted);
+}
+/* The tape: a translucent strip across the top edge, a little askew. */
+.sticky-note[data-held="tape"]::before {
+  content: "";
+  position: absolute;
+  top: -0.6rem;
+  left: 50%;
+  width: 4.75rem;
+  height: 1.3rem;
+  translate: -50% 0;
+  rotate: calc(var(--tilt, 0deg) * -1.6 - 2deg);
+  background: var(--tape);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+  backdrop-filter: blur(1px);
+}
+/* The pin: a gold head with its highlight, and the small shadow it casts on the paper. */
+.sticky-note[data-held="pin"]::before {
+  content: "";
+  position: absolute;
+  top: -0.35rem;
+  left: 50%;
+  width: 0.95rem;
+  height: 0.95rem;
+  translate: -50% 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #f6e39a 0 18%, var(--gold) 46%, #8f6f10 100%);
+  box-shadow: 1px 3px 3px rgb(0 0 0 / 0.28);
+}
+@keyframes note-drop {
+  from {
+    opacity: 0;
+    translate: 0 -26px;
+    rotate: calc(var(--tilt, 0deg) * 3.5);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    rotate: var(--tilt, 0deg);
+  }
+}
+
+/* Things that arrive together arrive one after another: a short stagger by their place. */
+.cascade {
+  animation: var(--animate-rise);
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+/* The headline's underline: the tool's own gesture, inked once under the word. */
+.headline-ink {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 700ms 250ms var(--ease-out-quint) forwards;
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/*
+ * The seal on a finished verdict: the ring is drawn, then the mark is stamped into it. Once, on
+ * a live completion; a reopened report carries the seal already made.
+ */
+.seal-ring {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.seal-mark {
+  transform-origin: center;
+  transform-box: fill-box;
+}
+[data-sealing] .seal-ring {
+  stroke-dashoffset: 1;
+  animation: draw 620ms var(--ease-out-quint) forwards;
+}
+[data-sealing] .seal-mark {
+  animation: stamp 420ms 480ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+@keyframes stamp {
+  from {
+    opacity: 0;
+    scale: 1.7;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+/* A row that scrolls sideways under the thumb, without a bar drawn across it. */
+@utility scroll-row {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/*
+ * Less motion is not no life (v3.1): many phones run with "remove animations" on. Nothing travels,
+ * turns or changes size — but colour and opacity still change, so every step is seen to happen:
+ * what would have moved into place fades into place, in the same order and at the same pace.
+ */
 @media (prefers-reduced-motion: reduce) {
   /* A pulse that cannot travel is not drawn: the tinted link says the same thing, still. */
   .link-pulse {
@@ -541,13 +694,75 @@ html[data-view="report"] [data-shell="hero"] {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-delay: 0s !important;
-    animation-iteration-count: 1 !important;
-    /* 0s, not a tiny duration: any non-zero duration turns every style change into a transition,
-       and code that measures layout right after a change would read the old size. */
-    transition-duration: 0s !important;
+    /* Only colour and opacity may transition. No size or position ever does, so code that
+       measures layout right after a change still reads the final size. */
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity, box-shadow !important;
     scroll-behavior: auto !important;
+    /* Sheets, dialogs and menus fade in where they stand instead of sliding or growing. */
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-exit-translate-y: 0 !important;
+    --tw-enter-scale: 1 !important;
+    --tw-exit-scale: 1 !important;
+    --tw-enter-rotate: 0 !important;
+    --tw-exit-rotate: 0 !important;
+  }
+  /* The same keyframes, without the travel. */
+  @keyframes rise {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes settle {
+    from {
+      opacity: 0.35;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes ink-in {
+    from {
+      opacity: 0.25;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes note-drop {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes stamp {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  /* A line that would have been drawn along its length fades in whole. */
+  .headline-ink,
+  [data-sealing] .seal-ring {
+    stroke-dashoffset: 0;
+    animation: rise 500ms 250ms both;
+  }
+  /* A note under the pointer lifts by its shadow alone. */
+  .sticky-note:hover,
+  .sticky-note:focus-visible {
+    rotate: var(--tilt, 0deg);
+    translate: 0 0;
+  }
+  .animate-spin {
+    animation: none;
   }
 }
 

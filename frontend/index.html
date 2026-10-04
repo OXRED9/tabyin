@@ -6,8 +6,8 @@
     <!-- The web app manifest (/manifest.webmanifest) and the home-screen icon are linked by
          src/lib/pwa.ts once the page has loaded: they serve installing, not this first paint. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#07130f" />
-    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#fbf7ee" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="referrer" content="no-referrer" />
     <meta
       name="description"
@@ -15,18 +15,18 @@
     />
     <title>تبيّن — تحقّق قبل أن تصدّق أو تنشر</title>
     <script>
-      // Before the first paint: the theme (the saved choice, else dark — so neither flashes the
-      // other), the saved language (so the shell below is in it), and which first screen the
-      // shell stands for.
+      // Before the first paint: the theme (the saved choice, else light — so neither flashes the
+      // other), whether the rail was put away, the saved language (so the shell below is in it),
+      // and which first screen the shell stands for.
       var d = document.documentElement
-      d.classList.add('dark')
       try {
         var q = new URLSearchParams(location.search)
         var t = q.get('theme') || JSON.parse(localStorage.getItem('tabayyun.theme') || 'null')
-        if (t === 'light') {
-          d.classList.remove('dark')
-          document.querySelector('meta[name="theme-color"]').content = '#f1f6f4'
+        if (t === 'dark') {
+          d.classList.add('dark')
+          document.querySelector('meta[name="theme-color"]').content = '#07130f'
         }
+        if (JSON.parse(localStorage.getItem('tabayyun.rail') || 'null') === 'closed') d.setAttribute('data-rail', 'closed')
         var l = q.get('lang')
         if (l !== 'ar' && l !== 'en') l = JSON.parse(localStorage.getItem('tabayyun.lang') || 'null')
         if (l === 'en') {
@@ -87,7 +87,7 @@
         step with src/App.tsx and src/components/shell/rail.tsx.
       -->
       <div class="flex min-h-dvh">
-        <aside class="sticky top-0 hidden h-dvh w-[17rem] shrink-0 border-e bg-paper xl:block">
+        <aside data-shell="rail" class="sticky top-0 hidden h-dvh w-[17rem] shrink-0 border-e bg-paper xl:block">
           <div class="flex h-full min-h-0 flex-col gap-4 p-4">
             <a href="/" tabindex="-1" class="flex items-center gap-2 self-start rounded-control">
               <svg viewBox="0 0 32 32" aria-hidden="true" class="size-7 shrink-0">
@@ -120,11 +120,20 @@
             </a>
           </header>
           <main class="relative flex-1 px-4 py-5 md:px-8 md:py-8">
-            <div data-shell="hero" class="relative mx-auto flex w-full max-w-[54rem] flex-col gap-6 md:pt-[6vh]">
-              <div class="space-y-2">
-                <p class="text-xl font-semibold text-balance text-ink md:text-2xl 2xl:text-3xl">
-                  <span data-shell-lang="ar">فتبيّنوا — تحقّق قبل أن تصدّق أو تنشر</span>
-                  <span data-shell-lang="en">Verify before you believe or share</span>
+            <div data-shell="hero" class="mx-auto flex w-full max-w-[44rem] flex-col gap-5 max-md:min-h-[calc(100dvh-5.5rem)] md:gap-8 md:pt-[6vh] xl:grid xl:max-w-[78rem] xl:grid-cols-[minmax(0,1fr)_17rem] xl:grid-rows-[auto_1fr] xl:gap-x-14 xl:gap-y-9 xl:pt-0">
+              <div class="xl:col-start-1 xl:mx-auto xl:w-full xl:max-w-[44rem] xl:pt-[13vh]">
+                <p class="naskh-display text-ink">
+                  <span data-shell-lang="ar">
+                    <span class="relative inline-block text-[3.25rem] leading-[1.4] text-green md:text-[4.5rem] xl:text-[5.25rem]">فتبيّنوا</span>
+                    <span class="block text-[1.6rem] leading-normal md:text-[2.1rem]">تحقّق قبل أن تصدّق أو تنشر</span>
+                  </span>
+                  <span data-shell-lang="en">
+                    <span class="relative inline-block text-[2.25rem] leading-[1.3] text-green md:text-[3.25rem]">Verify before you believe or share</span>
+                  </span>
+                </p>
+                <p class="pt-1 text-base text-quiet md:pt-2 md:text-lg">
+                  <span data-shell-lang="ar">تحقّق من صحة الآيات والأحاديث في أي نص</span>
+                  <span data-shell-lang="en">Check the verses and hadith quoted in any text</span>
                 </p>
               </div>
             </div>
