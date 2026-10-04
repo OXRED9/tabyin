@@ -10,6 +10,7 @@
  *      applies the AA thresholds: 4.5:1, or 3:1 for large text.
  *
  *   BASE_URL   where the app is served (default http://localhost:5173)
+ *   ONLY       run only the audits whose label contains this text, e.g. ONLY=390px
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -17,10 +18,11 @@ import path from 'node:path'
 import { chromium } from 'playwright'
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173'
+const ONLY = process.env.ONLY
 const axe = fs.readFileSync(path.resolve(import.meta.dirname, '../node_modules/axe-core/axe.min.js'), 'utf8')
 const COPY = {
-  ar: { asText: 'نص', unavailable: /تعذّر استلام/, done: 'اكتمل التحقق', referral: 'إحالة إلى أهل العلم', example: 'رابط مقطع يوتيوب', dark: 'داكن', image: 'صورة رسالة محوَّلة', removed: /حُذف من الصورة/ },
-  en: { asText: 'Text', unavailable: /could not be received/, done: 'Verification complete', referral: 'Refer to scholars', example: 'YouTube link', dark: 'Dark', image: 'A forwarded-message screenshot', removed: /Removed from the picture/ },
+  ar: { asText: 'نص', unavailable: /تعذّر استلام/, referral: 'إحالة إلى أهل العلم', example: 'رابط مقطع يوتيوب', dark: 'داكن', image: 'صورة رسالة محوَّلة', removed: /حُذف من الصورة/ },
+  en: { asText: 'Text', unavailable: /could not be received/, referral: 'Refer to scholars', example: 'YouTube link', dark: 'Dark', image: 'A forwarded-message screenshot', removed: /Removed from the picture/ },
 }
 const DESKTOP = { width: 1440, height: 900 }
 const MOBILE = { width: 390, height: 844 }
@@ -109,27 +111,31 @@ function measureContrast() {
 
 /**
  * States:
- *   empty      the composer            link       the composer with a recognised link and its tag
- *   error      a validation error      running    mid-run: text on the page, notes arriving
+ *   empty      the first screen        link       the composer with a recognised link and its tag
+ *   error      a validation error      running    mid-run: the investigation (a map from 1024px,
+ *              a timeline below), the text on the page, evidence cards arriving
+ *   drawer     (below 1280px) the rail as a drawer: new verification, history, legend, language, theme
+ *   replay     a finished report with «أعد عرض التحرّي» open under its verdict
  *   image      the composer after a picture was read: its text in the field, the unread word
  *              marked and counted, the uncertainty line, the removed items listed (opened)
- *   report     every note open, every «لماذا هذا الحكم؟» open
+ *   report     every evidence card open (its trail and its note), every «لماذا هذا الحكم؟» open
  *   dialog     the referral dialog
  *   legend     «ما معنى هذه الحالات؟», opened from the report's head
  *   question   a question put to the tool: its note open, with the search links in it
- *   report-error   «أبلغ عن خطأ» on a claim (from its sheet on a phone), with addresses to send to
+ *   report-error   «أبلغ عن خطأ» on a claim, with addresses to send to
  *   share      the share dialog on a claim (`card`: the state of the claim whose card is drawn)
  *   share-summary   the share dialog on the summary
- *   sheet      (below 1024px) a note open as a bottom sheet
- *   share-phone   (390px) the share dialog opened from a note's sheet, with a share sheet present
+ *   card       one evidence card open in place
+ *   share-phone   (390px) the share dialog opened from a card, with a share sheet present
  *   `shareAs: 'text'` puts a share dialog in its text mode: the text that will be sent, the apps'
  *   links, «نسخ النص»
  *   notice     the composer after a share that could not be received (`?share=unavailable`)
- *   single     a report with exactly one claim: its note open without a tap (inline below
- *              1024px, in the margin above), and the offer to install in the footer
+ *   single     a report with exactly one claim: its card open without a tap, and the offer to
+ *              install in the footer
  *   single-ios the same, with the iOS hint in place of the offer
  */
 async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, state = 'empty', card = 'not_found', shareAs = 'image' }) {
+  if (ONLY && !label.includes(ONLY)) return
   const mobile = viewport === MOBILE
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce', isMobile: mobile, hasTouch: mobile })
   const page = await context.newPage()
@@ -141,7 +147,7 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     })
   }
   const t = COPY[lang]
-  const composer = ['empty', 'link', 'error', 'image', 'notice'].includes(state)
+  const composer = ['empty', 'link', 'error', 'image', 'notice', 'drawer'].includes(state)
   const single = state === 'single' || state === 'single-ios'
   const question = state === 'question'
   // Reports are reached through mock mode's own route: `scenario=<name>&autorun=1`.
@@ -176,12 +182,17 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
       await page.getByTestId('image-unread').waitFor({ timeout: 15_000 })
       await page.getByText(t.removed).click()
     }
+    if (state === 'empty') await page.getByTestId('capabilities').waitFor()
+    if (state === 'drawer') {
+      await page.getByTestId('menu').click()
+      await page.getByTestId('rail-drawer').waitFor()
+    }
     await page.waitForTimeout(300)
   } else if (state === 'running') {
     await page.locator('[data-note][data-state]:not([data-state="pending"])').nth(1).waitFor({ timeout: 30_000 })
     await page.locator('[data-note][data-state="pending"]').first().waitFor({ timeout: 30_000 })
   } else {
-    await page.getByText(t.done).first().waitFor({ timeout: 30_000 })
+    await page.getByTestId('verdict').waitFor({ timeout: 30_000 })
     if (question) {
       await page.locator('[data-note][data-open]').first().waitFor()
       await page.getByTestId('referral-links').waitFor()
@@ -190,15 +201,17 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
       await page.locator('[data-note][data-open]').first().waitFor()
       await page.getByTestId('install-line').waitFor()
     }
-    if (viewport !== DESKTOP) {
-      // Below 1024px a note does not open in place: one is opened as a bottom sheet.
-      if (state === 'sheet' || state === 'share-phone' || state === 'report-error') {
-        await page.locator(mobile ? 'li[data-note="c2"] button' : '[data-margin] [data-note="c2"] > button').click()
-        await page.locator('[data-note-sheet="c2"]').waitFor()
-      }
+    if (state === 'card' || state === 'share-phone' || (state === 'report-error' && mobile)) {
+      // One evidence card, opened in place.
+      await page.locator('[data-note="c2"] > button').click()
+      await page.locator('[data-note="c2"][data-open]').getByTestId('provenance').waitFor()
     } else {
-      const closed = page.locator('[data-margin] [data-note] > button[aria-expanded="false"]')
+      const closed = page.locator('[data-note] > button[aria-expanded="false"]')
       for (let i = 0; i < 30 && (await closed.count()) > 0; i++) await closed.first().click()
+    }
+    if (state === 'replay') {
+      await page.getByTestId('replay').click()
+      await page.getByTestId('investigation').waitFor()
     }
     // Several gradings are folded under one line: open them, so the full list is audited too.
     const foldedGrades = page.locator('[data-testid="grades"] > button[aria-expanded="false"]')
@@ -207,7 +220,7 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     const closedPanels = page.locator('[data-testid="explain"] > button[aria-expanded="false"]')
     for (let i = 0; i < 30 && (await closedPanels.count()) > 0; i++) await closedPanels.first().click()
     if (state === 'share-phone') {
-      await page.locator('[data-note-sheet="c2"]').getByTestId('share-card').click()
+      await page.locator('[data-note="c2"]').getByTestId('share-card').click()
       await page.getByTestId('share-targets').waitFor()
     }
     if (state === 'share' || state === 'share-summary') {
@@ -226,12 +239,12 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
     }
     if (state === 'report-error') {
       // «أبلغ عن خطأ» on a claim, with the mock's placeholder addresses so every way to send shows.
-      const note = mobile ? page.locator('[data-note-sheet="c2"]') : page.locator('[data-margin] [data-note]').first()
+      const note = mobile ? page.locator('[data-note="c2"]') : page.locator('[data-note]').first()
       await note.getByTestId('report-error').click()
       await page.getByTestId('report-error-dialog').waitFor()
     }
     if (state === 'legend') {
-      await page.getByTestId('legend-link').first().click()
+      await page.getByTestId('verdict').getByTestId('legend-link').click()
       await page.getByTestId('legend').waitFor()
     }
     if (state === 'dialog') {
@@ -269,6 +282,12 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
 
 await audit('empty · light · ar', {})
 await audit('empty · dark · ar', { theme: 'dark' })
+await audit('empty · dark · en', { theme: 'dark', lang: 'en' })
+await audit('empty · dark · ar · 390px', { theme: 'dark', viewport: MOBILE })
+await audit('empty · light · ar · 820px', { viewport: TABLET })
+for (const theme of ['light', 'dark']) {
+  await audit(`rail as a drawer · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'drawer' })
+}
 await audit('composer with a link · light · ar', { state: 'link' })
 await audit('composer with a link · dark · en', { state: 'link', theme: 'dark', lang: 'en' })
 await audit('picture read · light · ar', { state: 'image' })
@@ -281,9 +300,11 @@ await audit('error · light · ar', { state: 'error' })
 await audit('error · dark · ar', { state: 'error', theme: 'dark' })
 for (const theme of ['light', 'dark']) {
   await audit(`mid-run · ${theme} · ar`, { theme, state: 'running' })
-  await audit(`report, all notes open · ${theme} · ar`, { theme, state: 'report' })
+  await audit(`report, all cards open · ${theme} · ar`, { theme, state: 'report' })
+  await audit(`investigation replayed under the verdict · ${theme} · ar`, { theme, state: 'replay' })
   await audit(`referral dialog · ${theme} · ar`, { theme, state: 'dialog' })
 }
+await audit('mid-run · dark · en', { theme: 'dark', lang: 'en', state: 'running' })
 for (const theme of ['light', 'dark']) {
   await audit(`share dialog, claim card · ${theme} · ar`, { theme, state: 'share' })
 }
@@ -304,24 +325,25 @@ await audit('share dialog, summary card · light · en', { lang: 'en', state: 's
 await audit('share dialog, summary card · dark · ar', { theme: 'dark', state: 'share-summary' })
 await audit('share dialog as text, claim · light · ar', { state: 'share', card: 'contradicted', shareAs: 'text' })
 await audit('share dialog as text, summary · dark · en', { lang: 'en', theme: 'dark', state: 'share-summary', shareAs: 'text' })
-await audit('report, all notes open · light · en', { lang: 'en', state: 'report' })
-await audit('report, all notes open · dark · en', { lang: 'en', theme: 'dark', state: 'report' })
+await audit('report, all cards open · light · en', { lang: 'en', state: 'report' })
+await audit('report, all cards open · dark · en', { lang: 'en', theme: 'dark', state: 'report' })
 for (const theme of ['light', 'dark']) {
-  await audit(`report · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'report' })
-  await audit(`note sheet · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'sheet' })
+  await audit(`report, all cards open · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'report' })
+  await audit(`one card open · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'card' })
+  await audit(`investigation replayed · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'replay' })
   await audit(`share dialog with the share sheet · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'share-phone' })
   await audit(`share dialog as text · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'share-phone', shareAs: 'text' })
 }
-await audit('mid-run · light · ar · 390px', { viewport: MOBILE, state: 'running' })
 for (const theme of ['light', 'dark']) {
-  await audit(`one claim, note inline, install offer · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'single' })
+  await audit(`mid-run, timeline · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'running' })
+  await audit(`one claim, card open, install offer · ${theme} · ar · 390px`, { theme, viewport: MOBILE, state: 'single' })
 }
-await audit('one claim, note inline, iOS hint · light · en · 390px', { lang: 'en', viewport: MOBILE, state: 'single-ios' })
-await audit('one claim, note inline · light · ar · 820px', { viewport: TABLET, state: 'single' })
-await audit('one claim, note open in the margin · dark · ar', { theme: 'dark', state: 'single' })
+await audit('mid-run, timeline · dark · ar · 820px', { theme: 'dark', viewport: TABLET, state: 'running' })
+await audit('one claim, card open, iOS hint · light · en · 390px', { lang: 'en', viewport: MOBILE, state: 'single-ios' })
+await audit('one claim, card open · light · ar · 820px', { viewport: TABLET, state: 'single' })
+await audit('one claim, card open · dark · ar', { theme: 'dark', state: 'single' })
 for (const theme of ['light', 'dark']) {
-  await audit(`report · ${theme} · ar · 820px`, { theme, viewport: TABLET, state: 'report' })
-  await audit(`note sheet · ${theme} · ar · 820px`, { theme, viewport: TABLET, state: 'sheet' })
+  await audit(`report, all cards open · ${theme} · ar · 820px`, { theme, viewport: TABLET, state: 'report' })
 }
 
 await browser.close()

@@ -10,9 +10,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "fixtures": "node scripts/build-fixtures.mjs",
-    "screenshots": "node scripts/screenshots-v2.mjs",
+    "screenshots": "node scripts/screenshots-v3.mjs",
     "a11y": "node scripts/a11y.mjs",
-    "screenshots:v2": "node scripts/screenshots-v2.mjs",
     "icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {
