@@ -15,7 +15,6 @@ import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState } from 'r
 import type { DragEvent, ReactNode, RefObject } from 'react'
 
 import { StateGlyph } from '@/components/state-glyph'
-import { LegendLink } from '@/components/legend-link'
 import { Button } from '@/components/ui/button'
 import type { ImageReading } from '@/hooks/use-image-reader'
 import type { InputDraft } from '@/lib/draft'
@@ -557,7 +556,8 @@ export function Composer({
       {error ? <div className="mt-4">{error}</div> : null}
 
       {/* The row keeps its height while /api/meta is on its way, so nothing below it moves. */}
-      <div className="mt-5 flex min-h-9 flex-wrap items-center gap-2">
+      {/* The examples: one row that scrolls sideways under the thumb on a phone, wrapped above that. */}
+      <div className="scroll-row -mx-4 mt-4 flex min-h-11 items-center gap-2 px-4 max-md:[&>*]:shrink-0 md:mx-0 md:mt-5 md:flex-wrap md:overflow-visible md:px-0">
         {examples.length > 0 ? <span className="text-sm text-quiet">{t.input.examples}</span> : null}
         {examples.map((example) => (
           <button
@@ -571,10 +571,7 @@ export function Composer({
         ))}
       </div>
 
-      {/* From 1280px up the rail carries the legend. */}
-      <div className="mt-3 xl:hidden">
-        <LegendLink className="text-sm" />
-      </div>
+
     </form>
   )
 }

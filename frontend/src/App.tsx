@@ -1,10 +1,10 @@
-import { FileText, Menu, Plus, Upload } from 'lucide-react'
+import { FileText, Menu, PanelLeftOpen, Plus, Upload } from 'lucide-react'
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import { Composer } from '@/components/composer'
 import type { AttachKind } from '@/components/composer'
 import { InlineError } from '@/components/inline-error'
-import { Capabilities } from '@/components/home/hero'
+import { EngineNotes, Headline } from '@/components/home/hero'
 import { InstallLine } from '@/components/install-line'
 import { ReportView } from '@/components/report/report-view'
 import { BrandLink, Rail } from '@/components/shell/rail'
@@ -22,8 +22,10 @@ import { errorCopy, errorRemedies, localError } from '@/lib/errors'
 import { featuresOf } from '@/lib/features'
 import { isImageFile, isMediaFile } from '@/lib/files'
 import { safeHref, truncate } from '@/lib/format'
+import { clearActivity, recordVerification, restoreActivity, verificationsRemembered, verificationsThisWeek } from '@/lib/activity'
 import { clearHistory, loadHistory, saveHistoryEntry, subscribeHistory } from '@/lib/history'
 import type { HistoryEntry, SubmittedInput } from '@/lib/history'
+import { readStored, writeStored } from '@/lib/storage'
 import { I18nProvider, useI18n } from '@/lib/i18n'
 import { detectLink, looksLikeBrokenLink } from '@/lib/link'
 import { notify, subscribeToaster, toasterWanted } from '@/lib/notify'
@@ -42,6 +44,7 @@ const DEFAULT_LIMITS: Meta['limits'] = {
 
 // Not needed to paint the page: each is fetched when first wanted.
 const RailDrawer = lazy(() => import('@/components/shell/rail-drawer'))
+const RAIL_KEY = 'tabayyun.rail'
 const Toaster = lazy(() => import('@/components/ui/sonner'))
 const loadExport = () => import('@/lib/export')
 
@@ -137,6 +140,8 @@ function Shell() {
       state.input.url ||
       state.input.file_name ||
       truncate(state.input.text ?? first?.text_as_quoted ?? '', 80)
+    // When, and nothing else: the week's line in the rail and the offer to install read it.
+    if (!state.restored) recordVerification(report.generated_at)
     saveHistoryEntry({
       id: report.generated_at,
       saved_at: report.generated_at,
@@ -144,7 +149,7 @@ function Shell() {
       input: state.input,
       report,
     })
-  }, [report, state.input])
+  }, [report, state.input, state.restored])
 
   const patchDraft = useCallback(
     (patch: Partial<InputDraft>) => {
@@ -320,18 +325,39 @@ function Shell() {
 
   const wipeHistory = useCallback(() => {
     const previous = loadHistory()
+    // The record of when this browser verified goes with the reports, and comes back with them.
+    const times = clearActivity()
     clearHistory()
     notify((toast) =>
       toast(t.history.cleared, {
         action: {
           label: t.undo,
           onClick: () => {
+            restoreActivity(times)
             for (const entry of [...previous].reverse()) saveHistoryEntry(entry)
           },
         },
       }),
     )
   }, [t])
+
+  // The rail can be put away (from 1280px, where it stands beside the workspace); the choice is
+  // remembered in this browser. Focus follows the control that was used to its counterpart.
+  const [railOpen, setRailOpen] = useState(() => readStored<string>(RAIL_KEY, 'open') !== 'closed')
+  const railClose = useRef<HTMLButtonElement | null>(null)
+  const railReopen = useRef<HTMLButtonElement | null>(null)
+  const setRail = useCallback((open: boolean) => {
+    setRailOpen(open)
+    writeStored(RAIL_KEY, open ? 'open' : 'closed')
+    window.requestAnimationFrame(() => (open ? railClose : railReopen).current?.focus())
+  }, [])
+  // Counted from this browser's own record, each time the history changes.
+  const weekCount = useMemo(() => (history ? verificationsThisWeek() : 0), [history])
+  // The offer to install waits for the second report (mock mode's `install` flag asks for it at once).
+  const installDue = useMemo(
+    () => (history ? verificationsRemembered() >= 2 : false) || (MOCK_MODE && new URLSearchParams(window.location.search).has('install')),
+    [history],
+  )
 
   // The export code is fetched when a report exists and the page is quiet, so that the click
   // itself can open the print window without waiting (a late window.open is blocked by browsers).
@@ -480,6 +506,7 @@ function Shell() {
     onNew: verifyAnother,
     onOpenEntry: openHistoryEntry,
     onClearHistory: wipeHistory,
+    weekCount,
   }
 
   return (
@@ -494,9 +521,26 @@ function Shell() {
 
         {/* A full-viewport application: the rail beside the workspace (a drawer below 1280px). */}
         <div className="flex min-h-dvh">
-          <Rail {...rail} />
+          <Rail {...rail} open={railOpen} onClose={() => setRail(false)} closeRef={railClose} />
 
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="relative flex min-w-0 flex-1 flex-col">
+            {/* The way back to a rail that was put away: one small button at the top corner. */}
+            {railOpen ? null : (
+              <Button
+                ref={railReopen}
+                type="button"
+                variant="ghost"
+                size="icon"
+                data-testid="rail-open"
+                aria-label={t.shell.openRail}
+                title={t.shell.openRail}
+                aria-expanded="false"
+                onClick={() => setRail(true)}
+                className="fixed start-3 top-3 z-30 hidden bg-paper shadow-panel xl:inline-flex print:hidden"
+              >
+                <PanelLeftOpen aria-hidden="true" className="rtl:-scale-x-100" />
+              </Button>
+            )}
             <header className="sticky top-0 z-40 flex h-12 items-center gap-2 border-b bg-paper px-3 xl:hidden print:hidden">
               <Button type="button" variant="ghost" size="icon" data-testid="menu" aria-label={t.shell.menu} aria-haspopup="dialog" onClick={openDrawer}>
                 <Menu aria-hidden="true" />
@@ -536,14 +580,14 @@ function Shell() {
                   />
                 </div>
               ) : (
-                <>
-                  {/* The field of points behind the first screen: atmosphere, not wallpaper. */}
-                  <div aria-hidden="true" className="field-points pointer-events-none absolute inset-x-0 top-0 h-[26rem]" />
-                  <div className="relative mx-auto flex w-full max-w-[54rem] flex-col gap-6 md:pt-[6vh]">
-                    <div className="space-y-2">
-                      <h1 className="text-xl font-semibold text-balance text-ink md:text-2xl 2xl:text-3xl">{t.headline}</h1>
-                      <p className="text-base text-quiet md:text-lg">{t.input.label}</p>
-                    </div>
+                // The first screen, in three zones from 1280px: the rail, a calm centre (the headline
+                // and the composer, with room around them), and on the far side the engines as
+                // sticky notes. Narrower, the notes go under the composer two by two; on a phone
+                // they are a row between the headline and the composer, which sits low, under
+                // the thumb.
+                <div className="mx-auto flex w-full max-w-[44rem] flex-col gap-5 max-md:min-h-[calc(100dvh-5.5rem)] md:gap-8 md:pt-[6vh] xl:grid xl:max-w-[78rem] xl:grid-cols-[minmax(0,1fr)_17rem] xl:grid-rows-[auto_1fr] xl:gap-x-14 xl:gap-y-9 xl:pt-0">
+                  <Headline className="xl:col-start-1 xl:mx-auto xl:w-full xl:max-w-[44rem] xl:pt-[13vh]" />
+                  <div className="max-md:order-3 max-md:mt-auto xl:col-start-1 xl:mx-auto xl:w-full xl:max-w-[44rem]">
                     <Composer
                       draft={draft}
                       onChange={patchDraft}
@@ -567,9 +611,12 @@ function Shell() {
                       fieldRef={fieldRef}
                       pickerRef={pickerRef}
                     />
-                    <Capabilities engines={meta?.engines} />
                   </div>
-                </>
+                  <EngineNotes
+                    engines={meta?.engines}
+                    className="max-md:order-2 xl:sticky xl:top-0 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-start xl:pt-[clamp(1.5rem,6vh,4rem)]"
+                  />
+                </div>
               )}
             </main>
 
@@ -577,7 +624,7 @@ function Shell() {
             <footer className="space-y-3 px-4 pb-5 text-sm text-quiet md:px-8">
               <p className="mx-auto w-full max-w-[86rem]">{t.transparency}</p>
               {/* Offered only after a verification has succeeded, never on load. */}
-              {hasReport ? (
+              {hasReport && installDue ? (
                 <div className="mx-auto w-full max-w-[86rem]">
                   <InstallLine />
                 </div>

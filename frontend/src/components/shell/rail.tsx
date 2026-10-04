@@ -1,4 +1,5 @@
-import { Moon, Plus, Sun, Trash2 } from 'lucide-react'
+import { Moon, PanelLeftClose, Plus, Sun, Trash2 } from 'lucide-react'
+import type { Ref } from 'react'
 
 import { LogoMark, Logotype } from '@/components/brand'
 import { LegendLink } from '@/components/legend-link'
@@ -20,6 +21,8 @@ export interface RailProps {
   onNew: () => void
   onOpenEntry: (entry: HistoryEntry) => void
   onClearHistory: () => void
+  /** Verifications finished in the last seven days, from this browser's own record. */
+  weekCount: number
 }
 
 /** The brand, as the way home: a plain click stays in the page, a modified one opens it afresh. */
@@ -78,13 +81,45 @@ function LanguageToggle() {
  * only), then the legend of the states, the language and the theme. On a wide screen it stands
  * beside the workspace; on a narrow one the same content is a drawer.
  */
-export function RailContent({ history, currentId, onHome, onNew, onOpenEntry, onClearHistory }: RailProps) {
+export function RailContent({
+  history,
+  currentId,
+  onHome,
+  onNew,
+  onOpenEntry,
+  onClearHistory,
+  weekCount,
+  onClose,
+  closeRef,
+}: RailProps & {
+  /** The standing rail can be put away; the drawer has its own way out. */
+  onClose?: () => void
+  closeRef?: Ref<HTMLButtonElement>
+}) {
   const { t, lang } = useI18n()
   const { theme, toggle } = useTheme()
   const themeLabel = theme === 'dark' ? t.header.darkOff : t.header.darkOn
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-4">
-      <BrandLink onHome={onHome} className="self-start" />
+      <div className="flex items-center justify-between gap-2">
+        <BrandLink onHome={onHome} />
+        {onClose ? (
+          <Button
+            ref={closeRef}
+            type="button"
+            variant="ghost"
+            size="icon"
+            data-testid="rail-close"
+            aria-label={t.shell.closeRail}
+            title={t.shell.closeRail}
+            aria-expanded="true"
+            onClick={onClose}
+          >
+            {/* The rail stands at the start side: the icon is mirrored where that is the right. */}
+            <PanelLeftClose aria-hidden="true" className="rtl:-scale-x-100" />
+          </Button>
+        ) : null}
+      </div>
 
       <Button type="button" size="touch" data-testid="new-verification" onClick={onNew} className="w-full justify-start">
         <Plus aria-hidden="true" />
@@ -92,9 +127,13 @@ export function RailContent({ history, currentId, onHome, onNew, onOpenEntry, on
       </Button>
 
       <section aria-labelledby="rail-history" className="flex min-h-0 flex-1 flex-col">
-        <h2 id="rail-history" className="pb-1 text-sm font-semibold text-quiet">
+        <h2 id="rail-history" className="text-sm font-semibold text-quiet">
           {t.history.title}
         </h2>
+        {/* The habit, said quietly: counted here, from what this browser remembers. */}
+        <p data-testid="week-line" className={cn('tabular pb-1 text-sm text-figure', weekCount === 0 && 'invisible')}>
+          {t.shell.week(Math.max(1, weekCount))}
+        </p>
         {/* The list keeps its room whether it is empty or full, so what stands under it — and the
             foot of the rail — stays where it is when a report is added. */}
         {history.length === 0 ? (
@@ -157,15 +196,33 @@ export function RailContent({ history, currentId, onHome, onNew, onOpenEntry, on
   )
 }
 
-/** The rail beside the workspace, from 1280px up. Below that it is a drawer (`rail-drawer.tsx`). */
-export function Rail(props: RailProps) {
+/**
+ * The rail beside the workspace, from 1280px up. Below that it is a drawer (`rail-drawer.tsx`).
+ * It can be put away: its width closes to nothing, the workspace takes the room and re-centres,
+ * and a small button at the top corner brings it back. The choice is remembered in this browser.
+ */
+export function Rail({
+  open,
+  onClose,
+  closeRef,
+  ...props
+}: RailProps & { open: boolean; onClose: () => void; closeRef?: Ref<HTMLButtonElement> }) {
   const { t } = useI18n()
   return (
     <aside
       aria-label={t.shell.rail}
-      className="sticky top-0 hidden h-dvh w-[17rem] shrink-0 border-e bg-paper xl:block print:hidden"
+      data-testid="rail"
+      data-open={open || undefined}
+      inert={!open}
+      className={cn(
+        'sticky top-0 hidden h-dvh shrink-0 overflow-hidden bg-paper transition-[width] duration-300 ease-out xl:block print:hidden',
+        open ? 'w-[17rem] border-e' : 'w-0',
+      )}
     >
-      <RailContent {...props} />
+      {/* Its content keeps its width while the rail closes over it, so nothing reflows on the way. */}
+      <div className="h-full w-[17rem]">
+        <RailContent {...props} onClose={onClose} closeRef={closeRef} />
+      </div>
     </aside>
   )
 }
