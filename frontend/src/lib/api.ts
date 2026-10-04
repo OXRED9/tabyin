@@ -136,6 +136,23 @@ export async function fetchExampleImage(url: string, signal?: AbortSignal): Prom
 const KNOWN_EVENTS = new Set(['stage', 'trace', 'source', 'segments', 'claims', 'card', 'summary', 'error', 'done'])
 
 /**
+ * The one gate every stream event passes, the server's and the mock's alike: an event whose name
+ * is not known is dropped, and its data is what survives JSON. The mock used to hand its events
+ * straight to the reducer, so an event this list forgot (`trace`, once) worked in every mock
+ * check and was silently dropped on the real stream.
+ */
+function deliver(name: string, json: string, onEvent: (event: StreamEvent) => void): void {
+  if (!KNOWN_EVENTS.has(name)) return
+  let data: unknown
+  try {
+    data = JSON.parse(json)
+  } catch {
+    return
+  }
+  onEvent({ event: name, data } as StreamEvent)
+}
+
+/**
  * POST the input and feed each SSE event to `onEvent` as it arrives. Resolves when the stream
  * closes. Rejects with `ApiFailure` when the request could not be made at all, and with the
  * browser's `AbortError` when the caller cancels.
@@ -148,7 +165,7 @@ export async function verifyStream(
 ): Promise<void> {
   if (MOCK_MODE) {
     const { mockVerify } = await loadMock()
-    return mockVerify(input, uiLang, onEvent, signal)
+    return mockVerify(input, uiLang, (event) => deliver(event.event, JSON.stringify(event.data ?? null), onEvent), signal)
   }
 
   let response: Response
@@ -186,16 +203,7 @@ export async function verifyStream(
   }
 
   try {
-    await readSseStream(response.body, (frame) => {
-      if (!KNOWN_EVENTS.has(frame.event)) return
-      let data: unknown
-      try {
-        data = JSON.parse(frame.data)
-      } catch {
-        return
-      }
-      onEvent({ event: frame.event, data } as StreamEvent)
-    })
+    await readSseStream(response.body, (frame) => deliver(frame.event, frame.data, onEvent))
   } catch (cause) {
     if (signal.aborted) throw cause
     throw new ApiFailure(clientError('stream_interrupted'))

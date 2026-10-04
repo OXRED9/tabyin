@@ -136,6 +136,7 @@ const stub = (card: Card): ClaimStub => ({
   claim_type: card.claim_type,
   text_as_quoted: card.text_as_quoted,
   span: card.span,
+  spans: card.spans,
   timestamp: card.timestamp,
   position: card.position,
 })

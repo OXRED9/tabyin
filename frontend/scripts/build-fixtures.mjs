@@ -840,20 +840,36 @@ function scenario({ source, parts, llm = true }) {
       if (part.card && !claim) return
       const text = claim ? `${part.before ?? ''}${claim.text_as_quoted}${part.after ?? ''}` : part.text
       const id = segments.length
-      segments.push({
-        id,
-        text,
-        start: part.at ?? null,
-        end: part.at != null ? (parts[i + 1]?.at ?? source.duration ?? null) : null,
-      })
+      const until = part.at != null ? (parts[i + 1]?.at ?? source.duration ?? null) : null
+      // `split`: the quotation runs over two caption lines, cut mechanically at the word boundary
+      // nearest its middle — as captions cut a narration. The claim then covers both (`spans`).
+      const quoted = claim?.text_as_quoted ?? ''
+      const cut = claim && part.split ? quoted.indexOf(' ', Math.floor(quoted.length / 2)) : -1
+      const start = (part.before ?? '').length
+      if (cut > 0) {
+        const half = part.at != null && until != null ? Math.round((part.at + until) / 2) : null
+        segments.push(
+          { id, text: `${part.before ?? ''}${quoted.slice(0, cut)}`, start: part.at ?? null, end: half },
+          { id: id + 1, text: `${quoted.slice(cut + 1)}${part.after ?? ''}`, start: half, end: until },
+        )
+      } else {
+        segments.push({ id, text, start: part.at ?? null, end: until })
+      }
       if (claim) {
-        const start = (part.before ?? '').length
         const index = cards.length + 1
+        const spans =
+          cut > 0
+            ? [
+                { segment_id: id, start, end: start + cut },
+                { segment_id: id + 1, start: 0, end: quoted.length - cut - 1 },
+              ]
+            : [{ segment_id: id, start, end: start + quoted.length }]
         cards.push({
           id: `c${index}`,
           index,
           ...claim,
-          span: { segment_id: id, start, end: start + claim.text_as_quoted.length },
+          span: spans[0],
+          spans,
           timestamp: part.at != null ? { start: part.at, end: null } : null,
           position: offset + start,
         })
@@ -880,7 +896,7 @@ const video = scenario({
     { at: 134, card: 'ayah', before: 'قال تعالى: ', after: ' فالصبر أول ما نبدأ به.' },
     { at: 242, card: 'hadithPartial', before: 'وفي الحديث: ', after: ' إلى آخر الحديث.' },
     { at: 320, card: 'ruling', before: 'ومن المعلوم أن ', after: '، وهذا لا يخفى على أحد.' },
-    { at: 351, card: 'hadithTwoGrades', before: 'وجاء في فضل الصيام: ', after: '' },
+    { at: 351, card: 'hadithTwoGrades', before: 'وجاء في فضل الصيام: ', after: '', split: true },
     { at: 378, card: 'bookHadith', before: 'ويُروى كذلك: ', after: '' },
     { at: 397, card: 'attributed', before: 'وقد قيل: ', after: '' },
     { at: 431, card: 'disputed', before: 'وأما ', after: ' فهذا ما أراه في المسألة.' },
