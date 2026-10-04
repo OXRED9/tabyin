@@ -45,6 +45,9 @@ and unresolved as of 3 October 2026.
 - **The evidence shown beside a ruling is the closest text, chosen by the model's pointer.** It can be a
   related narration that is not the one the speaker meant; the note says «أقرب نص». One text is shown,
   never a survey of the evidence, and the ruling itself is not judged.
+- **A speaker's own statements are not flagged.** An explanation or assertion that is not a quotation
+  gets a note only when a retrieved text states it. A wrong statement that quotes nothing passes
+  without a note unless the model marks the matter as disputed.
 - **Questions are not answered.** A question is referred to the three approved fatwa sites by search
   links; what those searches return is not controlled or checked by Tabayyun, and a long or unusual
   topic may find nothing there. A question inside a long text is treated as the speaker's own.

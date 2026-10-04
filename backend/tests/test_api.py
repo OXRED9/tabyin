@@ -120,3 +120,13 @@ def test_json_is_compressed_but_the_event_stream_is_not(client):
     stream = client.post("/api/verify", json={"input_type": "text", "text": "نص قصير بلا استشهاد."}, headers={"Accept-Encoding": "gzip"})
     assert stream.headers["content-type"].startswith("text/event-stream") and "content-encoding" not in stream.headers
 
+
+def test_trace_events_say_what_was_done_in_numbers_and_carry_no_user_text(client):
+    text = "اجتمع أهل الحي مساء أمس لمناقشة ما يتداوله الناس من أخبار."
+    events = sse(client.post("/api/verify", json={"input_type": "text", "text": text}))
+    traces = {d["step"]: d for n, d in events if n == "trace"}
+    assert {"ingest", "scan", "verify"} <= set(traces)
+    assert traces["ingest"]["characters"] == len(text) and traces["scan"]["quran_verses"] == 6236 and traces["scan"]["narrations"] > 50000
+    assert all(isinstance(v, (int, float, str, type(None))) for t in traces.values() for v in t.values())
+    assert not any("أهل الحي" in str(v) for t in traces.values() for v in t.values())  # counts and timings only
+

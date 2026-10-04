@@ -28,7 +28,11 @@ def absorb_closed_quotes(scanned: list[RawClaim], closed: list[RawClaim]) -> lis
     for c in closed:
         inside = [p for p in kept if p.type == c.type and overlap(p, c) >= 0.9 * (p.end - p.start)]
         if len(inside) == 1 and (inside[0].end - inside[0].start) >= 0.9 * (c.end - c.start):
-            inside[0].explicit_attribution = True  # the scan already covers the whole quotation
+            # The scan already covers the whole quotation. The quotation marks say exactly where it
+            # starts and ends, so the note takes those boundaries: the scan may have begun on the
+            # narrator's «يقول:» or run a word past the closing mark.
+            p = inside[0]
+            p.start, p.end, p.quote, p.closed, p.explicit_attribution = c.start, c.end, c.quote, True, True
             continue
         kept = [p for p in kept if all(p is not i for i in inside)]
         kept.append(c)

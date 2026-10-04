@@ -21,7 +21,7 @@ from .ingest.document import Document, IngestError
 from .llm.base import LLMError
 from .llm.router import get_llm
 from .report.messages import error_event
-from .schemas import Card, ClaimStub, ClaimType, EvidenceState, Summary
+from .schemas import Card, ClaimStub, ClaimType, ContentLevel, EvidenceState, Summary
 from .sources.dorar import get_dorar
 from .sources.hadith import get_hadith_index
 from .sources.quran import get_quran_index
@@ -90,6 +90,10 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         await put(("source", doc.source.model_dump()))
         await put(("segments", {"segments": [s.model_dump() for s in doc.segments]}))
         await put(stage("ingest", "done"))
+        # "trace" events are what really happened, in numbers — the interface shows the work from them.
+        # They carry counts, timings and model names only: never the user's text.
+        await put(("trace", {"step": "ingest", "input_type": doc.source.input_type, "characters": len(doc.full_text), "segments": len(doc.segments),
+                             "transcript_origin": doc.source.transcript_origin, "ms": int((t_ingest - started) * 1000)}))  # fmt: skip
 
         # ---- 2. extract (and start matching what is already certain)
         current = "extract"
@@ -103,6 +107,38 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         tasks: list[asyncio.Task] = []
         counter = 0
         total = 0
+
+        def is_speakers_statement(c: RawClaim) -> bool:
+            """The speaker's own explanation or assertion: not a verse, a narration or an attributed
+            saying, not a question or a personal case, not a matter marked as disputed. Tabayyun
+            verifies what is quoted, so such a statement gets a note only when an explicit source
+            text was found for it; otherwise it is left alone — no "needs review" on a lecturer's
+            own words."""
+            return (
+                c.type in (ClaimType.fact, ClaimType.ruling)
+                and not c.is_question
+                and c.content_level in (ContentLevel.A, ContentLevel.B)
+            )
+
+        async def process_silently(claim: RawClaim) -> None:
+            nonlocal counter, total
+            async with sem:
+                try:
+                    card = await verify_claim(claim, "pending", 0, ctx)
+                except Exception as e:
+                    log.error("verification failed for one statement: %s", _where(e))
+                    return
+            if card.state != EvidenceState.supported:
+                return
+            counter += 1
+            total += 1
+            card.id, card.index = f"c{counter}", counter
+            span, ts = doc.locate(claim.start, claim.end)
+            stub = ClaimStub(id=card.id, index=counter, claim_type=claim.type, text_as_quoted=claim.quote, span=span, timestamp=ts, position=claim.start)
+            await put(("claims", {"claims": [stub.model_dump(mode="json")]}))
+            cards.append(card)
+            await put(("card", card.model_dump(mode="json")))
+            await put(stage("match", "progress", done=len(cards), total=total))
 
         async def process(claim: RawClaim, cid: str, index: int) -> None:
             async with sem:
@@ -121,6 +157,9 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
             if not claims:
                 return
             stubs = []
+            for c in [c for c in claims if is_speakers_statement(c)]:
+                tasks.append(asyncio.create_task(process_silently(c)))
+            claims = [c for c in claims if not is_speakers_statement(c)]
             total += len(claims)
             for c in claims:
                 counter += 1
@@ -128,10 +167,12 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
                 span, ts = doc.locate(c.start, c.end)
                 stubs.append(ClaimStub(id=cid, index=counter, claim_type=c.type, text_as_quoted=c.quote, span=span, timestamp=ts, position=c.start))
                 tasks.append(asyncio.create_task(process(c, cid, counter)))
-            await put(("claims", {"claims": [s.model_dump(mode="json") for s in stubs]}))
+            if stubs:
+                await put(("claims", {"claims": [s.model_dump(mode="json") for s in stubs]}))
 
         # Deterministic, model-free claims first: verbatim verses and narrations found by scanning,
         # and quotations delimited by quotation marks after an explicit marker.
+        t_scan = time.monotonic()
         markers = extract_by_markers(doc)
         closed = [c for c in markers if c.closed]
         quick = await asyncio.to_thread(scan_quran, doc, quran)
@@ -142,6 +183,12 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         # The marked quotation replaces that fragment when the matcher finds it is the same verse.
         quick, _ = widen_scanned_verses(quick, [c for c in markers if not c.closed and c.type == ClaimType.ayah], quran, t.ayah_near)
 
+        await put(("trace", {
+            "step": "scan",
+            "quran_verses": len(quran.ayahs), "quran_hits": sum(1 for c in quick if c.type == ClaimType.ayah),
+            "narrations": len(hadith.hadeethenc) + hadith.books_count, "narration_hits": sum(1 for c in quick if c.type == ClaimType.hadith),
+            "markers": len(markers), "ms": int((time.monotonic() - t_scan) * 1000),
+        }))  # fmt: skip
         # Every quotation found, including repeats and delimited quotations that get no note of their own.
         seen_quotations: list[RawClaim] = [c for c in closed if c.type in (ClaimType.ayah, ClaimType.hadith)]
 
@@ -173,6 +220,8 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
                 log.warning("LLM extraction failed, switching to lexical-only mode: %s", e)
                 mode = "lexical_only"
             if mode == "full":
+                await put(("trace", {"step": "model", "model": llm.llm.model_for("extract") if hasattr(llm, "llm") else None,
+                                     "proposed": len(rest), "ms": int((time.monotonic() - t_scan) * 1000)}))  # fmt: skip
                 rest = keep_personal_cases(rest, markers)
                 rest = keep_questions(rest, markers, looks_like_question, is_fabrication_request)
             if held:
@@ -200,10 +249,15 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         if not quick:
             await put(stage("match", "start", done=0, total=len(new)))
         await announce(new)
-        if total == 0:
-            await put(("error", error_event("no_claims", "extract", fatal=False)))
         if tasks:
             await asyncio.gather(*tasks)
+        calls = [getattr(c, "task", c) for c in getattr(llm, "calls", [])]
+        await put(("trace", {
+            "step": "verify", "notes": len(cards), "pointer_calls": calls.count("judge"), "selection_calls": calls.count("select"),
+            "gradings": sum(len(c.grades) for c in cards), "dorar": ctx.dorar.status, "ms": int((time.monotonic() - t_extract) * 1000),
+        }))  # fmt: skip
+        if total == 0:  # after the silent checks: a statement that found its text counts
+            await put(("error", error_event("no_claims", "extract", fatal=False)))
         await put(stage("match", "done", done=len(cards), total=total))
         await put(stage("rules", "done"))
 
@@ -245,12 +299,14 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
 
 async def collect(ingest: Callable[[], Awaitable[Document]], *, ui_lang: str = "ar") -> dict:
     """Run to completion and return everything (used by tests and the evaluation harness)."""
-    out: dict = {"cards": [], "errors": [], "segments": [], "summary": None, "source": None}
+    out: dict = {"cards": [], "errors": [], "segments": [], "summary": None, "source": None, "trace": []}
     async for name, data in run(ingest, ui_lang=ui_lang):
         if name == "card":
             out["cards"].append(data)
         elif name == "error":
             out["errors"].append(data)
+        elif name == "trace":
+            out["trace"].append(data)
         elif name == "segments":
             out["segments"] = data["segments"]
         elif name in ("summary", "source"):

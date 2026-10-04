@@ -36,6 +36,18 @@ interface Alternative {
 addressed. The report is composed in the browser and sent by the reader's own mail or WhatsApp;
 this API has no endpoint that receives it.
 
+### `trace` events (what was done, in numbers)
+
+Sent on the verification stream between the other events. Counts, timings and model names only —
+never the user's text. A client may ignore them.
+
+```ts
+{ step: "ingest", input_type, characters, segments, transcript_origin, ms }
+{ step: "scan",   quran_verses, quran_hits, narrations, narration_hits, markers, ms }
+{ step: "model",  model, proposed, ms }                       // only when a model extracted claims
+{ step: "verify", notes, pointer_calls, selection_calls, gradings, dorar, ms }
+```
+
 ## `POST /api/ocr` (image input, F1)
 
 `multipart/form-data` with one field, `file`: PNG, JPG, WebP or HEIC, at most `limits.max_image_mb`.

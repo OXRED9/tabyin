@@ -44,11 +44,15 @@ def test_definitive_ruling_is_supported_only_through_a_verse_fetched_from_the_mu
     assert "183" in card["source"]["ref"] and card["certainty"] == "definitive"
 
 
-def test_ruling_stays_needs_review_when_the_model_points_at_nothing(run):
+def test_the_speakers_own_statement_gets_no_note_unless_a_text_was_found_for_it(run):
+    """Tabayyun verifies what is quoted. A lecturer's explanation that no retrieved text states is
+    left alone: no "needs review" on the speaker's own words (it read as a fault in the clip)."""
     text = "صيام شهر رمضان واجب على كل مسلم بالغ قادر."
-    report = run(text, ScriptedProvider([claim(quote=text.rstrip("."), evidence_ref="2:183")], judge_index=-1))
-    (card,) = report["cards"]
-    assert card["state"] == "needs_review" and card["source"] is None and card["referral"]
+    for level in ("A", "B"):
+        report = run(text, ScriptedProvider([claim(quote=text.rstrip("."), evidence_ref="2:183", content_level=level)], judge_index=-1))
+        assert report["cards"] == [] and any(e["code"] == "no_claims" for e in report["errors"])
+    disputed = run(text, ScriptedProvider([claim(quote=text.rstrip("."), content_level="C")], judge_index=-1))["cards"]
+    assert [c["state"] for c in disputed] == ["needs_review"] and disputed[0]["referral"]  # a matter marked as disputed is still flagged
 
 
 def test_a_proposed_verse_unrelated_to_the_claim_is_ignored(run):
@@ -100,8 +104,7 @@ def test_a_pointer_from_the_fallback_model_never_lifts_a_claim_to_supported(run,
     (primary,) = run(ruling, ScriptedProvider(extracted, judge_index=0))["cards"]
     assert primary["state"] == "supported"
     report = run(ruling, ScriptedProvider(extracted, judge_index=0, judge_from_fallback=True))
-    (backup,) = report["cards"]
-    assert backup["state"] == "needs_review" and "llm_fallback" in report["summary"]["warnings"]
+    assert report["cards"] == [] and "llm_fallback" in report["summary"]["warnings"]  # not supported, so no note
 
     words = matn("4560").split()
     reordered = " ".join(words[len(words) // 2 :] + words[: len(words) // 2])
@@ -151,7 +154,7 @@ def test_a_personal_case_stays_a_personal_case_whatever_the_model_calls_it(run):
 RULING = "صيام شهر رمضان واجب على كل مسلم بالغ قادر."
 
 
-@pytest.mark.parametrize("level", ["A", "B", "C"])
+@pytest.mark.parametrize("level", ["C"])
 def test_a_text_the_ruling_points_at_is_shown_without_raising_the_state(run, level):
     """Asked for by the team: a ruling that refers to its evidence shows that evidence from the sources
     — verbatim, with its grading — while the ruling itself stays for the scholars."""
@@ -205,8 +208,9 @@ def test_a_ruling_that_quotes_its_evidence_keeps_its_own_note(run, ayah):
     verse = ayah(2, 183)[1]
     ruling = "صيام شهر رمضان واجب على كل مسلم بالغ قادر"
     text = f"{ruling}، لقوله تعالى: ﴿{verse}﴾."
-    cards = run(text, ScriptedProvider([claim(type="ruling", quote=f"{ruling}، لقوله تعالى: ﴿{verse}﴾", content_level="A", search_query="وجوب صيام رمضان")], judge_index=-1))["cards"]
-    assert sorted(c["claim_type"] for c in cards) == ["ayah", "ruling"]
+    for level, expected in (("C", ["ayah", "ruling"]), ("A", ["ayah"])):  # a disputed ruling keeps its note; an unconfirmed statement has none
+        cards = run(text, ScriptedProvider([claim(type="ruling", quote=f"{ruling}، لقوله تعالى: ﴿{verse}﴾", content_level=level, search_query="وجوب صيام رمضان")], judge_index=-1))["cards"]
+        assert sorted(c["claim_type"] for c in cards) == expected
 
 
 def test_sound_narration_attributed_to_someone_else_is_contradicted(run, matn):

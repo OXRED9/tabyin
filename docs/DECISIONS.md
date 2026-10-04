@@ -550,3 +550,25 @@ Decided in the frontend for «تبيّن يتحقق مما يُنقل، ولا �
 119. **The mock's disputed matters search for «أحكام الصيام»** — topic words fitting the mock
      clip, not a religious text — and its personal case has no query, as the backend sends for
      level D. `?scenario=question` is one question, «ما حكم الزكاة؟», with the query «حكم الزكاة».
+
+## One narration, one note — and nothing on the speaker's own words (the team, 4 October 2026)
+
+120. **The speaker's own statements get no note unless an explicit source text was found for them.** On the
+    example clip a lecture explaining one narration came back with eight notes: the narration, the same
+    narration again, a remark about it ("needs review"), two words of praise ("no reference") and three
+    of the lecturer's explanations ("needs review"). It read as a clip full of problems. Tabayyun
+    verifies what is quoted: a statement or ruling of level A or B is now checked silently and shown
+    only if a retrieved text states it («له مرجعية»). Questions, personal cases and matters the model
+    marks as disputed (level C) keep their referral notes — the last so that someone reviewing content
+    still sees a disputed ruling stated as fact. The clip now gives one note. This supersedes the
+    "needs review" for unverified level-A/B statements (items 73 and 81); the evidence a ruling points
+    at is therefore shown for disputed matters and for narrations referred to by meaning.
+121. **A quotation is reported once, at its fullest occurrence**; a statement that merely contains a
+    quotation is not a claim; an attributed saying of one or two words is not checked.
+122. **Quotation marks decide where a note starts and ends.** A scan match that covers a delimited
+    quotation takes the quotation's own boundaries, so a note no longer begins on the narrator's
+    «يقول:» or mixes the speaker's words into the narration.
+123. **`trace` events** carry what was really done — verses and narrations scanned, hits, the model's
+    name and how many claims it proposed, pointing calls, gradings fetched, timings — and never the
+    user's text. The interface shows the work from them; nothing in that display is invented.
+

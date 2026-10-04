@@ -299,7 +299,7 @@ def referenced(monkeypatch):
     return _card
 
 
-@pytest.mark.parametrize("level", ["B", "C"])
+@pytest.mark.parametrize("level", ["C"])
 def test_the_evidence_a_ruling_points_at_is_shown_under_its_own_label_and_nothing_is_underlined(referenced, hadith, level):
     card = referenced(level)
     assert card.match_kind == "referenced" and card.state == EvidenceState.needs_review and card.source and card.grades
