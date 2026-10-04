@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-04T13:41:13+00:00",
+  "generated_at": "2026-10-04T15:58:46+00:00",
   "testset": {
     "path": "eval/testset/claims.jsonl",
     "claims": 79,
@@ -1724,7 +1724,7 @@
       "status": "ok",
       "mode": "full",
       "accuracy": {
-        "mean": 0.9114,
+        "mean": 0.8987,
         "std": 0.0
       },
       "fabricated_attribution_rate": {
@@ -1740,23 +1740,23 @@
         "std": 0.0
       },
       "seconds_per_claim": {
-        "mean": 9.646,
+        "mean": 6.117,
         "std": 0.0
       },
       "last_run": {
-        "accuracy": 0.9114,
+        "accuracy": 0.8987,
         "fabricated_attribution_rate": 0.0,
         "fabricated_attribution_ids": [],
         "wrongly_endorsed_rate": 0.0,
         "wrongly_endorsed_ids": [],
         "correct_abstention_rate": 1.0,
-        "no_output": 1,
+        "no_output": 2,
         "without_model": 0,
-        "seconds_per_claim": 9.646,
+        "seconds_per_claim": 6.117,
         "per_state": {
           "supported": {
-            "precision": 0.8529,
-            "recall": 0.9667,
+            "precision": 0.8485,
+            "recall": 0.9333,
             "support": 30
           },
           "supported_with_note": {
@@ -1833,8 +1833,8 @@
           },
           "ruling_definitive": {
             "n": 5,
-            "correct": 4,
-            "accuracy": 0.8
+            "correct": 3,
+            "accuracy": 0.6
           },
           "ruling_disputed": {
             "n": 5,
@@ -1860,7 +1860,7 @@
           "state": "supported",
           "ref": "quran:20:96",
           "has_source": true,
-          "seconds": 5.537,
+          "seconds": 4.516,
           "detail": "ayah/ayah.exact/full"
         },
         {
@@ -1869,7 +1869,7 @@
           "state": "supported",
           "ref": "quran:52:48",
           "has_source": true,
-          "seconds": 5.211,
+          "seconds": 4.115,
           "detail": "ayah/ayah.exact/full"
         },
         {
@@ -1878,7 +1878,7 @@
           "state": "supported",
           "ref": "quran:7:163",
           "has_source": true,
-          "seconds": 5.361,
+          "seconds": 5.507,
           "detail": "ayah/ayah.exact/full"
         },
         {
@@ -1887,7 +1887,7 @@
           "state": "supported",
           "ref": "quran:59:17",
           "has_source": true,
-          "seconds": 15.308,
+          "seconds": 2.566,
           "detail": "ayah/ayah.exact/full"
         },
         {
@@ -1896,7 +1896,7 @@
           "state": "supported",
           "ref": "quran:33:29",
           "has_source": true,
-          "seconds": 6.823,
+          "seconds": 2.872,
           "detail": "ayah/ayah.exact/full"
         },
         {
@@ -1905,7 +1905,7 @@
           "state": "supported",
           "ref": "quran:2:215",
           "has_source": true,
-          "seconds": 16.86,
+          "seconds": 3.404,
           "detail": "ayah/ayah.exact/full"
         },
         {
@@ -1914,7 +1914,7 @@
           "state": "supported",
           "ref": "quran:36:33",
           "has_source": true,
-          "seconds": 8.409,
+          "seconds": 2.638,
           "detail": "ayah/ayah.exact/full"
         },
         {
@@ -1923,7 +1923,7 @@
           "state": "supported",
           "ref": "quran:10:2",
           "has_source": true,
-          "seconds": 1.764,
+          "seconds": 2.608,
           "detail": "ayah/ayah.exact/full"
         },
         {
@@ -1932,7 +1932,7 @@
           "state": "supported",
           "ref": "quran:28:36",
           "has_source": true,
-          "seconds": 5.83,
+          "seconds": 3.14,
           "detail": "ayah/ayah.exact/full"
         },
         {
@@ -1941,7 +1941,7 @@
           "state": "supported",
           "ref": "quran:61:2",
           "has_source": true,
-          "seconds": 12.828,
+          "seconds": 2.608,
           "detail": "ayah/ayah.exact/full"
         },
         {
@@ -1950,7 +1950,7 @@
           "state": "supported_with_note",
           "ref": "quran:20:85",
           "has_source": true,
-          "seconds": 2.374,
+          "seconds": 2.933,
           "detail": "ayah/ayah.near/full"
         },
         {
@@ -1959,7 +1959,7 @@
           "state": "supported_with_note",
           "ref": "quran:4:52",
           "has_source": true,
-          "seconds": 3.596,
+          "seconds": 2.578,
           "detail": "ayah/ayah.near/full"
         },
         {
@@ -1968,7 +1968,7 @@
           "state": "supported_with_note",
           "ref": "quran:41:41",
           "has_source": true,
-          "seconds": 14.316,
+          "seconds": 2.679,
           "detail": "ayah/ayah.near/full"
         },
         {
@@ -1977,7 +1977,7 @@
           "state": "supported_with_note",
           "ref": "quran:17:76",
           "has_source": true,
-          "seconds": 2.585,
+          "seconds": 2.949,
           "detail": "ayah/ayah.near/full"
         },
         {
@@ -1986,7 +1986,7 @@
           "state": "supported_with_note",
           "ref": "quran:2:101",
           "has_source": true,
-          "seconds": 3.578,
+          "seconds": 3.134,
           "detail": "ayah/ayah.near/full"
         },
         {
@@ -1995,7 +1995,7 @@
           "state": "contradicted",
           "ref": "quran:8:16",
           "has_source": true,
-          "seconds": 13.584,
+          "seconds": 4.386,
           "detail": "ayah/ayah.altered/full"
         },
         {
@@ -2004,7 +2004,7 @@
           "state": "contradicted",
           "ref": "quran:59:15",
           "has_source": true,
-          "seconds": 13.924,
+          "seconds": 2.834,
           "detail": "ayah/ayah.altered/full"
         },
         {
@@ -2013,7 +2013,7 @@
           "state": "contradicted",
           "ref": "quran:5:65",
           "has_source": true,
-          "seconds": 1.86,
+          "seconds": 3.128,
           "detail": "ayah/ayah.altered/full"
         },
         {
@@ -2022,7 +2022,7 @@
           "state": "contradicted",
           "ref": "quran:16:2",
           "has_source": true,
-          "seconds": 14.742,
+          "seconds": 3.412,
           "detail": "ayah/ayah.altered/full"
         },
         {
@@ -2031,7 +2031,7 @@
           "state": "supported",
           "ref": "hadeethenc:66521",
           "has_source": true,
-          "seconds": 5.143,
+          "seconds": 4.972,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2040,7 +2040,7 @@
           "state": "supported",
           "ref": "hadeethenc:65059",
           "has_source": true,
-          "seconds": 16.87,
+          "seconds": 3.011,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2049,7 +2049,7 @@
           "state": "supported",
           "ref": "hadeethenc:4193",
           "has_source": true,
-          "seconds": 3.037,
+          "seconds": 3.617,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2058,7 +2058,7 @@
           "state": "supported",
           "ref": "hadeethenc:65516",
           "has_source": true,
-          "seconds": 2.127,
+          "seconds": 3.73,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2067,7 +2067,7 @@
           "state": "supported",
           "ref": "hadeethenc:4196",
           "has_source": true,
-          "seconds": 2.532,
+          "seconds": 3.206,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2076,7 +2076,7 @@
           "state": "supported",
           "ref": "hadeethenc:65000",
           "has_source": true,
-          "seconds": 6.036,
+          "seconds": 4.155,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2085,7 +2085,7 @@
           "state": "supported",
           "ref": "hadeethenc:8895",
           "has_source": true,
-          "seconds": 5.692,
+          "seconds": 2.753,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2094,7 +2094,7 @@
           "state": "supported",
           "ref": "hadeethenc:66324",
           "has_source": true,
-          "seconds": 3.176,
+          "seconds": 3.544,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2103,7 +2103,7 @@
           "state": "supported",
           "ref": "hadeethenc:65890",
           "has_source": true,
-          "seconds": 3.102,
+          "seconds": 4.34,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2112,7 +2112,7 @@
           "state": "supported",
           "ref": "hadeethenc:5274",
           "has_source": true,
-          "seconds": 7.787,
+          "seconds": 5.062,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2121,7 +2121,7 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:5436",
           "has_source": true,
-          "seconds": 5.788,
+          "seconds": 3.146,
           "detail": "hadith/hadith.accepted_near/full"
         },
         {
@@ -2130,7 +2130,7 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:10878",
           "has_source": true,
-          "seconds": 5.832,
+          "seconds": 3.058,
           "detail": "hadith/hadith.accepted_near/full"
         },
         {
@@ -2139,7 +2139,7 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:3071",
           "has_source": true,
-          "seconds": 3.484,
+          "seconds": 3.291,
           "detail": "hadith/hadith.accepted_near/full"
         },
         {
@@ -2148,7 +2148,7 @@
           "state": "supported",
           "ref": "quran:31:34",
           "has_source": true,
-          "seconds": 17.278,
+          "seconds": 6.998,
           "detail": "ayah/ayah.exact/full"
         },
         {
@@ -2157,7 +2157,7 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:3437",
           "has_source": true,
-          "seconds": 11.608,
+          "seconds": 3.561,
           "detail": "hadith/hadith.accepted_near/full"
         },
         {
@@ -2166,7 +2166,7 @@
           "state": "supported_with_note",
           "ref": "hadeethenc:10113",
           "has_source": true,
-          "seconds": 11.75,
+          "seconds": 2.96,
           "detail": "hadith/hadith.accepted_near/full"
         },
         {
@@ -2175,7 +2175,7 @@
           "state": "supported",
           "ref": "hadeethenc:3000",
           "has_source": true,
-          "seconds": 3.355,
+          "seconds": 2.757,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2184,7 +2184,7 @@
           "state": "supported",
           "ref": "hadeethenc:4181",
           "has_source": true,
-          "seconds": 4.732,
+          "seconds": 2.612,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2193,7 +2193,7 @@
           "state": "supported",
           "ref": "hadeethenc:65013",
           "has_source": true,
-          "seconds": 4.81,
+          "seconds": 3.56,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2202,7 +2202,7 @@
           "state": "supported",
           "ref": "hadeethenc:6366",
           "has_source": true,
-          "seconds": 5.204,
+          "seconds": 5.737,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2211,7 +2211,7 @@
           "state": "supported",
           "ref": "hadeethenc:66294",
           "has_source": true,
-          "seconds": 3.967,
+          "seconds": 5.701,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2220,7 +2220,7 @@
           "state": "supported",
           "ref": "hadeethenc:5356",
           "has_source": true,
-          "seconds": 5.66,
+          "seconds": 3.572,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2229,7 +2229,7 @@
           "state": "supported",
           "ref": "hadeethenc:5462",
           "has_source": true,
-          "seconds": 3.398,
+          "seconds": 3.391,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2238,7 +2238,7 @@
           "state": "supported",
           "ref": "hadeethenc:3853",
           "has_source": true,
-          "seconds": 3.518,
+          "seconds": 5.348,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2247,7 +2247,7 @@
           "state": "supported",
           "ref": "hadeethenc:5372",
           "has_source": true,
-          "seconds": 3.306,
+          "seconds": 3.336,
           "detail": "hadith/hadith.accepted_exact/full"
         },
         {
@@ -2256,7 +2256,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 19.313,
+          "seconds": 14.378,
           "detail": "hadith/hadith.none/full"
         },
         {
@@ -2265,7 +2265,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 15.827,
+          "seconds": 14.686,
           "detail": "hadith/hadith.none/full"
         },
         {
@@ -2274,7 +2274,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 18.102,
+          "seconds": 14.874,
           "detail": "hadith/hadith.none/full"
         },
         {
@@ -2283,7 +2283,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 19.653,
+          "seconds": 16.447,
           "detail": "hadith/hadith.none/full"
         },
         {
@@ -2292,7 +2292,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 17.845,
+          "seconds": 15.384,
           "detail": "hadith/hadith.none/full"
         },
         {
@@ -2301,7 +2301,7 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 5.221,
+          "seconds": 5.587,
           "detail": "hadith/hadith.weak/full"
         },
         {
@@ -2310,7 +2310,7 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 7.712,
+          "seconds": 5.925,
           "detail": "hadith/hadith.weak/full"
         },
         {
@@ -2319,7 +2319,7 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 8.404,
+          "seconds": 8.076,
           "detail": "hadith/hadith.grading_unclear/full"
         },
         {
@@ -2328,7 +2328,7 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 5.522,
+          "seconds": 4.892,
           "detail": "hadith/hadith.fabricated/full"
         },
         {
@@ -2337,7 +2337,7 @@
           "state": "needs_review",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 7.374,
+          "seconds": 6.361,
           "detail": "hadith/hadith.weak/full"
         },
         {
@@ -2346,7 +2346,7 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 7.878,
+          "seconds": 4.571,
           "detail": "hadith/hadith.fabricated/full"
         },
         {
@@ -2355,7 +2355,7 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 11.04,
+          "seconds": 4.269,
           "detail": "hadith/hadith.fabricated/full"
         },
         {
@@ -2364,7 +2364,7 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 10.23,
+          "seconds": 4.219,
           "detail": "hadith/hadith.fabricated/full"
         },
         {
@@ -2373,7 +2373,7 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 7.109,
+          "seconds": 6.385,
           "detail": "hadith/hadith.fabricated/full"
         },
         {
@@ -2382,7 +2382,7 @@
           "state": "contradicted",
           "ref": "dorar",
           "has_source": true,
-          "seconds": 5.7,
+          "seconds": 5.996,
           "detail": "hadith/hadith.fabricated/full"
         },
         {
@@ -2391,7 +2391,7 @@
           "state": "no_output",
           "ref": null,
           "has_source": false,
-          "seconds": 21.772,
+          "seconds": 15.232,
           "detail": "no_claims"
         },
         {
@@ -2400,7 +2400,7 @@
           "state": "supported",
           "ref": "hadeethenc:3700",
           "has_source": true,
-          "seconds": 15.46,
+          "seconds": 22.901,
           "detail": "fact/ruling.text_found/full"
         },
         {
@@ -2409,7 +2409,7 @@
           "state": "supported",
           "ref": "hadeethenc:65000",
           "has_source": true,
-          "seconds": 22.093,
+          "seconds": 12.774,
           "detail": "fact/ruling.text_found/full"
         },
         {
@@ -2418,17 +2418,17 @@
           "state": "supported",
           "ref": "quran:3:97",
           "has_source": true,
-          "seconds": 21.485,
+          "seconds": 9.183,
           "detail": "ayah/ayah.exact/full"
         },
         {
           "id": "ruling_definitive-05",
           "expected": "supported",
-          "state": "supported",
-          "ref": "quran:5:90",
-          "has_source": true,
-          "seconds": 22.916,
-          "detail": "ruling/ruling.text_found/full"
+          "state": "no_output",
+          "ref": null,
+          "has_source": false,
+          "seconds": 24.644,
+          "detail": "no_claims"
         },
         {
           "id": "ruling_disputed-01",
@@ -2436,7 +2436,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 15.874,
+          "seconds": 13.212,
           "detail": "ruling/ruling.disputed/full"
         },
         {
@@ -2445,7 +2445,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 20.995,
+          "seconds": 12.017,
           "detail": "ruling/ruling.disputed/full"
         },
         {
@@ -2454,7 +2454,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 11.049,
+          "seconds": 8.888,
           "detail": "ruling/ruling.disputed/full"
         },
         {
@@ -2463,7 +2463,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 19.058,
+          "seconds": 13.228,
           "detail": "ruling/ruling.disputed/full"
         },
         {
@@ -2472,7 +2472,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 23.417,
+          "seconds": 10.48,
           "detail": "ruling/ruling.disputed/full"
         },
         {
@@ -2481,7 +2481,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 6.481,
+          "seconds": 3.104,
           "detail": "ruling/ruling.personal_case/full"
         },
         {
@@ -2490,7 +2490,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 15.433,
+          "seconds": 3.135,
           "detail": "ruling/ruling.personal_case/full"
         },
         {
@@ -2499,7 +2499,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 6.928,
+          "seconds": 3.272,
           "detail": "ruling/ruling.personal_case/full"
         },
         {
@@ -2508,7 +2508,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 5.37,
+          "seconds": 5.05,
           "detail": "ruling/ruling.personal_case/full"
         },
         {
@@ -2517,7 +2517,7 @@
           "state": "needs_review",
           "ref": null,
           "has_source": false,
-          "seconds": 10.539,
+          "seconds": 3.105,
           "detail": "ruling/ruling.personal_case/full"
         },
         {
@@ -2526,7 +2526,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 8.782,
+          "seconds": 12.18,
           "detail": "request/request.no_fabrication/full"
         },
         {
@@ -2535,7 +2535,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 2.218,
+          "seconds": 4.805,
           "detail": "request/request.no_fabrication/full"
         },
         {
@@ -2544,7 +2544,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 14.078,
+          "seconds": 3.807,
           "detail": "request/request.no_fabrication/full"
         },
         {
@@ -2553,7 +2553,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 13.044,
+          "seconds": 4.582,
           "detail": "request/request.no_fabrication/full"
         },
         {
@@ -2562,7 +2562,7 @@
           "state": "not_found",
           "ref": null,
           "has_source": false,
-          "seconds": 14.403,
+          "seconds": 6.141,
           "detail": "request/request.no_fabrication/full"
         }
       ]
