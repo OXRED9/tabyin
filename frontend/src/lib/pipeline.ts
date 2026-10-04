@@ -25,9 +25,9 @@ export interface PipelineNode {
   id: NodeId
   status: NodeStatus
   title: string
-  /** What the node is, in a few words; for a model, its real id. */
+  /** What the node is, in a few words; for a model, its role — never its id. */
   detail: string
-  /** The detail is a model's id: set left to right, in tabular figures. */
+  /** Always false: no model id is shown anywhere in the interface (the team, v3.1). Kept for callers. */
   modelId: boolean
   figures: Figure[]
 }
@@ -115,8 +115,6 @@ export function pipelineOf(
           : origin
             ? p.read.stt
             : p.read.title
-  // A model read it: the vision model for a picture, the audio model for a transcription.
-  const readModel = viaImage ? engines?.models.vision : origin && origin !== 'captions' ? engines?.models.audio : null
 
   // ── extraction ──
   const modelStatus: NodeStatus = !modelAvailable
@@ -176,8 +174,9 @@ export function pipelineOf(
       id: 'read',
       status: phase(1),
       title: p.read.title,
-      detail: readModel ?? readDetail,
-      modelId: !!readModel,
+      // A model that read a picture or transcribed a clip is named by its role, never by its id.
+      detail: readDetail,
+      modelId: false,
       figures: ingest && shown >= 2 ? [{ label: p.read.segments, value: ingest.segments }] : [],
     },
     {
@@ -206,8 +205,9 @@ export function pipelineOf(
       id: 'model',
       status: modelStatus,
       title: p.model.title,
-      detail: modelStatus === 'skipped' ? p.model.unused : (model?.model ?? engines?.models.extract ?? p.model.title),
-      modelId: modelStatus !== 'skipped' && !!(model?.model ?? engines?.models.extract),
+      // Its role, not its name: the ids of the models stay in the API.
+      detail: modelStatus === 'skipped' ? p.model.unused : p.model.role,
+      modelId: false,
       figures: model && shown >= 4 ? [{ label: p.model.proposed, value: model.proposed }] : [],
     },
     {

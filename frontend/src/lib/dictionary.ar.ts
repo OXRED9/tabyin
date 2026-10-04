@@ -81,6 +81,17 @@ export const ar = {
     menu: 'القائمة',
     newVerification: 'تحقّق جديد',
     rail: 'التنقّل والسجل',
+    closeRail: 'إخفاء الشريط الجانبي',
+    openRail: 'إظهار الشريط الجانبي',
+    // From this browser's own record of when it verified; nothing is sent anywhere.
+    week: (n: number) =>
+      n === 1
+        ? 'تحقّقت من نص واحد هذا الأسبوع'
+        : n === 2
+          ? 'تحقّقت من نصّين هذا الأسبوع'
+          : n <= 10
+            ? `تحقّقت من ${n} نصوص هذا الأسبوع`
+            : `تحقّقت من ${n} نصاً هذا الأسبوع`,
   },
 
   hero: {
@@ -100,15 +111,22 @@ export const ar = {
       body: (graded: string, books: string) =>
         `${graded} رواية بأحكامها من موسوعة الأحاديث النبوية، و${books} رواية من كتب السنة.`,
     },
+    units: { verse: 'آية', narration: 'رواية' },
+    // The models are named by what they do and how many they are, never by their ids.
     models: {
-      title: 'نماذج القراءة والاستخراج',
-      extract: 'استخراج الاستشهادات',
-      vision: 'قراءة الصور',
-      audio: 'تفريغ الصوت',
+      title: 'نماذج ذكاء اصطناعي',
+      unit: (n: number): string => (n === 1 ? 'نموذج' : n === 2 ? 'نموذجان' : 'نماذج'),
+      extractVerb: 'تستخرج الاستشهادات',
+      visionVerb: 'تقرأ الصور',
+      audioVerb: 'تفرّغ الصوت',
+      join: '، ',
+      propose: 'تقترح ولا تقرّر',
       none: 'غير مفعّلة على هذا الخادم: الفحص لفظي فقط.',
     },
     gradings: {
       title: 'أحكام المحدّثين',
+      liveWord: 'حيّة',
+      storedWord: 'محفوظة',
       live: 'تُجلب حيّة من الدرر السنية وتُنقل بنصّها؛ لا يولّد النموذج حكماً.',
       stored: 'تُنقل بنصّها من موسوعة الأحاديث النبوية؛ لا يولّد النموذج حكماً.',
     },
@@ -141,13 +159,13 @@ export const ar = {
       pasted: 'نص يُقرأ كما هو',
       article: 'جلب نص المقال',
       captions: 'ترجمة المقطع المرفقة',
-      stt: 'النموذج الصوتي يفرّغ المقطع',
-      image: 'النموذج البصري قرأ الصورة',
+      stt: 'نموذج يفرّغ الصوت',
+      image: 'نموذج يقرأ الصور',
       segments: 'المقاطع',
     },
     mushaf: { title: 'مطابق المصحف', detail: 'خوارزمي، بلا نموذج', verses: 'الآيات', hits: 'المطابقات' },
     narrations: { title: 'فهرس الروايات', detail: 'موسوعة الأحاديث وكتب السنة', count: 'الروايات', hits: 'المطابقات', markers: 'علامات الاستشهاد' },
-    model: { title: 'نموذج الاستخراج', proposed: 'المقترَح', unused: 'فحص لفظي فقط' },
+    model: { title: 'نموذج الاستخراج', role: 'نموذج ذكاء اصطناعي يستخرج الاستشهادات', proposed: 'المقترَح', unused: 'فحص لفظي فقط' },
     gradings: { title: 'أحكام المحدّثين', detail: 'تُجلب حيّة من الدرر السنية', count: 'الأحكام', unreachable: 'تعذّر الوصول إلى الدرر السنية', notCalled: 'لم يُحتج إليها' },
     pointer: { title: 'نموذج الإشارة', detail: 'يشير إلى الدليل ولا يحكم', calls: 'النداءات', selections: 'اختيار «الثابت في الباب»' },
     rules: { title: 'محرّك القواعد', detail: 'القواعد تقرّر الحالة، لا النموذج', notes: 'الحواشي' },
@@ -175,6 +193,7 @@ export const ar = {
   panes: {
     text: 'النص',
     notes: 'الحواشي',
+    switch: 'ما يُعرض: الحواشي أو النص',
   },
 
   header: {

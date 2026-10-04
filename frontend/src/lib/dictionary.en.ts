@@ -33,6 +33,9 @@ export const en: Dictionary = {
     menu: 'Menu',
     newVerification: 'New verification',
     rail: 'Navigation and history',
+    closeRail: 'Hide the side rail',
+    openRail: 'Show the side rail',
+    week: (n: number) => (n === 1 ? 'You verified 1 text this week' : `You verified ${n} texts this week`),
   },
 
   hero: {
@@ -50,15 +53,21 @@ export const en: Dictionary = {
       body: (graded: string, books: string) =>
         `${graded} narrations with their gradings from HadeethEnc, and ${books} from the hadith books.`,
     },
+    units: { verse: 'verses', narration: 'narrations' },
     models: {
-      title: 'Reading and extraction models',
-      extract: 'Extracting citations',
-      vision: 'Reading images',
-      audio: 'Transcribing audio',
+      title: 'AI models',
+      unit: (n: number) => (n === 1 ? 'model' : 'models'),
+      extractVerb: 'extract the citations',
+      visionVerb: 'read pictures',
+      audioVerb: 'transcribe audio',
+      join: ', ',
+      propose: 'They propose; they do not decide',
       none: 'Not enabled on this server: lexical checking only.',
     },
     gradings: {
       title: 'Scholars’ gradings',
+      liveWord: 'Live',
+      storedWord: 'Stored',
       live: 'Fetched live from Dorar.net and copied verbatim; the model generates no grading.',
       stored: 'Copied verbatim from HadeethEnc; the model generates no grading.',
     },
@@ -90,13 +99,13 @@ export const en: Dictionary = {
       pasted: 'Text, read as it is',
       article: 'Fetching the article’s text',
       captions: 'The clip’s own captions',
-      stt: 'The audio model transcribes the clip',
-      image: 'The vision model read the picture',
+      stt: 'A model transcribes the audio',
+      image: 'A model reads the picture',
       segments: 'Segments',
     },
     mushaf: { title: 'Mushaf matcher', detail: 'Algorithmic, no model', verses: 'Verses', hits: 'Matches' },
     narrations: { title: 'Narration index', detail: 'HadeethEnc and the hadith books', count: 'Narrations', hits: 'Matches', markers: 'Citation markers' },
-    model: { title: 'Extraction model', proposed: 'Proposed', unused: 'Lexical check only' },
+    model: { title: 'Extraction model', role: 'An AI model extracts the citations', proposed: 'Proposed', unused: 'Lexical check only' },
     gradings: { title: 'Scholars’ gradings', detail: 'Fetched live from Dorar.net', count: 'Gradings', unreachable: 'Dorar.net could not be reached', notCalled: 'Not needed' },
     pointer: { title: 'Pointing model', detail: 'Points at the evidence; decides nothing', calls: 'Calls', selections: 'Picks for “reliably reported”' },
     rules: { title: 'Rule engine', detail: 'The rules decide the state, not the model', notes: 'Notes' },
@@ -124,6 +133,7 @@ export const en: Dictionary = {
   panes: {
     text: 'The text',
     notes: 'Notes',
+    switch: 'What is shown: the notes or the text',
   },
 
   header: {
