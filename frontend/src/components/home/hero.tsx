@@ -1,7 +1,6 @@
 import { BookOpenText, GraduationCap, Library, LibraryBig, ScrollText, Sparkles } from 'lucide-react'
 import type { CSSProperties } from 'react'
 
-import { useMediaQuery } from '@/hooks/use-media-query'
 import { useI18n } from '@/lib/i18n'
 import type { Engines } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -47,19 +46,17 @@ interface Engine {
 }
 
 /**
- * What really works behind the page, as four cards in the product's own style — the same panel
+ * What really works behind the page, as six cards in the product's own style — the same panel
  * as the composer: an icon, one loud figure, a title, one quiet line. The Mushaf text, the
  * narration index, the models (by their roles and their number — never their names), and where
  * gradings come from. Every figure is read from `meta.engines`; nothing is drawn until the server
  * has answered.
  *
  * A sticky column beside the centre from 1280px, two by two under the composer on a tablet, and
- * on a phone a row that scrolls sideways with the next card peeking.
+ * below that an endless glass ribbon that drifts sideways.
  */
 export function EngineCards({ engines, className }: { engines: Engines | undefined; className?: string }) {
   const { t } = useI18n()
-  // On a phone the row scrolls, so it must be reachable by keyboard; wider, it is plain content.
-  const scrolls = !useMediaQuery('(min-width: 768px)')
   const h = t.hero
   if (!engines) return <div aria-hidden="true" className={cn('min-h-[10rem] md:min-h-[17rem] xl:min-h-0', className)} />
 
@@ -119,40 +116,36 @@ export function EngineCards({ engines, className }: { engines: Engines | undefin
     },
   ]
 
+  // An endless glass ribbon: the cards drift on their own (up the column from 1280px, sideways
+  // below), twice over so the loop never shows a seam. The second copy is for the eye only. It
+  // stops under the pointer or the keyboard, and stands still with reduced motion.
+  const item = (card: Engine, copy: boolean) => {
+    const Icon = card.icon
+    return (
+      <li key={`${copy ? 'b' : 'a'}-${card.id}`} data-engine={copy ? undefined : card.id} aria-hidden={copy || undefined} className="glass-card">
+        <span aria-hidden="true" className="glass-icon">
+          <Icon className="size-[18px]" />
+        </span>
+        <div className="min-w-0">
+          <p className="flex items-baseline gap-1.5">
+            <span className="tabular text-[1.6rem] leading-none font-semibold text-figure">{card.figure}</span>
+            {card.unit ? <span className="text-sm text-quiet">{card.unit}</span> : null}
+          </p>
+          <p className="pt-1 text-base font-semibold text-ink">{card.title}</p>
+          <p className="text-sm text-quiet">{card.line}</p>
+        </div>
+      </li>
+    )
+  }
   return (
-    <section aria-label={h.enginesTitle} data-testid="capabilities" className={className}>
-      <ul
-        tabIndex={scrolls ? 0 : undefined}
-        aria-label={scrolls ? h.enginesTitle : undefined}
-        className="scroll-row -mx-4 flex snap-x snap-mandatory gap-3 px-4 pb-3 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 md:pb-0 xl:flex xl:flex-col xl:gap-2"
-      >
-        {cards.map((card, i) => {
-          const Icon = card.icon
-          return (
-            <li
-              key={card.id}
-              data-engine={card.id}
-              style={{ '--i': i * 2 } as CSSProperties}
-              className="panel cascade flex w-[78%] shrink-0 snap-center gap-3 p-4 md:w-auto xl:px-3.5 xl:py-2"
-            >
-              <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-control bg-raised text-green xl:size-8">
-                <Icon className="size-[18px]" />
-              </span>
-              <div className="min-w-0">
-                {/* The figure is the one loud thing on the card. */}
-                {/* In the desktop column the six cards are compact: the line in two lines (whole on
-                    hover and to a screen reader). */}
-                <p className="flex items-baseline gap-1.5">
-                  <span className="tabular text-[1.75rem] leading-none font-semibold text-figure xl:text-[1.375rem]">{card.figure}</span>
-                  {card.unit ? <span className="text-sm text-quiet">{card.unit}</span> : null}
-                </p>
-                <p className="pt-1.5 text-base font-semibold text-ink xl:pt-0.5">{card.title}</p>
-                <p title={card.line} className="text-sm text-quiet xl:line-clamp-2 xl:pt-1">{card.line}</p>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
+    <section aria-label={h.enginesTitle} data-testid="capabilities" className={cn('glass-stage', className)}>
+      <span aria-hidden="true" className="glass-glow" />
+      <div className="glass-window" tabIndex={0} aria-label={h.enginesTitle}>
+        <ul className="glass-track" style={{ '--n': cards.length } as CSSProperties}>
+          {cards.map((card) => item(card, false))}
+          {cards.map((card) => item(card, true))}
+        </ul>
+      </div>
     </section>
   )
 }

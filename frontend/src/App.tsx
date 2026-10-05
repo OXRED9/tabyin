@@ -614,7 +614,7 @@ function Shell() {
                   </div>
                   <EngineCards
                     engines={meta?.engines}
-                    className="max-md:order-2 xl:sticky xl:top-0 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-start xl:pt-[5vh]"
+                    className="max-md:order-2 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-start"
                   />
                 </div>
               )}

@@ -685,3 +685,151 @@ html[data-rail="closed"] [data-shell="rail"] {
     background: #fff;
   }
 }
+
+
+/* ── The home engines: an endless glass ribbon (the team, 5 Oct 2026) ─────────────────────── */
+.glass-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: clip; /* the glow and the running track never widen the page */
+  overflow-clip-margin: 1.5rem;
+}
+/* Colour behind the glass, so the frosting shows: soft green and gold light, drifting. */
+.glass-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(38% 30% at 30% 25%, color-mix(in oklab, var(--green) 34%, transparent), transparent 70%),
+    radial-gradient(34% 28% at 70% 60%, color-mix(in oklab, var(--gold) 40%, transparent), transparent 70%),
+    radial-gradient(30% 26% at 40% 90%, color-mix(in oklab, var(--green) 18%, transparent), transparent 70%);
+  filter: blur(18px);
+  animation: glass-drift 14s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+.glass-window {
+  overflow: hidden;
+  outline-offset: 4px;
+  mask-image: linear-gradient(to left, transparent, #000 6%, #000 94%, transparent);
+}
+.glass-track {
+  display: flex;
+  gap: 0.75rem;
+  width: max-content;
+  margin: 0;
+  padding: 0.5rem 0;
+  list-style: none;
+  animation: glass-run-x calc(var(--n) * 6s) linear infinite;
+}
+.glass-window:hover .glass-track,
+.glass-window:focus-within .glass-track {
+  animation-play-state: paused;
+}
+.glass-card {
+  display: flex;
+  gap: 0.75rem;
+  width: 17rem;
+  flex: none;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.72), rgb(255 255 255 / 0.38));
+  border: 1px solid rgb(255 255 255 / 0.85);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.9) inset,
+    0 10px 30px -14px rgb(18 38 31 / 0.35),
+    0 2px 6px -2px rgb(18 38 31 / 0.08);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+.glass-card:hover {
+  transform: translateY(-2px) scale(1.015);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.9) inset,
+    0 16px 36px -14px rgb(27 107 94 / 0.45);
+}
+.glass-icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  border-radius: 0.75rem;
+  color: var(--green);
+  background: rgb(255 255 255 / 0.7);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--green) 18%, transparent);
+}
+:where(.dark) .glass-card {
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.03));
+  border-color: rgb(255 255 255 / 0.14);
+  box-shadow: 0 10px 30px -14px rgb(0 0 0 / 0.6);
+}
+:where(.dark) .glass-icon {
+  background: rgb(255 255 255 / 0.08);
+}
+
+/* From 1280px: a column the height of the page, drifting upward. */
+@media (min-width: 1280px) {
+  .glass-stage {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    margin-block: -1.5rem;
+  }
+  .glass-window {
+    height: 100%;
+    mask-image: linear-gradient(to bottom, transparent, #000 9%, #000 91%, transparent);
+  }
+  .glass-track {
+    flex-direction: column;
+    width: auto;
+    padding: 0 0.5rem;
+    animation-name: glass-run-y;
+  }
+  .glass-card {
+    width: auto;
+  }
+}
+
+@keyframes glass-run-x {
+  to {
+    transform: translateX(calc(50% + 0.375rem));
+  }
+}
+:where([dir='ltr']) .glass-track {
+  animation-name: glass-run-x-ltr;
+}
+@keyframes glass-run-x-ltr {
+  to {
+    transform: translateX(calc(-50% - 0.375rem));
+  }
+}
+@keyframes glass-run-y {
+  to {
+    transform: translateY(calc(-50% - 0.375rem));
+  }
+}
+@keyframes glass-drift {
+  from {
+    transform: translate3d(-4%, -3%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(4%, 3%, 0) scale(1.08);
+  }
+}
+
+/* Still with reduced motion: the first copy, scrollable; the copy for the eye is hidden. */
+@media (prefers-reduced-motion: reduce) {
+  .glass-track,
+  .glass-glow {
+    animation: none;
+  }
+  .glass-window {
+    overflow: auto;
+  }
+  .glass-card[aria-hidden='true'] {
+    display: none;
+  }
+}
