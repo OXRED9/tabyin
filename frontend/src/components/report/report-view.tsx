@@ -22,7 +22,7 @@ import { STEPS, pipelineOf, stepsReached } from '@/lib/pipeline'
 import { sourcesUsed, tallyOf } from '@/lib/report'
 import { byAttention, chronological } from '@/lib/states'
 import type { ClauseKind } from '@/lib/summary'
-import type { Card, Meta, StageId, ReferralMatch } from '@/lib/types'
+import type { Card, Meta, ReferralMatch } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface ReportViewProps {
@@ -42,8 +42,6 @@ interface ReportViewProps {
 const INKING_MS = 700
 /** How long after a report completes its on-demand parts are warmed up. */
 const WARM_UP_MS = 2500
-
-const STAGES: StageId[] = ['ingest', 'extract', 'match', 'rules', 'report']
 
 // The investigation is its own piece of code, fetched the moment a run starts; what lies over the
 // page is fetched when first used.
@@ -96,51 +94,7 @@ function Notice({ title, icon, children }: { title?: string; icon?: ReactNode; c
   )
 }
 
-/** Seconds left, counted down locally between `stage` events so the number keeps moving. */
-function useEta(eta: VerifyState['eta']): number | null {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    if (!eta) return
-    const timer = window.setInterval(() => setNow(Date.now()), 1000)
-    return () => window.clearInterval(timer)
-  }, [eta])
-  if (!eta) return null
-  return Math.max(0, Math.round(eta.seconds - (now - eta.at) / 1000))
-}
 
-/**
- * Above the map while it runs: the stage in a sentence, how far the matching is, and a way out.
- * It holds the same height from the first event to the last — two lines on a phone, the button's
- * height above that — so the map under it never moves.
- */
-function RunHead({ state, onCancel }: { state: VerifyState; onCancel: (() => void) | undefined }) {
-  const { t } = useI18n()
-  const remaining = useEta(state.eta)
-  const currentId = STAGES[Math.max(1, state.highestStage) - 1]
-  const current = state.stages[currentId]
-  const finished = state.phase === 'done'
-  return (
-    <div className="flex min-h-[3.4rem] items-start gap-4 sm:min-h-10">
-      <p className="min-w-0 flex-1 text-base sm:pt-1.5" aria-live="polite">
-        <span aria-hidden="true" className={cn('me-2 inline-block size-2.5 rounded-tag align-middle', finished ? 'bg-green' : 'animate-live bg-gold')} />
-        <span className="font-semibold text-ink">{finished ? t.pipeline.finished : t.progress.sentence(t.stages[currentId])}</span>
-        {finished ? null : current?.total ? (
-          <span className="tabular ms-2 whitespace-nowrap text-quiet">{t.progress.matched(current.done ?? 0, current.total)}</span>
-        ) : null}
-        {remaining === null || state.phase !== 'running' ? null : (
-          <span className="tabular ms-2 whitespace-nowrap text-quiet">
-            {remaining > 1 ? t.progress.eta(remaining) : t.progress.etaSoon}
-          </span>
-        )}
-      </p>
-      {onCancel && state.phase === 'running' ? (
-        <Button type="button" variant="outline" onClick={onCancel} className="shrink-0">
-          {t.input.cancel}
-        </Button>
-      ) : null}
-    </div>
-  )
-}
 
 /**
  * A verification, from its first event to its report (docs/DESIGN.md §10). While it runs, the
@@ -467,7 +421,13 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
     <section aria-label={t.report.title} className="space-y-4">
       {/* The head: the investigation while it runs, then the verdict. */}
       {running || showTail ? (
-        investigation(<RunHead state={state} onCancel={onCancel} />)
+        investigation(
+          onCancel && state.phase === 'running' ? (
+            <Button type="button" variant="outline" size="sm" onClick={onCancel} className="shrink-0">
+              {t.input.cancel}
+            </Button>
+          ) : null,
+        )
       ) : noClaims ? (
         <header className="panel flex flex-col items-start gap-3 p-5">
           <div>
@@ -520,7 +480,7 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
       {/* The investigation again, on request: the same steps, with the figures and times it reported. */}
       {verdictVisible && replayOpen ? (
         <div ref={replayRef} className="scroll-mt-16 print:hidden">
-          {investigation(<p className="text-base font-semibold text-ink">{t.pipeline.title}</p>)}
+          {investigation(null)}
         </div>
       ) : null}
 

@@ -224,7 +224,7 @@ async function audit(label, { theme = 'light', lang = 'ar', viewport = DESKTOP, 
       await page.getByTestId('replay').click()
       await page.getByTestId('investigation').waitFor()
       // The replay walks its steps one by one, with reduced motion too: audit it once it has ended.
-      await page.locator('.orb[data-finished]').waitFor({ timeout: 20_000 })
+      await page.locator('.run-orb[data-done]').waitFor({ timeout: 20_000 })
     }
     // Several gradings are folded under one line: open them, so the full list is audited too.
     const foldedGrades = page.locator('[data-testid="grades"] > button[aria-expanded="false"]')

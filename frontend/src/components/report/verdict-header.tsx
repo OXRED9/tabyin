@@ -136,7 +136,8 @@ export function VerdictHeader({
   // The five states as tiles, once there is more than one thing to count. On a phone the tiles
   // then carry the states by themselves — the sentence keeps only its head — so the verdict
   // stays short and the text and its notes start as high on the screen as they can.
-  const tiles = tally.citations > 0 && tally.citations + tally.questions > 1
+  // The team wants the counts after every run (5 Oct 2026), even for a single citation.
+  const tiles = tally.citations > 0
   const roomy = useMediaQuery('(min-width: 640px)')
 
   const exportButton = (
@@ -221,13 +222,13 @@ export function VerdictHeader({
         {/* What really worked on this report, each with the figures it reported. */}
         <div className="flex flex-col gap-x-4 gap-y-2 border-t pt-3 text-sm lg:flex-row lg:items-center">
           {engines.length > 0 ? (
-            // On a phone this list is in the replay, one tap away; here it would push the cards down.
-            <ul aria-label={t.verdict.enginesUsed} className="flex min-w-0 flex-1 flex-wrap items-center gap-2 max-sm:hidden">
+            // On a phone, one row that scrolls sideways, so the figures are there without pushing the notes down.
+            <ul tabIndex={0} aria-label={t.verdict.enginesUsed} className="scroll-row flex min-w-0 flex-1 items-center gap-2 max-sm:-mx-4 max-sm:px-4 max-sm:pb-1 sm:flex-wrap">
               {elapsed ? (
-                <li className="tabular font-semibold text-figure">{t.verdict.elapsed(elapsed)}</li>
+                <li className="tabular shrink-0 font-semibold whitespace-nowrap text-figure">{t.verdict.elapsed(elapsed)}</li>
               ) : null}
               {engines.map((node) => (
-                <li key={node.id} className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-tag border px-2.5 text-ink">
+                <li key={node.id} className="inline-flex min-h-7 max-w-full shrink-0 items-center gap-1.5 rounded-tag border px-2.5 whitespace-nowrap text-ink">
                   {/* A model is named by its role (its title), never by its id. */}
                   <span className="shrink-0">{node.title}</span>
                   {typeof node.figures[0]?.value === 'number' ? (
@@ -240,7 +241,7 @@ export function VerdictHeader({
             <span className="flex-1" />
           )}
           <div className="flex flex-wrap items-center gap-x-4 print:hidden">
-            {elapsed ? <span className="tabular font-semibold text-figure sm:hidden">{t.verdict.elapsed(elapsed)}</span> : null}
+
             {jump}
             <LegendLink className="min-h-8 text-sm" />
             {onReplay ? (
