@@ -36,6 +36,17 @@ def _plain(text: str) -> tuple[str, list[int]]:
 _HONORIFIC = r"(?:\s*(?:صلي\s+الله\s+عليه\s+و\s?(?:اله\s+و\s?)?سلم|ﷺ|عليه\s+(?:الصلاه\s+و\s?)?السلام|تعالي|سبحانه(?:\s+وتعالي)?|عز\s+وجل|جل\s+وعلا|تبارك\s+وتعالي))*"
 # "Strong" markers introduce a quotation directly; "weak" ones only when a colon or an opening
 # quotation mark follows ("ورد في القرآن: …"), otherwise they are ordinary prose.
+# A saying introduced as a scholar's (5 Oct 2026: «وقال أهل العلم: …» was sometimes not reported by the
+# model and got no note). Group 1 is the person or group named, as the text gives it.
+_SCHOLAR_MARKER = re.compile(
+    r"(?<![\u0621-\u064a])(?:قال|يقول|وقال|ويقول|قرر|ذكر|نقل\s+عن|قول)\s+"
+    r"((?:بعض\s+|احد\s+|جمهور\s+|كبار\s+)?(?:اهل\s+العلم|العلماء|السلف|الفقهاء|المحدثين|الائمه|المفسرين"
+    r"|(?:الامام|شيخ\s+الاسلام|العلامه|الحافظ|الشيخ|الفقيه)(?:\s+[\u0621-\u064a]+){1,3}"
+    r"|ابن\s+[\u0621-\u064a]+(?:\s+[\u0621-\u064a]+)?))"
+    r"(?:\s+(?:رحمه|رحمهم)\s+الله(?:\s+تعالي)?)?\s*(?:[:：]\s*|\s*(?=[«“\"(])|\s+ان\s+)"
+)
+# A group («أهل العلم», «العلماء») followed by «أن …» reports a view, not words: only a quotation counts.
+_GROUP = re.compile(r"^(?:بعض\s+|احد\s+|جمهور\s+|كبار\s+)?(?:اهل\s+العلم|العلماء|السلف|الفقهاء|المحدثين|الائمه|المفسرين)$")
 _OPEN = r"(?:\s*[:：]\s*|\s*(?=[«“\"﴿(]))"
 _AYAH_MARKER = re.compile(
     r"(?:(?:قال\s+الله|يقول\s+الله|قال\s+تعالي|يقول\s+تعالي|قال\s+سبحانه|قال\s+ربنا|يقول\s+ربنا|قوله\s+(?:تعالي|سبحانه|عز\s+وجل)"
@@ -251,6 +262,12 @@ def extract_by_markers(doc: Document) -> list[RawClaim]:
             span = _quote_after(plain, m.end())
             if span:
                 add(kind, span[0], span[1], explicit_attribution=True, closed=span[2])
+    for m in _SCHOLAR_MARKER.finditer(plain):
+        if _GROUP.match(m.group(1)) and m.group(0).rstrip().endswith("ان"):
+            continue
+        span = _quote_after(plain, m.end())
+        if span and len(plain[span[0] : span[1]].split()) >= 4:
+            add(ClaimType.attributed_quote, span[0], span[1], explicit_attribution=True, closed=span[2], attributed_to=text[index[m.start(1)] : index[min(m.end(1), len(index) - 1)]].strip(), content_level=ContentLevel.B)
     for m in _REQUEST.finditer(plain):
         add(ClaimType.request, m.start(), m.end(), content_level=ContentLevel.B)
     for m in _PERSONAL.finditer(plain):

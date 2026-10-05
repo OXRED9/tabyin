@@ -230,6 +230,8 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
                                      "proposed": len(rest), "ms": int((time.monotonic() - t_scan) * 1000)}))  # fmt: skip
                 rest = keep_personal_cases(rest, markers)
                 rest = keep_questions(rest, markers, looks_like_question, is_fabrication_request)
+                # A saying introduced as a scholar's is reported even when the model left it out.
+                rest = merge_claims(rest, [c for c in markers if c.type == ClaimType.attributed_quote])
             if held:
                 if mode == "full":
                     quick, rest = widen_scanned_verses(quick, rest, quran, t.ayah_near)

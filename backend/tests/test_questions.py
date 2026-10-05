@@ -135,3 +135,24 @@ def test_a_general_question_the_model_called_personal_is_a_question_unless_it_sp
     assert run("حكم القزع؟").is_question
     assert not run("ما حكم طلاق زوجي لي وأنا حائض؟").is_question and is_personal_case("ما حكم طلاق زوجي لي وأنا حائض؟")
 
+
+@pytest.mark.parametrize(
+    "text, who",
+    [("وقال أهل العلم: كلمات القول الأول هنا الثانية", "أهل العلم"), ("قال شيخ الإسلام ابن تيمية رحمه الله: «كلمات القول الأول هنا»", "شيخ الإسلام ابن تيمية"),
+     ("وقال ابن القيم إن كلمات القول الأول هنا", "ابن القيم")],
+)  # fmt: skip
+def test_a_saying_introduced_as_a_scholars_is_found_without_the_model(text, who):
+    """TODO-SULAIMAN-REVIEW: placeholder words, not real sayings."""
+    from tabayyun.extract.lexical import extract_by_markers
+    from tabayyun.ingest.text import ingest_text
+
+    (c,) = [c for c in extract_by_markers(ingest_text(text)) if c.type.value == "attributed_quote"]
+    assert c.attributed_to == who and c.quote.startswith("كلمات")
+
+
+def test_scholars_reporting_a_view_is_not_taken_for_their_words():
+    from tabayyun.extract.lexical import extract_by_markers
+    from tabayyun.ingest.text import ingest_text
+
+    assert not [c for c in extract_by_markers(ingest_text("ذكر العلماء أن هذا القول ضعيف عندهم")) if c.type.value == "attributed_quote"]
+
