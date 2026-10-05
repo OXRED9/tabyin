@@ -143,17 +143,6 @@ export const ar = {
     title: 'التحرّي',
     running: 'التحرّي جارٍ',
     finished: 'اكتمل التحرّي',
-    // What the status bar says while a source works (the figure follows on the line under it).
-    say: {
-      read: 'يقرأ المحتوى',
-      mushaf: 'يطابق الآيات بلفظها في مصحف المدينة',
-      narrations: 'يبحث في الروايات وكتب السنة',
-      model: 'نموذج ذكاء اصطناعي يستخرج الاستشهادات',
-      gradings: 'يجلب أحكام المحدّثين بنصّها',
-      pointer: 'يبحث عن الدليل وأقوال أهل العلم',
-      rules: 'القواعد تقرّر حالة كل استشهاد',
-    } as Partial<Record<string, string>>,
-    seconds: (s: number) => `${s.toFixed(1)} ث`,
     replay: 'أعد عرض التحرّي',
     hide: 'إخفاء التحرّي',
     log: 'سجل الخطوات',
