@@ -31,7 +31,7 @@ recorded here is what the call returned on **3 October 2026**.
 | 5 | Open-Hadith-Data | the Six Books, Muwatta, Musnad Ahmad — retrieval only | download + local FTS index | in use |
 | 6 | Challenge scientific package — terminology table | approved Arabic→English equivalents | static `data/terms.json` | in use |
 | 7 | mcp.islamiccontent.org | association's MCP server | explored; used in a test to fetch a recitation | fallback only |
-| 8 | islamqa.info, binbaz.org.sa, binothaimeen.net | rulings and fatwas | referral only: links that open each site on a search for the topic; nothing is fetched | **linked, not integrated** |
+| 8 | islamqa.info, binbaz.org.sa, binothaimeen.net, the Kuwaiti encyclopedia (bohoth.awqaf.gov.kw) | rulings and fatwas (package p. 12) | referral only, links: binothaimeen — the nearest page by title from a local index of the site's public sitemap (titles and addresses only); islamqa and binbaz — the site's own search; the encyclopedia — its search page and the term to type. No fatwa text is fetched or shown | **linked, not integrated** |
 | 9 | shamela.ws | attributed sayings | — | **not integrated yet** |
 
 ### 1. Quran text — Tanzil (Uthmani v1.1 and simple-clean)
@@ -116,9 +116,10 @@ step.
 
 ## Not integrated yet
 
-- **Fatwa sites** (islamqa.info, binbaz.org.sa, binothaimeen.net): only linked from the referral
-  dialog. islamqa's search is rendered client-side; a robots-respecting integration needs more work
-  than one day allowed.
+- **Fatwa sites**: only linked. islamqa.info and binbaz.org.sa search through undocumented internal
+  APIs (islamqa's robots.txt disallows its internals) and islamqa's sitemap lists numbers without
+  titles, so they get search links, not a nearest page. The Kuwaiti encyclopedia's search is a form
+  its firewall rejects for scripts. binothaimeen.net is matched by title (row 8).
 - **Shamela** (attributed sayings): not integrated. A saying attributed to a scholar can today only
   be checked against the hadith corpora, which catches a prophetic hadith attributed to someone
   else but cannot confirm a scholar's own words.

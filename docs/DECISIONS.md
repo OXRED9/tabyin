@@ -745,3 +745,19 @@ Mock mode only; no paid call. The running stage is the lead's (item 140); these 
 156. **An opened note reads in the order the team asked for:** the words as quoted, the source's text with
     its reference and grading, what the tool says, and the verification trail last.
 
+## A question goes to the nearest fatwa, not only to a search (Abdulaziz, 5 October 2026)
+
+157. **Four references for rulings, as the challenge's package lists them (page 12):** islamqa.info,
+    binbaz.org.sa, binothaimeen.net and the Kuwaiti encyclopedia (Ministry of Awqaf, bohoth.awqaf.gov.kw).
+    The encyclopedia was added on Abdulaziz's approval after checking it in the package. Tabayyun still
+    never answers: links only.
+158. **Nearest page by title, where it can be done properly** (agreed per site): binothaimeen.net publishes a
+    sitemap whose addresses carry each page's title; `scripts/build_binothaimeen_index.py` keeps the
+    13,550 titled pages (titles and addresses only) and `sources/binothaimeen.py` matches a question's
+    topic words to them locally — rare words weigh more, a title must cover 80% of the question's
+    weight (60% sent «صيام يوم الجمعة» to a fatwa on Saturday) — so no model takes part and the question
+    is not sent to any site. islamqa.info and binbaz.org.sa keep their search links: their search runs
+    on undocumented internal APIs that could break during judging, and islamqa's sitemap has no titles.
+    The encyclopedia's search is a form behind a firewall that rejects scripts: its search page opens
+    and the reader is shown the term to type. ⚑ Sulaiman: the wording «أقرب فتوى بعنوانها» and its note.
+

@@ -26,7 +26,9 @@ The final authority on any source or religious-behaviour decision is the challen
 - **Tabayyun verifies what is quoted; it does not answer what is asked** («يتحقق مما يُنقل، ولا يجيب عما
   يُسأل»). Its outputs are sources, never its own words. A question ("ما حكم …؟") is referred — as
   links only, nothing fetched or summarised — to the fatwa sites of the challenge's approved package
-  (islamqa.info, binbaz.org.sa, binothaimeen.net) and to no site outside it.
+  (islamqa.info, binbaz.org.sa, binothaimeen.net, and the Kuwaiti encyclopedia at
+  bohoth.awqaf.gov.kw) and to no site outside it. The nearest page may be chosen by its title,
+  matched locally (the question never leaves the server); a fatwa's text is never fetched or shown.
 - **No fatwa, no tarjih (preferring one opinion)**: disputed matters are shown as they appear in
   sources with the disagreement noted, no preference, and referral to scholars. Personal cases
   (level D) get no ruling at all.
