@@ -156,3 +156,15 @@ def test_scholars_reporting_a_view_is_not_taken_for_their_words():
 
     assert not [c for c in extract_by_markers(ingest_text("ذكر العلماء أن هذا القول ضعيف عندهم")) if c.type.value == "attributed_quote"]
 
+
+def test_a_general_question_at_the_end_of_a_long_text_is_referred_even_if_the_model_called_it_personal():
+    """5 Oct 2026: in a 1,400-character text «ما حكم القزع؟» came back as a personal case."""
+    from tabayyun.extract import keep_questions
+    from tabayyun.extract.lexical import is_fabrication_request, looks_like_question
+    from tabayyun.extract.models import RawClaim
+    from tabayyun.schemas import ClaimType, ContentLevel
+
+    c = RawClaim(type=ClaimType.ruling, quote="ما حكم القزع؟", start=1400, end=1413, content_level=ContentLevel.D, origin="llm")
+    (out,) = keep_questions([c], [], looks_like_question, is_fabrication_request)
+    assert out.is_question and out.content_level == ContentLevel.B
+

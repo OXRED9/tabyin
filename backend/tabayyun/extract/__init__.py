@@ -256,11 +256,17 @@ def keep_questions(proposed: list[RawClaim], markers: list[RawClaim], looks_like
     # In a longer text the marker rules do not look for questions; a sentence the model proposed that
     # reads as a question for a ruling is still one (seen 5 Oct 2026: «ما حكم القزع؟» at the end of a
     # paragraph was taken for a request to produce evidence and answered "no source").
+    from .lexical import is_personal_case
+
     for c in out:
-        if c.is_question or c.type in _QUOTED or c.type == ClaimType.attributed_quote or c.content_level == ContentLevel.D:
+        if c.is_question or c.type in _QUOTED or c.type == ClaimType.attributed_quote:
             continue
+        if c.content_level == ContentLevel.D and is_personal_case(c.quote):
+            continue  # a personal case keeps its own message
         if looks_like_question(c.quote) and not is_fabrication_request(c.quote):
             c.is_question, c.type = True, ClaimType.ruling
+            if c.content_level == ContentLevel.D:
+                c.content_level = ContentLevel.B  # a general question the model called personal
     out.sort(key=lambda c: c.start)
     return out
 

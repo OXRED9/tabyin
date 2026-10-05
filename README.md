@@ -17,19 +17,21 @@
 
 [![فيديو تبيّن التعريفي](docs/media/reel-poster.jpg)](docs/media/tabayyun-reel.mp4)
 
-| التحرّي معروضاً أثناء العمل: كل رقم مما أرسله الخادم | الشاشة الأولى |
+| الشاشة الأولى | التحرّي أثناء العمل: كل رقم مما أرسله الخادم |
 |---|---|
-| ![خريطة التحرّي أثناء العمل](docs/screenshots/v3/running-1440-light.png) | ![الشاشة الأولى](docs/screenshots/v3/empty-1440-light.png) |
+| ![الشاشة الأولى](docs/screenshots/real/home-1440.png) | ![التحرّي أثناء العمل](docs/screenshots/real/running-1440.png) |
 
-| التقرير: الخلاصة، النص بمواضعه، الحواشي | حاشية مفتوحة: مسار التحقق ثم نص المصدر والتخريج |
+| التقرير: آية وحديث وقول لابن تيمية وحديث ضعيف وسؤال، في نص واحد | على الجوال |
 |---|---|
-| ![تقرير التحقق](docs/screenshots/v3/report-1440-light.png) | ![حاشية مفتوحة بمسار التحقق](docs/screenshots/v3/card-open-1440-light.png) |
+| ![تقرير التحقق](docs/screenshots/real/report-1440.png) | ![الشاشة الأولى على الجوال](docs/screenshots/real/home-390.png) |
 
-| سؤال يُحال ولا يُجاب | بطاقة التثبّت | خلاصة التحقق |
-|---|---|---|
-| ![سؤال أُحيل إلى أهل العلم](docs/screenshots/v3/question-1440-light.png) | ![بطاقة تثبّت](docs/screenshots/v2/card-server-contradicted-portrait-light-ar.png) | ![بطاقة الخلاصة](docs/screenshots/v2/card-server-summary-square-light-ar.png) |
+| حديث: نص المصدر كاملاً والتخريج وحكمه | قول لابن تيمية من المكتبة الشاملة | حديث ضعيف بحكمه منقولاً | سؤال يُحال إلى أقرب فتوى ولا يُجاب |
+|---|---|---|---|
+| ![حاشية حديث](docs/screenshots/real/note-hadith.png) | ![حاشية قول لأهل العلم](docs/screenshots/real/note-saying.png) | ![حاشية حديث ضعيف](docs/screenshots/real/note-weak.png) | ![حاشية سؤال](docs/screenshots/real/note-question.png) |
 
-لقطات الواجهة في [`docs/screenshots/v3/`](docs/screenshots/v3/) مأخوذة من **وضع العرض التجريبي**
+اللقطات أعلاه في [`docs/screenshots/real/`](docs/screenshots/real/) مأخوذة من **تشغيل حقيقي** على الخادم
+(5 أكتوبر 2026): النص مبنيّ برمجياً من مصحف المدينة وموسوعة الأحاديث والمكتبة الشاملة ومجموعة الاختبار.
+وبقية لقطات الواجهة في [`docs/screenshots/v3/`](docs/screenshots/v3/) مأخوذة من **وضع العرض التجريبي**
 (`?mock=1`) الذي يعيد تشغيل بيانات مولَّدة برمجياً من المصادر نفسها؛ وبطاقات `card-server-*` (في
 `docs/screenshots/v2/`) رسمها الخادم. لقطات التصميمين السابقين (`docs/screenshots/v2/` وما خارجه)
 تُركت سجلاً. خطة التصميم ونقد اللقطات في [`docs/DESIGN.md`](docs/DESIGN.md) (القسم 10 للواجهة
