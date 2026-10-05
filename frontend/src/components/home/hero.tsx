@@ -32,7 +32,7 @@ export function Headline({ className }: { className?: string }) {
         </span>
         {tail ? <span className="block text-[1.6rem] leading-normal md:text-[2.1rem]">{tail}</span> : null}
       </h1>
-      <p className="pt-1 text-base text-quiet md:pt-2 md:text-lg">{t.input.label}</p>
+      <p className="max-w-[36rem] pt-1 text-base text-balance text-quiet md:pt-2 md:text-lg">{t.input.label}</p>
     </div>
   )
 }

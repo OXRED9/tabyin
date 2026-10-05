@@ -150,7 +150,7 @@ export const en: Dictionary = {
       video_url: 'Video link',
       file: 'Upload file',
     },
-    label: 'Check the verses and hadith quoted in any text',
+    label: 'Check the verses, hadith and scholars’ sayings in any text — and find where scholars answer your question',
     placeholder: 'Paste a text, or a link to a clip or an article, or attach an audio file…',
     placeholderImage: 'Paste a text, or a link to a clip or an article, or attach a WhatsApp screenshot…',
     attach: 'Attach',
