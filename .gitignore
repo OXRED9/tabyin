@@ -17,6 +17,8 @@ frontend/dist/
 # runtime caches and large generated indexes (rebuilt by scripts/, see docs/OPERATIONS.md)
 data/cache/
 data/raw/open-hadith-data/
+data/raw/shamela/
+data/shamela*.sqlite
 data/hadith_books.sqlite
 data/hadeethenc.json
 data/binothaimeen.json
