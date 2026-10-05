@@ -1,4 +1,4 @@
-import { BookOpenText, Library, ScrollText, Sparkles } from 'lucide-react'
+import { BookOpenText, GraduationCap, Library, LibraryBig, ScrollText, Sparkles } from 'lucide-react'
 import type { CSSProperties } from 'react'
 
 import { useMediaQuery } from '@/hooks/use-media-query'
@@ -101,6 +101,22 @@ export function EngineCards({ engines, className }: { engines: Engines | undefin
       title: h.gradings.title,
       line: engines.live_gradings ? h.gradings.live : h.gradings.stored,
     },
+    {
+      id: 'shamela',
+      icon: LibraryBig,
+      figure: h.shamela.figure,
+      unit: h.shamela.unit,
+      title: h.shamela.title,
+      line: h.shamela.body,
+    },
+    {
+      id: 'referral',
+      icon: GraduationCap,
+      figure: '4',
+      unit: h.referral.unit,
+      title: h.referral.title,
+      line: h.referral.body,
+    },
   ]
 
   return (
@@ -108,7 +124,7 @@ export function EngineCards({ engines, className }: { engines: Engines | undefin
       <ul
         tabIndex={scrolls ? 0 : undefined}
         aria-label={scrolls ? h.enginesTitle : undefined}
-        className="scroll-row -mx-4 flex snap-x snap-mandatory gap-3 px-4 pb-3 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 md:pb-0 xl:flex xl:flex-col xl:gap-4"
+        className="scroll-row -mx-4 flex snap-x snap-mandatory gap-3 px-4 pb-3 md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 md:pb-0 xl:flex xl:flex-col xl:gap-2"
       >
         {cards.map((card, i) => {
           const Icon = card.icon
@@ -117,19 +133,21 @@ export function EngineCards({ engines, className }: { engines: Engines | undefin
               key={card.id}
               data-engine={card.id}
               style={{ '--i': i * 2 } as CSSProperties}
-              className="panel cascade flex w-[78%] shrink-0 snap-center gap-3 p-4 md:w-auto"
+              className="panel cascade flex w-[78%] shrink-0 snap-center gap-3 p-4 md:w-auto xl:px-3.5 xl:py-2"
             >
-              <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-control bg-raised text-green">
+              <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-control bg-raised text-green xl:size-8">
                 <Icon className="size-[18px]" />
               </span>
               <div className="min-w-0">
                 {/* The figure is the one loud thing on the card. */}
+                {/* In the desktop column the six cards are compact: the line in two lines (whole on
+                    hover and to a screen reader). */}
                 <p className="flex items-baseline gap-1.5">
-                  <span className="tabular text-[1.75rem] leading-none font-semibold text-figure">{card.figure}</span>
+                  <span className="tabular text-[1.75rem] leading-none font-semibold text-figure xl:text-[1.375rem]">{card.figure}</span>
                   {card.unit ? <span className="text-sm text-quiet">{card.unit}</span> : null}
                 </p>
-                <p className="pt-1.5 text-base font-semibold text-ink">{card.title}</p>
-                <p className="text-sm text-quiet">{card.line}</p>
+                <p className="pt-1.5 text-base font-semibold text-ink xl:pt-0.5">{card.title}</p>
+                <p title={card.line} className="text-sm text-quiet xl:line-clamp-2 xl:pt-1">{card.line}</p>
               </div>
             </li>
           )

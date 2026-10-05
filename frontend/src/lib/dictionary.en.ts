@@ -50,6 +50,17 @@ export const en: Dictionary = {
         `${graded} narrations with their gradings from HadeethEnc, and ${books} from the hadith books.`,
     },
     units: { verse: 'verses', narration: 'narrations' },
+    shamela: {
+      title: 'Sayings of the scholars',
+      figure: '8,000',
+      unit: 'books',
+      body: 'Finds a saying word for word in the scholars’ books on al-Maktaba al-Shamela, and who said it, even when unnamed.',
+    },
+    referral: {
+      title: 'Where to find a ruling',
+      unit: 'references',
+      body: 'No fatwa: a question goes to the nearest fatwa on Ibn Uthaymeen’s site, and to Ibn Baz, IslamQA and the Kuwaiti encyclopedia.',
+    },
     models: {
       title: 'AI models',
       unit: (n: number) => (n === 1 ? 'model' : 'models'),
