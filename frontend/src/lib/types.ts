@@ -107,6 +107,8 @@ export interface SourceRef {
   /** the publisher's commentary, verbatim */
   explanation: string | null
   translation: Translation | null
+  /** A verse's commentary (التفسير الميسر), verbatim from QuranEnc; absent on older reports. */
+  tafsir?: Translation | null
 }
 
 /** F5: one retrieved candidate, as listed under "لماذا هذا الحكم؟". */

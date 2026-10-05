@@ -106,3 +106,12 @@ def _no_real_model_calls(request, monkeypatch, tmp_path):
             return None
 
     monkeypatch.setattr(verify, "get_shamela", lambda: _NoShamela())
+
+    # Nor QuranEnc: the tafsir and the translations are unavailable, as they would be offline.
+    from tabayyun.sources import quranenc
+
+    async def _none(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(quranenc, "translation", _none)
+    monkeypatch.setattr(quranenc, "tafsir", _none)

@@ -161,6 +161,18 @@ function Takhrij({ source }: { source: SourceRef }) {
           </p>
         </div>
       ) : null}
+      {source.tafsir ? (
+        // The commentator's words, set apart from the verse: their own heading, the tool's face (not
+        // the Mushaf's), a rule beside them, and their source — as the challenge's package asks.
+        <section data-testid="tafsir" className="mt-3 space-y-1 border-s-2 border-gold/60 ps-3">
+          <h5 className="text-sm font-semibold text-ink">{t.card.tafsir}</h5>
+          <p className="text-xs text-quiet">{t.card.tafsirHint}</p>
+          <LongText text={source.tafsir.text} className="text-base text-ink" />
+          <p className="text-sm">
+            <SourceLink href={source.tafsir.source_url}>{source.tafsir.source_name}</SourceLink>
+          </p>
+        </section>
+      ) : null}
     </div>
   )
 }

@@ -355,3 +355,19 @@ def test_a_saying_is_found_on_shamela_and_its_attribution_follows_the_book(run, 
     assert other["state"] == "needs_review" and other["source"]["url"].startswith("https://shamela.ws/")
     assert with_pages([])["state"] == "not_found"
 
+
+def test_a_verse_carries_its_tafsir_apart_from_its_text(run, monkeypatch, ayah):
+    """التفسير الميسر is attached to a matched verse's source, verbatim from QuranEnc, labelled with
+    its own source — never mixed into the verse's text."""
+    from tabayyun.schemas import Translation
+    from tabayyun.sources import quranenc
+
+    async def fake(surah, a, b):
+        return Translation(lang="ar", text="كلام المفسر", source_name=quranenc.NAMES["arabic_moyassar"], source_url=f"https://quranenc.com/ar/browse/arabic_moyassar/{surah}/{a}")
+
+    monkeypatch.setattr(quranenc, "tafsir", fake)
+    clean, _ = ayah(2, 153)
+    (card,) = run(f"قال الله تعالى: ﴿{clean}﴾", ScriptedProvider([]))["cards"]
+    assert card["source"]["tafsir"]["text"] == "كلام المفسر" and "كلام المفسر" not in card["source"]["text"]
+    assert card["source"]["tafsir"]["source_url"].endswith("/2/153")
+

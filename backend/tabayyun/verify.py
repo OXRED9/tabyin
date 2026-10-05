@@ -363,7 +363,11 @@ async def verify_ayah(claim: RawClaim, cid: str, index: int, ctx: Context) -> Ca
 
     translation = None
     if ctx.ui_lang == "en":
-        translation = await quranenc.translation(m.surah, m.ayah_start, m.ayah_end, "en")
+        translation, tafsir = await asyncio.gather(
+            quranenc.translation(m.surah, m.ayah_start, m.ayah_end, "en"), quranenc.tafsir(m.surah, m.ayah_start, m.ayah_end)
+        )
+    else:
+        tafsir = await quranenc.tafsir(m.surah, m.ayah_start, m.ayah_end)
     note_ar, note_en = decision.note_ar, decision.note_en
     if m.other_locations:
         others_ar = "، ".join(f"{ctx.quran.surahs[s]['name_ar']} {a}" for s, a in m.other_locations[:4])
@@ -376,7 +380,7 @@ async def verify_ayah(claim: RawClaim, cid: str, index: int, ctx: Context) -> Ca
         note_ar=note_ar, note_en=note_en,
         similarity=m.similarity,
         match_kind=kind,
-        source=_quran_source(m, ctx, translation),
+        source=_quran_source(m, ctx, translation).model_copy(update={"tafsir": tafsir}),
         diff=None if kind == "exact" else m.diff,
         certainty=Certainty.definitive if kind == "exact" else Certainty.not_applicable,
         facts=facts, candidates=candidates, quran_match=m,

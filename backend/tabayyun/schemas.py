@@ -90,6 +90,8 @@ class SourceRef(BaseModel):
     attribution: str | None = None  # takhrij line verbatim from the source (e.g. HadeethEnc "attribution")
     explanation: str | None = None  # the publisher's commentary, verbatim, labelled as commentary
     translation: Translation | None = None
+    # A verse's commentary (التفسير الميسر), verbatim from QuranEnc; shown apart from the verse itself.
+    tafsir: Translation | None = None
 
 
 class ExplainCandidate(BaseModel):

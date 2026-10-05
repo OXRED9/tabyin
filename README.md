@@ -25,9 +25,9 @@
 |---|---|
 | ![تقرير التحقق](docs/screenshots/real/report-1440.png) | ![الشاشة الأولى على الجوال](docs/screenshots/real/home-390.png) |
 
-| حديث: نص المصدر كاملاً والتخريج وحكمه | قول لابن تيمية من المكتبة الشاملة | حديث ضعيف بحكمه منقولاً | سؤال يُحال إلى أقرب فتوى ولا يُجاب |
-|---|---|---|---|
-| ![حاشية حديث](docs/screenshots/real/note-hadith.png) | ![حاشية قول لأهل العلم](docs/screenshots/real/note-saying.png) | ![حاشية حديث ضعيف](docs/screenshots/real/note-weak.png) | ![حاشية سؤال](docs/screenshots/real/note-question.png) |
+| آية: نص المصحف والتفسير الميسر منفصلاً | حديث: نص المصدر كاملاً والتخريج وحكمه | قول لابن تيمية من المكتبة الشاملة | حديث ضعيف بحكمه منقولاً | سؤال يُحال إلى أقرب فتوى ولا يُجاب |
+|---|---|---|---|---|
+| ![حاشية آية مع التفسير](docs/screenshots/real/note-verse-tafsir.png) | ![حاشية حديث](docs/screenshots/real/note-hadith.png) | ![حاشية قول لأهل العلم](docs/screenshots/real/note-saying.png) | ![حاشية حديث ضعيف](docs/screenshots/real/note-weak.png) | ![حاشية سؤال](docs/screenshots/real/note-question.png) |
 
 اللقطات أعلاه في [`docs/screenshots/real/`](docs/screenshots/real/) مأخوذة من **تشغيل حقيقي** على الخادم
 (5 أكتوبر 2026): النص مبنيّ برمجياً من مصحف المدينة وموسوعة الأحاديث والمكتبة الشاملة ومجموعة الاختبار.

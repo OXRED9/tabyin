@@ -428,6 +428,8 @@ export const en: Dictionary = {
     inSource: 'In the source',
     referencedSource: 'The evidence referred to, in the sources',
     referencedShort: 'Evidence referred to',
+    tafsir: 'Al-Tafsir al-Muyassar (Arabic commentary)',
+    tafsirHint: 'The commentators’ explanation of the verse, not the Quranic text.',
     nearbyLine: 'Not matched word for word — the nearest text is shown for comparison',
     nearbyTitle: 'Related texts',
     nearbyHint: 'A text similar to what was said, found in the sources — but not the speaker\'s words; its grading is its own, not what was said.',

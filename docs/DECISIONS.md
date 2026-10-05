@@ -786,3 +786,14 @@ Mock mode only; no paid call. The running stage is the lead's (item 140); these 
     any proposed sentence that reads as a question for a ruling (and is not a request to fabricate) is
     now a question.
 
+## The tafsir of a verse (Abdulaziz, 5 October 2026)
+
+162. **Every matched verse carries «التفسير الميسر»**, fetched verbatim from QuranEnc (in the package as
+    "موسوعة القرآن الكريم … وتفاسيره") and shown under the verse's reference in a section of its own:
+    its heading, «كلام المفسّرين في معنى الآية، وليس من نص القرآن», the tool's typeface rather than the
+    Mushaf's, a gold rule beside it, and its source link — the package asks that the commentator's words
+    be kept apart from the Quranic text. No model takes part; if QuranEnc is unreachable the section is
+    simply absent. Dorar's tafsir encyclopedia is also in the package, but its pages sit behind a
+    Cloudflare check that rejects scripts and its addresses are by passage, not by verse, so no link to
+    it is generated rather than a guessed one.
+

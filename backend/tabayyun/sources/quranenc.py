@@ -14,8 +14,8 @@ from ..schemas import Translation
 from .cache import get_cache
 
 log = logging.getLogger("tabayyun.quranenc")
-DEFAULT_KEYS = {"en": "english_saheeh"}
-NAMES = {"english_saheeh": "Saheeh International — via QuranEnc.com"}
+DEFAULT_KEYS = {"en": "english_saheeh", "tafsir": "arabic_moyassar"}
+NAMES = {"english_saheeh": "Saheeh International — via QuranEnc.com", "arabic_moyassar": "التفسير الميسر — موسوعة القرآن الكريم (QuranEnc.com)"}
 
 
 async def translation(surah: int, ayah_start: int, ayah_end: int, lang: str = "en") -> Translation | None:
@@ -39,8 +39,14 @@ async def translation(surah: int, ayah_start: int, ayah_end: int, lang: str = "e
         log.warning("QuranEnc translation unavailable: %s", type(e).__name__)
         return None
     return Translation(
-        lang=lang,
+        lang="ar" if lang == "tafsir" else lang,
         text=" ".join(parts),
         source_name=NAMES.get(key, key),
-        source_url=f"https://quranenc.com/{lang}/browse/{key}/{surah}/{ayah_start}",
+        source_url=f"https://quranenc.com/{'ar' if lang == 'tafsir' else lang}/browse/{key}/{surah}/{ayah_start}",
     )
+
+
+async def tafsir(surah: int, ayah_start: int, ayah_end: int) -> Translation | None:
+    """«التفسير الميسر» for the verse(s), verbatim from QuranEnc (the challenge's package lists it for
+    explaining a verse, with the commentator's words kept apart from the Quranic text)."""
+    return await translation(surah, ayah_start, ayah_end, "tafsir")

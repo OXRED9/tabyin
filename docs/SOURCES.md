@@ -27,6 +27,7 @@ recorded here is what the call returned on **3 October 2026**.
 | 1 | Tanzil Project — Uthmani text (Madinah Mushaf) + simple-clean | Quran matching and display | one-time download, committed | in use |
 | 2 | QuranEnc.com | translations of the meanings (English UI), verse pages | live API, cached | in use |
 | 3 | HadeethEnc.com | hadith text, takhrij line, grading, explanation, English translation | one-time API download + local index | in use |
+| 3b | QuranEnc.com — التفسير الميسر (`arabic_moyassar`) | a verse's commentary, verbatim, shown apart from the verse (package p. 3: «لشرح الآية مع تمييز كلام المفسر عن النص القرآني») | live API, cached | in use |
 | 4 | Dorar.net — الموسوعة الحديثية | scholars' gradings, verbatim | live API, cached | in use |
 | 5 | Open-Hadith-Data | the Six Books, Muwatta, Musnad Ahmad — retrieval only | download + local FTS index | in use |
 | 6 | Challenge scientific package — terminology table | approved Arabic→English equivalents | static `data/terms.json` | in use |
