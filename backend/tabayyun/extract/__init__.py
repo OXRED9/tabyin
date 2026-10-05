@@ -227,6 +227,14 @@ def keep_questions(proposed: list[RawClaim], markers: list[RawClaim], looks_like
                 c.is_question, c.type = True, ClaimType.ruling
         if not hit:
             out.append(m)
+    # In a longer text the marker rules do not look for questions; a sentence the model proposed that
+    # reads as a question for a ruling is still one (seen 5 Oct 2026: «ما حكم القزع؟» at the end of a
+    # paragraph was taken for a request to produce evidence and answered "no source").
+    for c in out:
+        if c.is_question or c.type in _QUOTED or c.type == ClaimType.attributed_quote or c.content_level == ContentLevel.D:
+            continue
+        if looks_like_question(c.quote) and not is_fabrication_request(c.quote):
+            c.is_question, c.type = True, ClaimType.ruling
     out.sort(key=lambda c: c.start)
     return out
 

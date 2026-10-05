@@ -289,10 +289,11 @@ def decide_quote(
     *,
     found: bool,
     similarity: float,
-    attribution_matches: bool | None,
+    attribution_matches: bool | str | None,
     t: Thresholds = THRESHOLDS,
 ) -> Decision:
-    """``attribution_matches``: True/False when the source states who said it, None when unknown."""
+    """``attribution_matches``: True/False when the source states who said it ("reported": another
+    scholar's book quotes it from the person named), None when unknown."""
     if not found or similarity < t.quote_verbatim:
         return Decision(
             S.not_found,
@@ -307,6 +308,20 @@ def decide_quote(
             "quote.misattributed",
             "النص موجود في المصدر لكنه منسوب فيه إلى غير من نُسب إليه هنا.",
             "The text exists in the source but is attributed there to someone else.",
+        )
+    if attribution_matches == "unnamed":
+        return Decision(
+            S.supported_with_note,
+            "quote.unnamed",
+            "لم يُسمِّ النص قائل هذا الكلام، وهو موجود بنصه في كتاب لأحد أهل العلم؛ المرجع ذلك الكتاب.",
+            "The text does not name who said this; it is found verbatim in a scholar's book, which is the reference.",
+        )
+    if attribution_matches == "reported":
+        return Decision(
+            S.supported_with_note,
+            "quote.reported",
+            "القول موجود بنصه في كتاب لعالم آخر ينقله عمّن نُسب إليه هنا؛ المرجع ناقله.",
+            "The saying is found verbatim in another scholar's book, which reports it from the person named here; the reference is that report.",
         )
     if attribution_matches is True:
         return Decision(

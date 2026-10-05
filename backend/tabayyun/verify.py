@@ -55,6 +55,8 @@ from .sources import quranenc
 from .sources.binothaimeen import SITE_AR as BINOTHAIMEEN_AR
 from .sources.binothaimeen import SITE_EN as BINOTHAIMEEN_EN
 from .sources.binothaimeen import get_title_index
+from .sources.shamela import SOURCE_NAME as SHAMELA_NAME
+from .sources.shamela import ShamelaPage, get_shamela, named_in
 from .sources.dorar import SOURCE_NAME as DORAR_NAME
 from .sources.dorar import SOURCE_NAME_EN as DORAR_NAME_EN
 from .sources.dorar import DorarClient, DorarHit
@@ -704,10 +706,94 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
 # --------------------------------------------------------------------------- attributed quotes
 
 
+_VAGUE = re.compile(r"(?<!\w)(?:بعض|احد|علماء|العلماء|اهل|السلف|الحكماء|قيل|يقال|احدهم|الشاعر)(?!\w)")
+
+
+def _names_someone(attributed_to: str | None) -> bool:
+    """«ابن تيمية» names someone; «بعض أهل العلم», «أحد السلف», «قيل» do not."""
+    words = normalize_ar(attributed_to or "").split()
+    return bool(words) and not _VAGUE.search(" ".join(words))
+
+
+_QUOTING = re.compile(r"(?<!\w)(?:قال|يقول|وقال|ويقول|قوله|ذكر|نقل|حكي)(?!\w)")
+
+
+def _shamela_match(quote: str, pages: list[ShamelaPage], named: str) -> tuple[ShamelaPage, float, list, bool | str | None] | None:
+    """The page where the saying is found verbatim, and what that says of its attribution:
+    True — in a book by the person named; "reported" — in another scholar's book that names that
+    person just before it; None — found, but the attribution cannot be checked (or no one was named).
+    Among pages that hold the words, the strongest attribution wins, then the closer wording."""
+    q_orig, q_norm = aligned_words(quote, drop_honorifics=True)
+    found: list[tuple[int, float, ShamelaPage, list, bool | str | None]] = []
+    for page in pages:
+        s_orig, s_norm = aligned_words(page.text, drop_honorifics=True)
+        span = best_span(q_norm, s_norm)
+        if span is None or span.score < THRESHOLDS.quote_verbatim:
+            continue
+        before = " ".join(s_orig[max(0, span.start - 30) : span.start])
+        attribution: bool | str | None = None
+        if named and named_in(named, page.author):
+            attribution = True
+        elif named and named_in(named, before):
+            attribution = "reported"
+        # Where no one is named (or the name is not found), the page that does not itself quote the
+        # words from someone else is the likelier original: a book that introduces them with «قال …»
+        # or «يقول …» is reporting them.
+        quoting = bool(_QUOTING.search(normalize_ar(" ".join(s_orig[max(0, span.start - 12) : span.start]))))
+        rank = {True: 3, "reported": 2, None: 0}[attribution] + (0 if quoting else 1)
+        diff = word_diff(q_orig, q_norm, s_orig[span.start : span.end], s_norm[span.start : span.end])
+        found.append((rank, span.score, page, diff, attribution))
+    if not found:
+        return None
+    # Other books that quote the words and name the one they quote them from point at the original:
+    # a page whose author they name ranks above one they do not.
+    def cited_by_others(page: ShamelaPage) -> bool:
+        if not page.author:
+            return False
+        for other in pages:
+            if other is page:
+                continue
+            s_orig, s_norm = aligned_words(other.text, drop_honorifics=True)
+            span = best_span(q_norm, s_norm)
+            if span is not None and span.score >= THRESHOLDS.quote_verbatim and named_in(page.author, " ".join(s_orig[max(0, span.start - 40) : span.start])):
+                return True
+        return False
+
+    rank, score, page, diff, attribution = max(found, key=lambda f: (f[0], cited_by_others(f[2]), f[1]))
+    return page, score, diff, attribution
+
+
+def _shamela_source(page: ShamelaPage) -> SourceRef:
+    where = f"، {page.where}" if page.where else ""
+    return SourceRef(
+        kind="book", source_name=SHAMELA_NAME, text=page.text, url=page.url,
+        ref=f"{page.book}{where}" + (f" — {page.author}" if page.author else ""),
+    )  # fmt: skip
+
+
 async def verify_quote(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card:
     cands = await asyncio.to_thread(ctx.hadith.search, claim.quote, k=10)
     best = cands[0] if cands else None
     found = best is not None and best.similarity >= THRESHOLDS.quote_verbatim
+    if not found and arabic_ratio(claim.quote) >= 0.5:
+        # Not a narration: the books of the scholars, on Shamela.
+        pages = await get_shamela().find(claim.quote)
+        hit = _shamela_match(claim.quote, pages or [], claim.attributed_to or "")
+        if hit is not None:
+            page, score, diff, attribution = hit
+            if attribution is None and not _names_someone(claim.attributed_to):
+                attribution = "unnamed"
+            decision = apply_level_caps(decide_quote(found=True, similarity=score, attribution_matches=attribution), claim.content_level)
+            if attribution in (None, "unnamed"):
+                decision.note_ar += f" ورد بنصه في «{page.book}»" + (f" لـ{page.author}." if page.author else ".")
+                decision.note_en += f" It is found verbatim in “{page.book}”" + (f" by {page.author}." if page.author else ".")
+            kw = dict(source=_shamela_source(page), diff=diff, similarity=score, match_kind="exact" if score >= 0.999 else "near")
+            listed = [
+                ExplainCandidate(rank=0, source_name=SHAMELA_NAME, ref=_shamela_source(p).ref, url=p.url, similarity=None, chosen=p is page, excerpt=_excerpt(p.text))
+                for p in (pages or [])
+            ]  # fmt: skip
+            facts = Facts(similarity=score, quoted_words=len(claim.quote.split()))
+            return _base_card(claim, cid, index, decision, ctx, facts=facts, candidates=listed, **kw)
     attribution: bool | None = None
     kw: dict = {}
     if found and best is not None:

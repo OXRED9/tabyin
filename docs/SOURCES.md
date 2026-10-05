@@ -32,7 +32,7 @@ recorded here is what the call returned on **3 October 2026**.
 | 6 | Challenge scientific package — terminology table | approved Arabic→English equivalents | static `data/terms.json` | in use |
 | 7 | mcp.islamiccontent.org | association's MCP server | explored; used in a test to fetch a recitation | fallback only |
 | 8 | islamqa.info, binbaz.org.sa, binothaimeen.net, the Kuwaiti encyclopedia (bohoth.awqaf.gov.kw) | rulings and fatwas (package p. 12) | referral only, links: binothaimeen — the nearest page by title from a local index of the site's public sitemap (titles and addresses only); islamqa and binbaz — the site's own search; the encyclopedia — its search page and the term to type. No fatwa text is fetched or shown | **linked, not integrated** |
-| 9 | shamela.ws | attributed sayings | — | **not integrated yet** |
+| 9 | shamela.ws — المكتبة الشاملة | attributed sayings, in the scholars' own books | live search (the endpoint its own search page calls) + the top 3 pages, cached under hashed keys; the saying is aligned against each page's text | in use |
 
 ### 1. Quran text — Tanzil (Uthmani v1.1 and simple-clean)
 
@@ -120,7 +120,5 @@ step.
   APIs (islamqa's robots.txt disallows its internals) and islamqa's sitemap lists numbers without
   titles, so they get search links, not a nearest page. The Kuwaiti encyclopedia's search is a form
   its firewall rejects for scripts. binothaimeen.net is matched by title (row 8).
-- **Shamela** (attributed sayings): not integrated. A saying attributed to a scholar can today only
-  be checked against the hadith corpora, which catches a prophetic hadith attributed to someone
-  else but cannot confirm a scholar's own words.
+- **Shamela**: integrated through its website search, not its 13 GB database (the database download is the package's other option; a local index of chosen authors would remove the dependency on the live site).
 - **Tafsir** sources: not used; Tabayyun verifies wording and attribution, it does not explain.

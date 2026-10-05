@@ -229,6 +229,16 @@ def describe(rule_id: str, f: Facts, t: Thresholds = THRESHOLDS) -> RuleExplanat
             "The text was classified as level D (a personal case); no verdict is issued and it is referred to a qualified body.",
             "statement", None,
         ),
+        "quote.unnamed": (
+            "لم يذكر النص اسم القائل؛ فبُحث عن الكلام في المكتبة الشاملة فوُجد بنصه في كتاب لعالم، وقُدّم الكتاب الذي لا ينقله عن غيره والذي تنسبه إليه كتبٌ أخرى.",
+            "The text names no one; the words were searched on Shamela and found verbatim in a scholar's book — preferring the book that does not quote them from someone else and that other books cite.",
+            "quote", None,
+        ),
+        "quote.reported": (
+            "وُجد القول بنصه في المكتبة الشاملة في كتاب لعالم آخر يذكر قبله اسم من نُسب إليه هنا؛ فالمرجع نقلُ ذلك العالم عنه، لا كتابُ القائل نفسه.",
+            "The saying was found verbatim on Shamela in another scholar's book that names, just before it, the person it is attributed to here; the reference is that scholar's report, not the speaker's own book.",
+            "quote", None,
+        ),
         "quote.verbatim": (
             f"وُجد القول بنصه في المصدر بتشابه {s} (لا يقل عن {t.quote_verbatim:.2f}) منسوباً إلى قائله.",
             f"The saying was found verbatim in the source with similarity {s} (at or above {t.quote_verbatim:.2f}), attributed to its author.",

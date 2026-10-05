@@ -96,3 +96,13 @@ def _no_real_model_calls(request, monkeypatch, tmp_path):
 
     for module in (pipeline, service, main):
         monkeypatch.setattr(module, "get_llm", lambda: NoLLM())
+    # Nor Shamela: an unreachable source, as it would be offline (tests that need it stub it).
+    from tabayyun import verify
+
+    class _NoShamela:
+        reachable, status = False, "unreachable"
+
+        async def find(self, quote):
+            return None
+
+    monkeypatch.setattr(verify, "get_shamela", lambda: _NoShamela())

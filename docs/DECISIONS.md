@@ -761,3 +761,28 @@ Mock mode only; no paid call. The running stage is the lead's (item 140); these 
     The encyclopedia's search is a form behind a firewall that rejects scripts: its search page opens
     and the reader is shown the term to type. ⚑ Sulaiman: the wording «أقرب فتوى بعنوانها» and its note.
 
+## Sayings of the scholars, from Shamela (Abdulaziz, 5 October 2026)
+
+159. **Shamela by its website search, not by download.** The package lists Shamela (page 14). Its 13.3 GB
+    database was being downloaded when Abdulaziz asked for an API call instead; the search that
+    shamela.ws's own page uses answers a plain request (0.6–1.5 s), so a saying that is not a narration
+    is searched there, the top three pages are opened, and the saying is aligned against each page's
+    text (threshold `quote_verbatim`, 0.90). The saying's words are sent to shamela.ws, as narrations are
+    to Dorar; responses are cached under hashed keys only. If the site is unreachable the saying is
+    reported as before (not found in the sources available).
+160. **What a match means** (⚑ Sulaiman — the last two are new states for a saying):
+    - in a book by the person named («ابن تيمية» ≈ Shamela's «[ابن تيمية]») → `quote.verbatim`, «له مرجعية»;
+    - in another scholar's book that names that person just before the words → `quote.reported`,
+      «له مرجعية مع ملاحظة»: the reference is that scholar's report;
+    - the content names no one («قال بعض أهل العلم») and the words are in a scholar's book →
+      `quote.unnamed`, «له مرجعية مع ملاحظة», naming the book and its author. Among several books the
+      one that does not itself introduce the words with «قال …», and that the other books name, is
+      preferred (so a saying of Ibn Taymiyya resolves to «درء تعارض العقل والنقل», not to a later book
+      quoting it);
+    - found, but in a book by someone else that does not name the person → «يحتاج مراجعة»;
+    - not found → «لم يُعثر على مصدر موثوق».
+161. **A question anywhere in a text is referred.** In a paragraph longer than the question markers look
+    at, «ما حكم القزع؟» was proposed by the model as a request for evidence and answered "no source";
+    any proposed sentence that reads as a question for a ruling (and is not a request to fabricate) is
+    now a question.
+

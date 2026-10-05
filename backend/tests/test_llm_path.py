@@ -326,3 +326,32 @@ def test_a_sentence_presenting_the_next_quotation_is_not_a_note_and_a_narration_
     cards = run(text, ScriptedProvider(proposal, judge_index=-1))["cards"]
     assert [c["claim_type"] for c in cards] == ["hadith"] and cards[0]["text_as_quoted"] == quoted
 
+
+def test_a_saying_is_found_on_shamela_and_its_attribution_follows_the_book(run, monkeypatch):
+    """A saying attributed to a scholar is looked up in his books on Shamela. In his own book: it has a
+    reference. Quoted from him in another scholar's book: a reference with a note. Found in a book by
+    someone else that does not name him: shown, attribution not asserted. Not found: no source."""
+    from tabayyun import verify
+    from tabayyun.sources.shamela import ShamelaPage
+
+    saying = "كلمة أولى ثانية ثالثة رابعة خامسة سادسة سابعة ثامنة"  # TODO-SULAIMAN-REVIEW: placeholder words, not a real saying
+    def page(author, before=""):
+        return ShamelaPage(url=f"https://shamela.ws/book/1/{len(author)}", book_id=1, page=1, book="كتاب", author=author, where="ج 1، ص 2", text=f"مقدمة {before} {saying} خاتمة")
+
+    def with_pages(pages):
+        class Fake:
+            reachable, status = True, "ok"
+
+            async def find(self, quote):
+                return pages
+        monkeypatch.setattr(verify, "get_shamela", lambda: Fake())
+        text = f"قال الشيخ زيد العالم: «{saying}»"
+        return run(text, ScriptedProvider([claim(type="attributed_quote", quote=saying, attributed_to="الشيخ زيد العالم")]))["cards"][0]
+
+    assert with_pages([page("زيد العالم")])["state"] == "supported"
+    reported = with_pages([page("عمرو الناقل", before="وقال زيد العالم")])
+    assert (reported["state"], reported["rule_id"]) == ("supported_with_note", "quote.reported")
+    other = with_pages([page("عمرو الناقل")])
+    assert other["state"] == "needs_review" and other["source"]["url"].startswith("https://shamela.ws/")
+    assert with_pages([])["state"] == "not_found"
+
