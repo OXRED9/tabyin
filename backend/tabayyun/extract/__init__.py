@@ -213,8 +213,16 @@ def keep_questions(proposed: list[RawClaim], markers: list[RawClaim], looks_like
             continue
         hit = [c for c in out if overlap(c, m) >= 0.5 * min(c.end - c.start, m.end - m.start)]
         for c in hit:
-            if c.type in _QUOTED or c.content_level == ContentLevel.D:
+            if c.type in _QUOTED:
                 continue
+            if c.content_level == ContentLevel.D:
+                # The model called a general question a personal case ("حكم القزع؟" → level D). Only
+                # the personal-case markers (first person: «لي», «زوجي», «طلقت» …) make it one.
+                from .lexical import is_personal_case
+
+                if is_personal_case(c.quote):
+                    continue
+                c.content_level = ContentLevel.B
             if looks_like_question(c.quote) and not is_fabrication_request(c.quote):
                 c.is_question, c.type = True, ClaimType.ruling
         if not hit:

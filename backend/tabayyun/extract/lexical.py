@@ -75,6 +75,11 @@ _QUESTION = re.compile(
     + _RULING_QUESTION
     + r"[^.؟?!\n]*[؟?]?"
     + r"|(?:ما\s+(?:معني|المقصود|الفرق|الدليل|هو|هي)|كيف|متي|لماذا|اين|كم|من\s+(?:هو|هي)|هل)(?![\u0621-\u064a])[^.؟?!\n]*[؟?]"
+    # Asked the way people type it (the team, 5 Oct 2026: «حكم القزع» was not taken for a question):
+    # a line that begins with "حكم …" (or "وش/ايش/شو حكم …"), and "هل … حرام/حلال/…" or "… حرام؟".
+    + r"|(?:(?<=\n)|^)\s*(?:(?:وش|ايش|شو|اش)\s+)?(?:ال)?حكم\s+[^.؟?!\n]+[؟?]?"
+    + r"|هل(?![\u0621-\u064a])[^.؟?!\n]{0,80}?(?:حرام|حلال|جائز|مكروه|واجب|بدعه|شرك|مباح)(?![\u0621-\u064a])[^.؟?!\n]*[؟?]?"
+    + r"|[^.؟?!\n]{2,80}(?:حرام|حلال|جائز|مكروه|واجب|بدعه|مباح)\s*[؟?]"
     + r"|(?:what|how|why|when|is\s+it|can\s+i|should\s+i|does|do)\b[^.?!\n]*\?"
     + r")",
     re.IGNORECASE,
@@ -122,6 +127,11 @@ def mentions_prophet(text: str) -> bool:
 def looks_like_question(text: str) -> bool:
     plain, _ = _plain(text)
     return bool(_QUESTION.search(plain))
+
+
+def is_personal_case(text: str) -> bool:
+    plain, _ = _plain(text)
+    return bool(_PERSONAL.search(plain))
 
 
 def is_fabrication_request(text: str) -> bool:

@@ -105,3 +105,33 @@ def test_a_question_is_referred_to_the_nearest_ibn_uthaymeen_page_by_title_only(
     assert index.nearest("صيام يوم الجمعة").url.endswith("/b")
     assert index.nearest("صلاة الجماعة").url.endswith("/c")
     assert index.nearest("حكم الموسيقى") is None  # no title covers it: the search link stays
+
+
+@pytest.mark.parametrize("text", ["حكم القزع", "حكم القزع؟", "وش حكم القزع", "هل القزع حرام", "القزع حرام؟", "ما حكم القزع"])
+def test_a_ruling_asked_the_way_people_type_it_is_a_question(text):
+    from tabayyun.extract.lexical import looks_like_question
+
+    assert looks_like_question(text)
+
+
+def test_a_statement_with_a_ruling_word_is_not_a_question():
+    from tabayyun.extract.lexical import looks_like_question
+
+    assert not looks_like_question("وصيام رمضان واجب على كل مسلم بالغ قادر.")
+
+
+def test_a_general_question_the_model_called_personal_is_a_question_unless_it_speaks_of_the_asker():
+    from tabayyun.extract import keep_questions
+    from tabayyun.extract.lexical import is_fabrication_request, is_personal_case, looks_like_question
+    from tabayyun.extract.models import RawClaim
+    from tabayyun.schemas import ClaimType, ContentLevel
+
+    def run(text):
+        marker = RawClaim(type=ClaimType.ruling, quote=text, start=0, end=len(text), is_question=True, origin="marker")
+        model = RawClaim(type=ClaimType.ruling, quote=text, start=0, end=len(text), content_level=ContentLevel.D, origin="llm")
+        (out,) = keep_questions([model], [marker], looks_like_question, is_fabrication_request)
+        return out
+
+    assert run("حكم القزع؟").is_question
+    assert not run("ما حكم طلاق زوجي لي وأنا حائض؟").is_question and is_personal_case("ما حكم طلاق زوجي لي وأنا حائض؟")
+
