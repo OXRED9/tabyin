@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import re
 
 from ..normalize import normalize_ar
@@ -7,6 +8,7 @@ from ..schemas import ClaimType, ContentLevel
 from .models import RawClaim
 
 _QUOTED = {ClaimType.ayah, ClaimType.hadith}
+_OPENING = re.compile(r"[«“﴿]")  # the start of another quotation
 
 
 def overlap(a: RawClaim, b: RawClaim) -> int:
@@ -17,7 +19,7 @@ def _compatible(a: RawClaim, b: RawClaim) -> bool:
     return a.type == b.type or {a.type, b.type} <= _QUOTED
 
 
-def absorb_closed_quotes(scanned: list[RawClaim], closed: list[RawClaim]) -> list[RawClaim]:
+def absorb_closed_quotes(scanned: list[RawClaim], closed: list[RawClaim], text: str = "") -> list[RawClaim]:
     """A delimited, explicitly attributed quotation is one claim.
 
     Verbatim fragments that the scans found *inside* it (the intact parts of a misquoted verse, for
@@ -31,7 +33,14 @@ def absorb_closed_quotes(scanned: list[RawClaim], closed: list[RawClaim]) -> lis
         # mixture (seen 4 Oct 2026: an «exact» note on the introduction and the first five words of a
         # supplication). The quotation marks say where the quotation is: such a hit is dropped. (A hit that
         # runs past the closing edge is kept: the quotation may hold a quotation of its own.)
-        kept = [p for p in kept if not (p.type == c.type and p.start < c.start < p.end < c.end)]
+        # Also when the hit runs on past the quotation into the next one (the same narration recited
+        # twice gave one hit over both and the words between) — unless the quotation sits inside a
+        # larger delimited one that the hit begins with (a chain, then the wording in its own marks).
+        nested = any(o is not c and o.type == c.type and o.start <= c.start and c.end <= o.end and (o.start, o.end) != (c.start, c.end) for o in closed)
+        kept = [
+            p for p in kept
+            if not (p.type == c.type and p.start < c.start < p.end and not nested and (p.end <= c.end or _OPENING.search(text[c.end : p.end])))
+        ]  # fmt: skip
         inside = [p for p in kept if p.type == c.type and overlap(p, c) >= 0.9 * (p.end - p.start)]
         if len(inside) == 1 and (inside[0].end - inside[0].start) >= 0.9 * (c.end - c.start):
             # The scan already covers the whole quotation. The quotation marks say exactly where it
@@ -80,7 +89,9 @@ def widen_scanned_narrations(scanned: list[RawClaim], proposed: list[RawClaim]) 
     left: list[RawClaim] = []
     for c in proposed:
         inside = [p for p in kept if p.type == ClaimType.hadith and overlap(p, c) >= 0.9 * (p.end - p.start)] if c.type == ClaimType.hadith else []
-        if not inside or (c.end - c.start) < 1.2 * max(p.end - p.start for p in inside):
+        # Quotation marks decide where a quotation ends: a proposal that runs over a delimited
+        # quotation (e.g. the same narration recited twice, taken by the model as one) widens nothing.
+        if not inside or any(p.closed for p in inside) or (c.end - c.start) < 1.2 * max(p.end - p.start for p in inside):
             left.append(c)
             continue
         kept = [p for p in kept if all(p is not i for i in inside)]
@@ -98,6 +109,21 @@ _PRESENTS = re.compile(r"(?<!\w)(?:هذا|هذه|هذي|ذا)\s+(?:ال)?(?:دع
 
 def presents_a_quotation(text: str) -> bool:
     return bool(_PRESENTS.search(normalize_ar(text).strip()))
+
+
+def join_split_quotations(proposed: list[RawClaim], closed: list[RawClaim]) -> list[RawClaim]:
+    """One quotation, one note: when the model splits a delimited quotation into several pieces of the
+    same kind (seen with an English narration: its last clause became a second note), the quotation
+    as the marks delimit it replaces the pieces."""
+    out = list(proposed)
+    for q in closed:
+        pieces = [c for c in out if c.type == q.type and q.start <= c.start and c.end <= q.end]
+        if len(pieces) < 2:
+            continue
+        joined = dataclasses.replace(pieces[0], quote=q.quote, start=q.start, end=q.end, closed=True)
+        out = [c for c in out if all(c is not p for p in pieces)] + [joined]
+    out.sort(key=lambda c: c.start)
+    return out
 
 
 def widen_scanned_verses(scanned: list[RawClaim], proposed: list[RawClaim], quran, near: float) -> tuple[list[RawClaim], list[RawClaim]]:

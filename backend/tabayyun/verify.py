@@ -549,6 +549,11 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
     if decision.state in (EvidenceState.supported, EvidenceState.supported_with_note) and not grades and in_sahihayn:
         note_ar += " الحديث وارد في أحد الصحيحين (البخاري أو مسلم)."
         note_en += " The narration is in one of the two Sahih collections (al-Bukhari or Muslim)."
+    lead = ctx.doc.full_text[max(0, claim.start - 40) : claim.start]
+    if decision.state == EvidenceState.not_found and not claim.closed and attributes_to_revelation(f"{lead} {claim.quote}") and not _QUOTE_OPENED.search(lead):
+        # «نهى النبي ﷺ عن …» in the speaker's words, proposed as a narration: no narration has these
+        # words, and the sentence reports one by meaning — not "no source", but a report by meaning.
+        decision = decide_attribution_by_meaning()
     kind = "paraphrase" if paraphrase else {"hadith.accepted_exact": "exact", "hadith.partial": "partial"}.get(decision.rule_id, "near")
     if similarity >= t.hadith_exact and not paraphrase:
         kind = "exact"
@@ -706,6 +711,7 @@ async def verify_statement(claim: RawClaim, cid: str, index: int, ctx: Context) 
 # --------------------------------------------------------------------------- attributed quotes
 
 
+_QUOTE_OPENED = re.compile(r"[«\"“:]\s*$")  # the words follow a quotation mark or a colon: presented as the wording itself
 _VAGUE = re.compile(r"(?<!\w)(?:بعض|احد|علماء|العلماء|اهل|السلف|الحكماء|قيل|يقال|احدهم|الشاعر)(?!\w)")
 
 
