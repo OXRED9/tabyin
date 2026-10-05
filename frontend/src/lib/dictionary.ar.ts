@@ -696,6 +696,10 @@ export const ar = {
     searchNote:
       'روابط بحث في مواقع أهل العلم المعتمدة؛ تبيّن لا يجلب منها شيئاً ولا يرجّح بينها، والنتائج نتائج بحث تلك المواقع.',
     searchFor: (words: string, site: string) => `ابحث عن «${words}» في ${site}`,
+    // TODO-SULAIMAN-REVIEW (wording).
+    nearest: 'أقرب فتوى بعنوانها',
+    nearestNote: 'اختيرت بمطابقة عنوانها لكلمات السؤال، دون نموذج ولا ترجيح؛ تُفتح في موقع الشيخ نفسه.',
+    typeThere: (words: string) => `ابحث فيها عن: «${words}»`,
   },
 
   // «تبيّن يتحقق مما يُنقل، ولا يجيب عما يُسأل»: a question put to the tool is referred, never

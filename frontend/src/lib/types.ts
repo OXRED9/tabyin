@@ -161,6 +161,8 @@ export interface Card {
   is_question?: boolean
   /** Topic words for the referral links' search; null opens each site's first page. */
   referral_query?: string | null
+  /** The nearest page by title on an approved scholar's site (a link; nothing of it is fetched). */
+  referral_matches?: ReferralMatch[]
   /**
    * F2 «الثابت في الباب»: up to three accepted narrations on the same subject, for a hadith with
    * no reference or a weak or rejected one. Retrieved, never generated. Absent on a report saved
@@ -407,3 +409,10 @@ export type StreamEvent =
   | { event: 'summary'; data: Summary }
   | { event: 'error'; data: ApiError }
   | { event: 'done'; data: Record<string, never> }
+
+export interface ReferralMatch {
+  site_ar: string
+  site_en: string
+  title: string
+  url: string
+}

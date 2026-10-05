@@ -132,6 +132,16 @@ class Span(BaseModel):
     end: int
 
 
+class ReferralMatch(BaseModel):
+    """The nearest page on an approved scholar's site for a question, matched by its title only.
+    A link — nothing of the fatwa is fetched, shown or summarised."""
+
+    site_ar: str
+    site_en: str
+    title: str  # the page's own title, as the site gives it
+    url: str
+
+
 class Alternative(BaseModel):
     """F2 — an accepted narration on the same subject as a text that has no reference or a weak one.
     Retrieved from an approved source, never generated: without its text, link and grading it cannot exist."""
@@ -175,6 +185,7 @@ class Card(BaseModel):
     referral: bool = False  # show the "إحالة إلى أهل العلم" affordance
     is_question: bool = False  # a question put to the tool: referred to the approved scholars' sites, never answered
     referral_query: str | None = None  # the topic words a referral link searches for (never a personal account)
+    referral_matches: list[ReferralMatch] = Field(default_factory=list)  # nearest page by title on an approved site
     personal_case: bool = False  # level D
     disagreement_noted: bool = False  # level C
 

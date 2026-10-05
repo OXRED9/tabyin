@@ -17,6 +17,7 @@ STEPS = [
     ("data/quran.json", "scripts/build_quran.py"),
     ("data/hadeethenc.json", "scripts/fetch_hadeethenc.py"),
     ("data/hadith_books.sqlite", "scripts/build_hadith_index.py"),
+    ("data/binothaimeen.json", "scripts/build_binothaimeen_index.py"),
 ]
 
 if __name__ == "__main__":

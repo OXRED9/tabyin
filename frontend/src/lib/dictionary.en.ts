@@ -584,6 +584,9 @@ export const en: Dictionary = {
     searchNote:
       'Search links on the approved scholars’ sites; Tabayyun fetches nothing from them and prefers none; the results are those sites’ own.',
     searchFor: (words: string, site: string) => `Search ${site} for “${words}”`,
+    nearest: 'The nearest fatwa, by its title',
+    nearestNote: 'Chosen by matching its title with the question’s words — no model, no preference; it opens on the scholar’s own site.',
+    typeThere: (words: string) => `Search it for: “${words}”`,
   },
 
   question: {

@@ -1,7 +1,7 @@
 import { ReferralLinks } from '@/components/report/referral-links'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useI18n } from '@/lib/i18n'
-import type { Meta } from '@/lib/types'
+import type { Meta, ReferralMatch } from '@/lib/types'
 
 /**
  * "إحالة إلى أهل العلم": the approved fatwa sites, served by `/api/meta`, each opened on its own
@@ -12,12 +12,14 @@ export default function ReferralDialog({
   onOpenChange,
   meta,
   query,
+  matches = [],
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   meta: Meta | null
   /** The topic words of the note the dialog was opened from; null opens each site's first page. */
   query: string | null
+  matches?: ReferralMatch[]
 }) {
   const { t } = useI18n()
   return (
@@ -27,7 +29,7 @@ export default function ReferralDialog({
           <DialogTitle>{t.referral.title}</DialogTitle>
           <DialogDescription>{t.referral.description}</DialogDescription>
         </DialogHeader>
-        <ReferralLinks meta={meta} query={query} />
+        <ReferralLinks meta={meta} query={query} matches={matches} />
       </DialogContent>
     </Dialog>
   )

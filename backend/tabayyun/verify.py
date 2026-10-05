@@ -38,6 +38,7 @@ from .llm.base import LLMError
 from .llm.router import LLMSession
 from .normalize import arabic_ratio, normalize_ar, normalize_latin
 from .schemas import (
+    ReferralMatch,
     Alternative,
     Card,
     Certainty,
@@ -51,6 +52,9 @@ from .schemas import (
     Translation,
 )
 from .sources import quranenc
+from .sources.binothaimeen import SITE_AR as BINOTHAIMEEN_AR
+from .sources.binothaimeen import SITE_EN as BINOTHAIMEEN_EN
+from .sources.binothaimeen import get_title_index
 from .sources.dorar import SOURCE_NAME as DORAR_NAME
 from .sources.dorar import SOURCE_NAME_EN as DORAR_NAME_EN
 from .sources.dorar import DorarClient, DorarHit
@@ -767,6 +771,21 @@ def _referral_query(claim: RawClaim, card: Card) -> str | None:
     return " ".join(words[:6]) or None
 
 
+def _referral_matches(claim: RawClaim, card: Card) -> list[ReferralMatch]:
+    """The nearest page on Shaykh Ibn Uthaymeen's site, by title, matched here (the question never
+    leaves this server). Tried on the topic words, then on a question's own words — never on a
+    personal case's own account."""
+    index = get_title_index()
+    if index is None:
+        return []
+    tries = [card.referral_query or ""] + ([claim.quote] if card.is_question and not card.personal_case else [])
+    for words in tries:
+        page = index.nearest(words) if words.strip() else None
+        if page is not None:
+            return [ReferralMatch(site_ar=BINOTHAIMEEN_AR, site_en=BINOTHAIMEEN_EN, title=page.title, url=page.url)]
+    return []
+
+
 async def authentic_alternatives(card: Card, claim: RawClaim, ctx: Context) -> list[Alternative]:
     """F2 — «الثابت في الباب»: for words attributed to the Prophet that have no reference, or a weak or
     rejected one, up to three ACCEPTED narrations on the same subject, retrieved from HadeethEnc with
@@ -828,6 +847,7 @@ async def verify_claim(claim: RawClaim, cid: str, index: int, ctx: Context) -> C
     card.alternatives = await authentic_alternatives(card, claim, ctx)
     if card.referral:
         card.referral_query = _referral_query(claim, card)
+        card.referral_matches = _referral_matches(claim, card)
     if card.explain is not None:
         card.explain.match_ms = int((time.perf_counter() - started) * 1000)
     return card

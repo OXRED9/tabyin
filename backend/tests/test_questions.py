@@ -82,8 +82,26 @@ def test_a_verse_quoted_inside_a_question_is_still_verified(run, ayah):
     assert any(c["claim_type"] == "ayah" and c["state"] == "supported" for c in cards)
 
 
-def test_referral_goes_only_to_the_approved_fatwa_sites_as_search_links():
+def test_referral_goes_only_to_the_four_approved_references_as_links():
+    """The four references the challenge's package names for rulings (its page 12): three sites with a
+    search address, and the Kuwaiti encyclopedia, whose search page is opened as it is."""
     fatwa = [link for link in REFERRAL_LINKS if link["kind"] == "fatwa"]
-    assert [link["url"].split("/")[2] for link in fatwa] == ["islamqa.info", "binbaz.org.sa", "binothaimeen.net"]
-    for link in fatwa:
+    assert [link["url"].split("/")[2] for link in fatwa] == ["islamqa.info", "binbaz.org.sa", "binothaimeen.net", "bohoth.awqaf.gov.kw"]
+    for link in fatwa[:3]:
         assert "{q}" in link["search_url"] and link["search_url"].startswith(link["url"].split("/ar")[0]) and link["max_words"] >= 2
+    assert fatwa[3]["search_url"] is None
+
+
+def test_a_question_is_referred_to_the_nearest_ibn_uthaymeen_page_by_title_only(monkeypatch):
+    """Matched here, by title: no model, nothing fetched, nothing of the fatwa shown but its title."""
+    from tabayyun.sources import binothaimeen
+
+    pages = [
+        {"title": "حكم صيام يوم السبت منفرداً", "url": "https://binothaimeen.net/ar/a", "collection": "الصيام"},
+        {"title": "الحكمة من النهي عن إفراد يوم الجمعة بالصيام", "url": "https://binothaimeen.net/ar/b", "collection": "الصيام"},
+        {"title": "حكم صلاة الجماعة", "url": "https://binothaimeen.net/ar/c", "collection": "الصلاة"},
+    ] + [{"title": f"عنوان آخر رقم {chr(0x0627 + i % 20)}{i}", "url": f"https://binothaimeen.net/ar/x{i}", "collection": ""} for i in range(40)]
+    index = binothaimeen.TitleIndex(pages)
+    assert index.nearest("صيام يوم الجمعة").url.endswith("/b")
+    assert index.nearest("صلاة الجماعة").url.endswith("/c")
+    assert index.nearest("حكم الموسيقى") is None  # no title covers it: the search link stays

@@ -30,6 +30,11 @@ REFERRAL_LINKS = [
      "url": "https://binbaz.org.sa", "search_url": "https://binbaz.org.sa/search?q={q}", "max_words": 6},
     {"name_ar": "الموقع الرسمي للشيخ محمد بن صالح العثيمين", "name_en": "Official site of Shaykh Ibn Uthaymeen", "kind": "fatwa",
      "url": "https://binothaimeen.net", "search_url": "https://binothaimeen.net/ar/Searchpage/{q}/0/0", "max_words": 2},
+    # No search address can be built for it (its search is a form the site's firewall keeps for people):
+    # the link opens the encyclopedia's search page, and the reader is shown the words to search for.
+    {"name_ar": "الموسوعة الفقهية الكويتية", "name_en": "The Kuwaiti Encyclopedia of Islamic Jurisprudence", "kind": "fatwa",
+     "url": "https://bohoth.awqaf.gov.kw/ar/%D8%A7%D9%84%D8%A8%D8%AD%D8%AB%20%D9%81%D9%8A%20%D8%A7%D9%84%D9%85%D9%88%D8%B3%D9%88%D8%B9%D8%A9%20%D8%A7%D9%84%D9%81%D9%82%D9%87%D9%8A%D8%A9",
+     "search_url": None, "max_words": 3},
     {"name_ar": "الدرر السنية", "name_en": "Dorar.net", "kind": "hadith", "url": "https://dorar.net", "search_url": None, "max_words": 0},
 ]  # fmt: skip
 

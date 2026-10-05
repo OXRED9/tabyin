@@ -22,7 +22,7 @@ import { STEPS, pipelineOf, stepsReached } from '@/lib/pipeline'
 import { sourcesUsed, tallyOf } from '@/lib/report'
 import { byAttention, chronological } from '@/lib/states'
 import type { ClauseKind } from '@/lib/summary'
-import type { Card, Meta, StageId } from '@/lib/types'
+import type { Card, Meta, StageId, ReferralMatch } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface ReportViewProps {
@@ -160,7 +160,7 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
   const [referralOpen, setReferralOpen] = useState(false)
   // The dialog stays mounted once it has been opened, so it can close with its transition; it
   // keeps the topic words of the note it was opened from, which its links search for.
-  const [referralFor, setReferralFor] = useState<{ query: string | null } | null>(null)
+  const [referralFor, setReferralFor] = useState<{ query: string | null; matches: ReferralMatch[] } | null>(null)
   const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null)
   const [errorTarget, setErrorTarget] = useState<ErrorTarget | null>(null)
   const [replayOpen, setReplayOpen] = useState(false)
@@ -325,7 +325,7 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
 
   const openReferral = useCallback(
     (cardId: string) => {
-      setReferralFor({ query: cards[cardId]?.referral_query ?? null })
+      setReferralFor({ query: cards[cardId]?.referral_query ?? null, matches: cards[cardId]?.referral_matches ?? [] })
       setReferralOpen(true)
     },
     [cards],
@@ -642,7 +642,7 @@ export function ReportView({ state, running, onCancel, meta, error, exportAction
 
       <Suspense fallback={null}>
         {referralFor ? (
-          <ReferralDialog open={referralOpen} onOpenChange={setReferralOpen} meta={meta} query={referralFor.query} />
+          <ReferralDialog open={referralOpen} onOpenChange={setReferralOpen} meta={meta} query={referralFor.query} matches={referralFor.matches} />
         ) : null}
         {shareTarget ? <ShareCardDialog target={shareTarget} meta={meta} onClose={() => setShareTarget(null)} /> : null}
         {errorTarget ? (

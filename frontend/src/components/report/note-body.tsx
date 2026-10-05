@@ -407,7 +407,7 @@ export default function NoteBody({
           </div>
         ) : null}
         {note ? <p className="text-base text-ink">{note}</p> : null}
-        <ReferralLinks meta={meta} query={card.referral_query} />
+        <ReferralLinks meta={meta} query={card.referral_query} matches={card.referral_matches} />
         {clock ? (
           <p className="text-sm text-quiet">
             {timeHref ? <SourceLink href={timeHref}>{t.card.occurredAt(clock)}</SourceLink> : t.card.occurredAt(clock)}
