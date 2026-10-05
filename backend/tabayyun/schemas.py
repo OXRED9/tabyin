@@ -219,6 +219,10 @@ class SourceInfo(BaseModel):
     duration: float | None = None
     transcript_origin: str | None = None  # e.g. "captions", "cloud-stt", "local-stt"
     language: str | None = None
+    # A clip's own thumbnail, reduced and embedded (data: URL), so the page shows it without the
+    # reader's browser contacting the platform; and who published the clip, as the platform names them.
+    thumbnail: str | None = None
+    channel: str | None = None
 
 
 class ClaimStub(BaseModel):

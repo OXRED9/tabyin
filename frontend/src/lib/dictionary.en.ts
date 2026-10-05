@@ -136,6 +136,8 @@ export const en: Dictionary = {
     none: 'No matching source',
   },
 
+  clip: { open: 'Watch the clip' },
+
   panes: {
     text: 'The text',
     notes: 'Notes',

@@ -76,6 +76,66 @@ const inkDelay = (index: number, count: number) =>
  * its note. For a clip, each segment carries its time in the outer gutter, like line numbers in a
  * critical edition.
  */
+const PLATFORMS: [RegExp, string][] = [
+  [/(^|\.)tiktok\.com$/, 'TikTok'],
+  [/(^|\.)(youtube\.com|youtu\.be)$/, 'YouTube'],
+  [/(^|\.)(x|twitter)\.com$/, 'X'],
+  [/(^|\.)instagram\.com$/, 'Instagram'],
+  [/(^|\.)facebook\.com$/, 'Facebook'],
+  [/(^|\.)snapchat\.com$/, 'Snapchat'],
+]
+
+/**
+ * The clip the text came from: its own thumbnail (embedded by the server, so the page asks the
+ * platform for nothing), a play mark that opens the clip, its title, channel, platform and length.
+ */
+function ClipCard({ source, href, origin, indent }: { source: SourceInfo; href: string; origin: string | null; indent: boolean }) {
+  const { t } = useI18n()
+  const host = new URL(href).hostname.replace(/^www\./, '')
+  const platform = PLATFORMS.find(([re]) => re.test(host))?.[1] ?? host
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-testid="clip-card"
+      className={cn(
+        'group mb-5 flex items-stretch gap-4 overflow-hidden rounded-sheet border bg-raised/60 p-2 transition-shadow hover:shadow-md focus-visible:-outline-offset-2',
+        indent && 'md:ms-14',
+      )}
+    >
+      <span className="relative block aspect-video w-36 shrink-0 overflow-hidden rounded-control bg-ink/10 sm:w-48">
+        {source.thumbnail ? (
+          <img src={source.thumbnail} alt="" className="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        ) : null}
+        <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
+        <span aria-hidden="true" className="absolute inset-0 grid place-items-center">
+          <span className="grid size-10 place-items-center rounded-full bg-white/85 shadow-lg backdrop-blur transition-transform duration-200 group-hover:scale-110">
+            <svg viewBox="0 0 24 24" className="ms-0.5 size-4 fill-ink"><path d="M8 5.5v13l11-6.5z" /></svg>
+          </span>
+        </span>
+        {source.duration ? (
+          <span className="tabular absolute end-1.5 bottom-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs text-white" dir="ltr">
+            {formatClock(source.duration)}
+          </span>
+        ) : null}
+      </span>
+      <span className="flex min-w-0 flex-col justify-center gap-1 py-1 pe-2">
+        <span className="line-clamp-2 text-base font-semibold text-ink" dir="auto">
+          {source.title || host}
+        </span>
+        <span className="truncate text-sm text-quiet">
+          {[source.channel, platform].filter(Boolean).join(t.report.summary.comma)}
+        </span>
+        {origin ? <span className="text-xs text-quiet">{origin}</span> : null}
+        <span className="text-sm text-green underline decoration-green/40 underline-offset-4 group-hover:decoration-green">
+          {t.clip.open}
+        </span>
+      </span>
+    </a>
+  )
+}
+
 export const PageText = memo(function PageText({
   source,
   segments,
@@ -102,7 +162,9 @@ export const PageText = memo(function PageText({
 
   return (
     <div data-page className="min-w-0">
-      {source?.title || sourceHref || origin || source?.duration ? (
+      {source?.input_type === 'video_url' && sourceHref ? (
+        <ClipCard source={source} href={sourceHref} origin={origin} indent={hasTimes} />
+      ) : source?.title || sourceHref || origin || source?.duration ? (
         <div className={cn('mb-4 text-sm text-quiet', hasTimes && 'md:ps-14')}>
           {source?.title ? (
             <p className="text-base font-semibold text-ink" dir="auto">

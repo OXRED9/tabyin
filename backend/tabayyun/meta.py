@@ -134,6 +134,7 @@ def build_meta() -> dict:
         + [
             {"id": "text", "input_type": "text", "label_ar": "نص فيه آية وحديث", "label_en": "Text with a verse and a hadith", "text": _example_text(), "url": None},
             {"id": "video", "input_type": "video_url", "label_ar": "رابط مقطع يوتيوب", "label_en": "YouTube link", "text": None, "url": settings.example_video_url},
+            {"id": "tiktok", "input_type": "video_url", "label_ar": "رابط مقطع تيك توك", "label_en": "TikTok link", "text": None, "url": settings.example_tiktok_url},
             {
                 "id": "fabrication",
                 "input_type": "text",

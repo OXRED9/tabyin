@@ -196,6 +196,8 @@ export const ar = {
     none: 'لا مصدر مطابق',
   },
 
+  clip: { open: 'شاهد المقطع' },
+
   panes: {
     text: 'النص',
     notes: 'الحواشي',

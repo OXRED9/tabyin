@@ -79,6 +79,8 @@ class Settings(BaseSettings):
 
     # --- Optional demo content (no religious text is hard-coded; see /api/meta) ---
     example_video_url: str | None = None
+    # A public TikTok clip offered as an example on the first screen (the team's choice, 5 Oct 2026).
+    example_tiktok_url: str | None = "https://vt.tiktok.com/ZSb54g8Db/"
 
     # --- Development ---
     dev_mode: bool = False  # enables /admin/usage (the per-call cost log summary)

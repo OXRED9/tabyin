@@ -87,6 +87,38 @@ def _download_audio(url: str, directory: str) -> str:
     return str(files[0])
 
 
+async def _thumbnail(info: dict) -> str | None:
+    """The clip's thumbnail as a small JPEG data URL (at most 480 px wide), or None."""
+    url = info.get("thumbnail")
+    if not url:
+        thumbs = [t for t in info.get("thumbnails") or [] if t.get("url")]
+        url = thumbs[-1]["url"] if thumbs else None
+    if not url:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=10, headers={"User-Agent": settings.user_agent}, follow_redirects=True) as client:
+            r = await client.get(url)
+        if r.status_code != 200 or len(r.content) > 3_000_000:
+            return None
+
+        def shrink(data: bytes) -> str:
+            import base64
+            import io
+
+            from PIL import Image
+
+            img = Image.open(io.BytesIO(data)).convert("RGB")
+            img.thumbnail((480, 480))
+            out = io.BytesIO()
+            img.save(out, "JPEG", quality=72, optimize=True)
+            return "data:image/jpeg;base64," + base64.b64encode(out.getvalue()).decode("ascii")
+
+        return await asyncio.to_thread(shrink, r.content)
+    except Exception as e:  # a missing thumbnail never stops a verification
+        log.info("no thumbnail (%s)", type(e).__name__)
+        return None
+
+
 async def ingest_video(url: str | None) -> Document:
     url = await validate_public_url(url)
     if not _allowed(url):
@@ -98,7 +130,10 @@ async def ingest_video(url: str | None) -> Document:
     duration = info.get("duration")
     if duration and duration > settings.max_media_minutes * 60:
         raise IngestError("video_too_long")
-    source = SourceInfo(input_type="video_url", title=info.get("title"), url=info.get("webpage_url") or url, duration=duration, language=info.get("language"))
+    source = SourceInfo(
+        input_type="video_url", title=info.get("title"), url=info.get("webpage_url") or url, duration=duration, language=info.get("language"),
+        thumbnail=await _thumbnail(info), channel=info.get("channel") or info.get("uploader"),
+    )  # fmt: skip
 
     picked = _pick_captions(info)
     if picked:

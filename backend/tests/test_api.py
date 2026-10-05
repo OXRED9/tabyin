@@ -37,7 +37,7 @@ def test_health_and_meta(client):
     m = client.get("/api/meta").json()
     assert m["abstention_verse"]["text"] and "النحل" in m["abstention_verse"]["ref"]
     assert m["motto_verse"]["text"] and len(m["referral_links"]) >= 2 and len(m["terms"]) >= 10
-    assert {e["id"] for e in m["examples"]} - {"image"} == {"text", "video", "fabrication"}  # "image" only with a vision model
+    assert {e["id"] for e in m["examples"]} - {"image"} == {"text", "video", "tiktok", "fabrication"}  # "image" only with a vision model
 
 
 def test_built_in_text_example_verifies_cleanly(client):

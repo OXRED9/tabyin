@@ -42,6 +42,9 @@ export interface SourceInfo {
   /** "captions" | "cloud-stt" | "local-stt" | null */
   transcript_origin: string | null
   language: string | null
+  /** The clip's thumbnail, embedded by the server (a data: URL); absent on older reports. */
+  thumbnail?: string | null
+  channel?: string | null
 }
 
 /** Character offsets inside the segment text. */
