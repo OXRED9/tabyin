@@ -66,3 +66,45 @@ def test_a_narration_introduced_as_a_scholars_saying_is_one_note(verify_text, ma
 def test_a_question_next_to_a_quotation_about_its_authenticity_gets_no_card_of_its_own(verify_text, ayah):
     report = verify_text(f"هل هذه آية؟ {ayah(2, 153)[1]}")
     assert kinds(report) == [("ayah", "supported")]
+
+
+def test_a_whole_verse_followed_by_the_speakers_words_is_not_an_altered_verse(verify_text, ayah):
+    report = verify_text(f"قال تعالى ﴿{ayah(49, 6)[1]} وهذه قاعدة في التثبت")
+    assert kinds(report) == [("ayah", "supported")]
+
+
+def test_a_verse_altered_at_its_end_is_still_caught(verify_text, ayah):
+    words = ayah(49, 6)[1].split()
+    report = verify_text("قال تعالى: ﴿" + " ".join(words[:-1] + ["غافلين"]) + "﴾")
+    assert [k[1] for k in kinds(report)] in (["supported_with_note"], ["contradicted"])
+
+
+def test_dialect_ways_of_asking_for_a_ruling_are_questions(verify_text):
+    for text in ("ابي اعرف حكم صيام الست من شوال قبل القضاء", "أريد معرفة حكم الصلاة في الطائرة"):
+        assert kinds(verify_text(text)) == [("question", "needs_review")]
+
+
+def test_a_verse_presented_as_the_prophets_words_is_noted(verify_text, ayah):
+    (card,) = verify_text(f"قال رسول الله صلى الله عليه وسلم: «{ayah(49, 6)[1]}»")["cards"]
+    assert card["claim_type"] == "ayah" and card["state"] == "supported" and "النبي ﷺ" in card["note_ar"]
+
+
+def test_a_narration_presented_as_quran_names_where_it_really_is(verify_text, matn):
+    (card,) = verify_text(f"قال الله تعالى في كتابه: ﴿{matn('5516')}﴾")["cards"]
+    assert card["claim_type"] == "ayah" and card["state"] == "not_found"
+    assert "حديث" in card["note_ar"] and card["other_sources"] and card["other_sources"][0]["url"].startswith("https://hadeethenc.com/")
+
+
+def test_an_unmarked_verse_with_a_changed_word_is_one_note_with_the_difference(verify_text, ayah):
+    words = ayah(2, 153)[1].split()
+    for changed in (words[:2] + ["الناس"] + words[3:], words[:-1] + ["الصادقين"]):
+        (card,) = verify_text(" ".join(changed))["cards"]
+        assert card["claim_type"] == "ayah" and card["state"] in ("supported_with_note", "needs_review")
+        assert any(d["op"] != "equal" for d in card["diff"])
+
+
+def test_the_speakers_words_beside_an_unmarked_verse_are_not_absorbed(verify_text, ayah):
+    words = ayah(2, 153)[1].split()
+    for text in ("وقال الخطيب الكريم " + " ".join(words[3:]), "تأمل " + " ".join(words[1:]), " ".join(words) + " وهذا يكفي"):
+        (card,) = verify_text(text)["cards"]
+        assert card["state"] == "supported", text

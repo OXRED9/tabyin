@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import re
 
+from ..evidence_rules.thresholds import THRESHOLDS
 from ..ingest.document import Document
 from ..normalize import arabic_ratio, normalize_ar
 from ..schemas import Certainty, ClaimType, ContentLevel
@@ -89,6 +90,9 @@ _QUESTION = re.compile(
     # Asked the way people type it (the team, 5 Oct 2026: «حكم القزع» was not taken for a question):
     # a line that begins with "حكم …" (or "وش/ايش/شو حكم …"), and "هل … حرام/حلال/…" or "… حرام؟".
     + r"|(?:(?<=\n)|^)\s*(?:(?:وش|ايش|شو|اش)\s+)?(?:ال)?حكم\s+[^.؟?!\n]+[؟?]?"
+    # «أبي أعرف حكم …», «أريد معرفة حكم …», «ودي أعرف الحكم في …» (seen 6 Oct 2026: taken for a request
+    # to fabricate evidence and answered «تبيّن لا يؤلّف نصوصاً»).
+    + r"|(?:ابي|ابغي|ابغا|اريد|ودي|حاب|نبي|نبغي)\s+(?:ا|ن)?(?:عرف|معرفه)\s+(?:ما\s+(?:هو\s+)?)?(?:ال)?حكم[^.؟?!\n]*[؟?]?"
     + r"|هل(?![\u0621-\u064a])[^.؟?!\n]{0,80}?(?:حرام|حلال|جائز|مكروه|واجب|بدعه|شرك|مباح)(?![\u0621-\u064a])[^.؟?!\n]*[؟?]?"
     + r"|[^.؟?!\n]{2,80}(?:حرام|حلال|جائز|مكروه|واجب|بدعه|مباح)\s*[؟?]"
     + r"|(?:what|how|why|when|is\s+it|can\s+i|should\s+i|does|do)\b[^.?!\n]*\?"
@@ -110,7 +114,7 @@ _RELIGIOUS_TOPIC = re.compile(
 
 
 def _asked_of_the_tool(question: str) -> bool:
-    return bool(re.match(_RULING_QUESTION, question.strip()) or re.search(r"(?:حرام|حلال|جائز|مكروه|واجب|بدعه|مباح|شرك)", question) or _RELIGIOUS_TOPIC.search(question))
+    return bool(re.match(_RULING_QUESTION, question.strip()) or "حكم" in question or re.search(r"(?:حرام|حلال|جائز|مكروه|واجب|بدعه|مباح|شرك)", question) or _RELIGIOUS_TOPIC.search(question))
 
 
 # A statement that reports, in the speaker's own words, what the Prophet ﷺ said, did or taught, or what
@@ -199,6 +203,77 @@ def has_ayah_marker_before(doc_text: str, start: int) -> bool:
     return bool(m and len(plain) - m.end() <= 6) or doc_text[max(0, start - 3) : start].strip().endswith("﴿")
 
 
+def has_hadith_marker_before(doc_text: str, start: int) -> bool:
+    """The words just before ``start`` introduce a saying of the Prophet ﷺ («قال رسول الله ﷺ:»)."""
+    plain, _ = _plain(doc_text[max(0, start - 90) : start])
+    m = None
+    for m in _HADITH_MARKER.finditer(plain):
+        pass
+    return bool(m and len(plain) - m.end() <= 3)
+
+
+_EDGE_BREAK = re.compile(r"[.؟?!\n«»﴿﴾\"“”:؛]")
+_MAX_EXTEND = 4
+
+
+def _ayah_words(quran: QuranIndex, m) -> list[list[str]]:
+    """The normalised words of the verses ``m`` covers, once per spelling (simple and Uthmani)."""
+    out = []
+    for col in (3, 2):
+        ws: list[str] = []
+        for a in range(m.ayah_start, m.ayah_end + 1):
+            idx = quran.by_ref.get((m.surah, a))
+            if idx is not None:
+                ws += [w[3] for w in words_with_offsets(quran.ayahs[idx][col])]
+        out.append(ws)
+    return out
+
+
+def _extend_fragment(quran: QuranIndex, words: list, text: str, w_start: int, w_end: int, match) -> tuple[int, int]:
+    """Widen an exact fragment over neighbouring words that stand where the verse's own neighbouring
+    words stand, most of them equal: «يا أيها الناس آمنوا …» around the intact «آمنوا …» of a verse whose
+    third word was changed. Without this a verse pasted with a changed word, and no «قال تعالى» before
+    it, got a "matches the Mushaf" note on its intact part only (6 Oct 2026). The outermost word taken
+    must itself be the verse's word, and the words are not taken across a sentence end or a quotation
+    mark, so the speaker's own words beside a verse are never absorbed. Returns the new word range."""
+    frag = [w[3] for w in words[w_start:w_end]]
+    best = (w_start, w_end)
+    for src in _ayah_words(quran, match):
+        at = next((i for i in range(len(src) - len(frag) + 1) if src[i : i + len(frag)] == frag), None)
+        if at is None:
+            continue
+        lo, hi = w_start, w_end
+        for direction in (-1, 1):
+            room = at if direction < 0 else len(src) - (at + len(frag))
+            take = 0
+            for j in range(1, min(room, _MAX_EXTEND) + 1):
+                qi = w_start - j if direction < 0 else w_end - 1 + j
+                if not (0 <= qi < len(words)):
+                    break
+                a, b = (words[qi], words[qi + 1]) if direction < 0 else (words[qi - 1], words[qi])
+                if _EDGE_BREAK.search(text[a[1] : b[0]]):
+                    break
+                si = at - j if direction < 0 else at + len(frag) - 1 + j
+                sides = range(1, j + 1)
+                equal = sum(1 for k in sides if words[w_start - k if direction < 0 else w_end - 1 + k][3] == src[at - k if direction < 0 else at + len(frag) - 1 + k])
+                if words[qi][3] == src[si] and 2 * equal >= j and equal < j:
+                    take = j  # at least one changed word inside, the outermost one the verse's own
+                elif direction > 0 and j == room and j <= 2:
+                    # The verse's last word(s), changed, right where the sentence ends: «… فعلتم غافلين.»
+                    # reaches exactly to the verse's end. Not at the start: a word before a verse is more
+                    # often the speaker's own («تأمل …», «اقرأ …») than a changed first word.
+                    edge = text[words[qi][1] :].lstrip(" \t")
+                    if not edge or _EDGE_BREAK.match(edge[0]):
+                        take = j
+            if direction < 0:
+                lo = w_start - take
+            else:
+                hi = w_end + take
+        if (lo, hi) != (w_start, w_end) and (hi - lo) > (best[1] - best[0]):
+            best = (lo, hi)
+    return best
+
+
 def scan_quran(doc: Document, quran: QuranIndex) -> list[RawClaim]:
     """Find verbatim Quran fragments anywhere in the document (no model involved)."""
     text = doc.full_text
@@ -207,7 +282,24 @@ def scan_quran(doc: Document, quran: QuranIndex) -> list[RawClaim]:
     orig = [w[2] for w in words]
     claims: list[RawClaim] = []
     basmala = normalize_ar(quran.ayahs[0][3])
+    found = []
     for w_start, w_end, match in quran.find_quotes_in(orig, norm):
+        lo, hi = _extend_fragment(quran, words, text, w_start, w_end, match)
+        if (lo, hi) != (w_start, w_end):
+            wider = quran.match(text[words[lo][0] : words[hi - 1][1]])
+            same_verse = wider is not None and wider.surah == match.surah and wider.ayah_start <= match.ayah_end and match.ayah_start <= wider.ayah_end
+            if same_verse and wider.similarity >= THRESHOLDS.ayah_near:
+                w_start, w_end, match = lo, hi, wider
+        if found and found[-1][2].surah == match.surah and w_start <= found[-1][1] and not (found[-1][2].kind == "exact" and match.kind == "exact"):
+            # two intact pieces of one verse around a changed word, each widened over it: one quotation
+            prev = found.pop()
+            joined = quran.match(text[words[prev[0]][0] : words[max(prev[1], w_end) - 1][1]])
+            if joined is not None and joined.surah == match.surah:
+                w_start, w_end, match = prev[0], max(prev[1], w_end), joined
+            else:
+                found.append(prev)
+        found.append((w_start, w_end, match))
+    for w_start, w_end, match in found:
         start, end = words[w_start][0], words[w_end - 1][1]
         if " ".join(norm[w_start:w_end]) == basmala and not has_ayah_marker_before(text, start):
             continue  # an opening basmala is a formula, not a citation to verify

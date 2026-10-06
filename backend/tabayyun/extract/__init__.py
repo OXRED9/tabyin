@@ -47,6 +47,11 @@ def absorb_closed_quotes(scanned: list[RawClaim], closed: list[RawClaim], text: 
             # starts and ends, so the note takes those boundaries: the scan may have begun on the
             # narrator's «يقول:» or run a word past the closing mark.
             p = inside[0]
+            if _words(p.quote) != _words(c.quote):
+                # The quotation holds words the scan's exact fragment does not (a changed last word):
+                # the fragment's "exact" match no longer describes it, so the quotation is matched anew
+                # (6 Oct 2026: a verse with its last word changed was shown as matching the Mushaf).
+                p.prematched = None
             p.start, p.end, p.quote, p.closed, p.explicit_attribution = c.start, c.end, c.quote, True, True
             continue
         kept = [p for p in kept if all(p is not i for i in inside)]
@@ -141,6 +146,16 @@ def widen_scanned_verses(scanned: list[RawClaim], proposed: list[RawClaim], qura
     for c in proposed:
         inside = [p for p in kept if p.type == ClaimType.ayah and overlap(p, c) >= 0.9 * (p.end - p.start)] if c.type == ClaimType.ayah else []
         if not inside or (c.end - c.start) < 1.2 * max(p.end - p.start for p in inside):
+            left.append(c)
+            continue
+        # The intact fragment is a whole verse (or ends one) and the proposal only adds words after it,
+        # or only before a fragment that begins a verse: those words are the speaker's own, not a
+        # changed ending (6 Oct 2026: «قال تعالى ﴿… نادمين وهذه قاعدة في التثبت» was marked as altered).
+        first, last = min(inside, key=lambda p: p.start), max(inside, key=lambda p: p.end)
+        if (
+            last.prematched is not None and c.start >= first.start - 2 and c.end > last.end and quran.ends_at_ayah_end(last.prematched)
+            and (first.prematched is None or c.start >= first.start - 2)
+        ) or (first.prematched is not None and c.end <= last.end + 2 and c.start < first.start and quran.starts_at_ayah_start(first.prematched)):
             left.append(c)
             continue
         match = quran.match(c.quote)
@@ -248,6 +263,10 @@ def drop_noise(claims: list[RawClaim], shown: list[RawClaim] | None = None, quot
             if near and _asks_authenticity(rest) and not is_fabrication_request(c.quote):
                 continue
         if c.type == ClaimType.attributed_quote and len(_words(c.quote).split()) < 3:
+            continue
+        if c.type in (ClaimType.fact, ClaimType.ruling) and not c.is_question and re.match(r"^\s*[\[(]?\s*(?:يعني|اي)\s+(?:حديث|الحديث)", c.quote):
+            # «[يعني حديث: …]» — the note Dorar prints after a shortened narration, copied with it. It
+            # names the narration meant; the narration is what gets verified.
             continue
         if c.type in (ClaimType.fact, ClaimType.ruling) and not c.is_question and len(_words(c.quote).split()) <= 30:
             # It presents the quotation that follows it closely: the quotation is the claim.

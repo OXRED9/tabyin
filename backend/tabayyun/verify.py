@@ -32,7 +32,7 @@ from .evidence_rules import (
     decide_ruling,
 )
 from .evidence_rules.explain import LEVEL_REASONS, Facts, describe
-from .extract.lexical import attributes_to_revelation, mentions_prophet
+from .extract.lexical import attributes_to_revelation, has_ayah_marker_before, has_hadith_marker_before, mentions_prophet
 from .extract.models import JUDGEMENT_SCHEMA, SELECTION_SCHEMA, LLMJudgement, LLMSelection, RawClaim
 from .extract.prompts import JUDGE_SYSTEM, SELECT_SYSTEM
 from .ingest.document import Document
@@ -361,7 +361,19 @@ async def verify_ayah(claim: RawClaim, cid: str, index: int, ctx: Context) -> Ca
                 )
             )
     if m is None or decision.state == EvidenceState.not_found:
-        return _base_card(claim, cid, index, decision, ctx, similarity=m.similarity if m else None, certainty=Certainty.not_applicable, facts=facts, candidates=candidates)
+        others: list[SourceRef] = []
+        if arabic_ratio(claim.quote) >= 0.5 and len(claim.quote.split()) >= 4:
+            # Words presented as Quran that are not in the Mushaf but are a narration, word for word
+            # («قال الله تعالى: ﴿من قال: سبحان الله …﴾»). The verdict stays the rule's; the reader is told
+            # where the words are, with the narration's own reference and grading.
+            hits = await asyncio.to_thread(ctx.hadith.search, claim.quote, k=3)
+            if hits and hits[0].similarity >= THRESHOLDS.hadith_exact:
+                h = hits[0]
+                src = _hadith_source(h, ctx)
+                others.append(src)
+                decision.note_ar += f" وهذا اللفظ حديث في كتب السنة لا آية: {src.ref}" + (f" — الحكم: {h.grade_text}" if h.grade_text else "") + "."
+                decision.note_en += f" These words are a narration in the hadith collections, not a verse: {src.ref}" + (f" — grading: {h.grade_text}" if h.grade_text else "") + "."
+        return _base_card(claim, cid, index, decision, ctx, similarity=m.similarity if m else None, certainty=Certainty.not_applicable, facts=facts, candidates=candidates, other_sources=others)
 
     translation = None
     if ctx.ui_lang == "en":
@@ -376,6 +388,10 @@ async def verify_ayah(claim: RawClaim, cid: str, index: int, ctx: Context) -> Ca
         others_en = ", ".join(f"{ctx.quran.surahs[s]['name_en']} {s}:{a}" for s, a in m.other_locations[:4])
         note_ar += f" وردت هذه الألفاظ أيضاً في: {others_ar}."
         note_en += f" The same words also occur in: {others_en}."
+    if has_hadith_marker_before(ctx.doc.full_text, claim.start) and not has_ayah_marker_before(ctx.doc.full_text, claim.start):
+        # «قال رسول الله ﷺ: «…»» over words of the Quran: the text is right, its attribution is not.
+        note_ar += " هذا النص آية من القرآن الكريم، وقد قُدِّم هنا على أنه من كلام النبي ﷺ؛ يُنسب إلى القرآن بموضعه المعروض."
+        note_en += " This text is a verse of the Quran, presented here as the Prophet's ﷺ words; attribute it to the Quran at the place shown."
     kind = {"ayah.exact": "exact", "ayah.near": "near"}.get(decision.rule_id, "partial")
     return _base_card(
         claim, cid, index, decision, ctx,

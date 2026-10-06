@@ -116,6 +116,25 @@ class QuranIndex:
     def ayah_text(self, surah: int, ayah: int) -> str:
         return self.ayahs[self.by_ref[(surah, ayah)]][2]
 
+    def _edge_word(self, surah: int, ayah: int, last: bool) -> set[str]:
+        idx = self.by_ref.get((surah, ayah))
+        if idx is None:
+            return set()
+        out = set()
+        for text in self.ayahs[idx][2:4]:
+            words = normalize_ar(text).split()
+            if words:
+                out.add(words[-1] if last else words[0])
+        return out
+
+    def ends_at_ayah_end(self, m: QuranMatch) -> bool:
+        """The matched words run to the last word of the verse they end in."""
+        return bool(m.matched_source_words) and normalize_ar(m.matched_source_words[-1]).replace(" ", "") in self._edge_word(m.surah, m.ayah_end, True)
+
+    def starts_at_ayah_start(self, m: QuranMatch) -> bool:
+        """The matched words begin with the first word of the verse they start in."""
+        return bool(m.matched_source_words) and normalize_ar(m.matched_source_words[0]).replace(" ", "") in self._edge_word(m.surah, m.ayah_start, False)
+
     def match(self, quoted: str) -> QuranMatch | None:
         """Match a quoted fragment. Returns None when nothing in the Mushaf resembles it."""
         q_orig, q_norm = aligned_words(quoted)

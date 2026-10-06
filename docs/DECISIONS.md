@@ -838,3 +838,27 @@ small talk and noise. The faults found, and what was changed:
 169. **Kept as decided (4 October, item 120):** a settled statement on its own («صيام رمضان واجب …») with no
     retrieved text still gives an empty report rather than «يحتاج مراجعة». The stress run raised it again;
     it is the team's decision and is left for the team to revisit.
+170. **A changed word in a verse is caught without «قال تعالى» too.** The verbatim scan found only the
+    intact part of a verse pasted with a changed word, and that part was shown «له مرجعية» alone. An intact
+    fragment is now widened over neighbouring words that stand where the verse's own words stand — most
+    of them equal, the outermost one the verse's own — never across a sentence end or a quotation mark;
+    a changed last word is taken only when it reaches exactly to the verse's end and the sentence ends
+    there. The Mushaf matcher then decides on the widened words as before. Words before a verse («تأمل
+    …») are never taken as a changed first word.
+171. **A quotation widened by its quotation marks is matched anew.** «﴿… غافلين﴾» with the verse's last word
+    changed kept the "exact" match of the intact part inside the marks and was shown «له مرجعية».
+172. **A whole verse followed by the speaker's words is not an altered verse.** «قال تعالى ﴿… نادمين وهذه
+    قاعدة في التثبت» (the closing mark missing) was widened to the end of the sentence and read as a changed
+    ending. When the intact fragment ends a verse and the wider quotation only adds words after it (or
+    only before a fragment that begins a verse), the fragment stands.
+173. **Misattribution between Quran and Sunna is named.** A verse introduced with «قال رسول الله ﷺ» keeps
+    its verdict and gets a note that it is a verse, to be attributed to the Quran. Words presented as
+    Quran that are not in the Mushaf but are a narration word for word keep «لم يُعثر عليه في المصحف» and
+    the note names the narration's reference and grading, copied from HadeethEnc.
+174. **«أبي أعرف حكم …», «أريد معرفة حكم …» are questions**, referred to the scholars' sites; they had been
+    taken for requests to fabricate evidence. A request's content level is set by rule (B): the model had
+    called «أعطني حديثاً يثبت …» a personal case. Dorar's «[يعني حديث: …]», copied with a narration, is not
+    a claim of its own.
+175. **Not changed — for Sulaiman (⚑):** a narration that one scholar grades «باطل» and others «ضعيف» / «لا
+    يصح» is «مخالف للمصدر» under the existing rule (a fabrication grading outweighs a weak one). The test
+    set expects «يحتاج مزيد تحقق» for one such item (hadith_weak-04), built from al-Nawawi's grading alone.

@@ -80,6 +80,10 @@ async def extract_with_llm(doc: Document, llm: LLMSession, *, max_claims: int) -
             start, end = offset + where[0], offset + where[1]
             kind = ClaimType(c.type)
             level = ContentLevel.A if kind in (ClaimType.ayah, ClaimType.hadith) else ContentLevel(c.content_level)
+            if kind == ClaimType.request:
+                # A request to produce evidence is refused whatever its subject; it is not a personal
+                # case (the model called «أعطني حديثاً يثبت …» level D, which would read as one).
+                level = ContentLevel.B
             claims.append(
                 RawClaim(
                     type=kind,
@@ -94,9 +98,9 @@ async def extract_with_llm(doc: Document, llm: LLMSession, *, max_claims: int) -
                     evidence_ref=c.evidence_ref.strip(),
                     origin="llm",
                     # quoted verses and narrations are level A by rule; for the rest the level is the model's
-                    level_reason_ar="" if kind in (ClaimType.ayah, ClaimType.hadith) else c.level_reason_ar.strip(),
-                    level_reason_en="" if kind in (ClaimType.ayah, ClaimType.hadith) else c.level_reason_en.strip(),
-                    level_reason_origin="rule" if kind in (ClaimType.ayah, ClaimType.hadith) else "model",
+                    level_reason_ar="" if kind in (ClaimType.ayah, ClaimType.hadith, ClaimType.request) else c.level_reason_ar.strip(),
+                    level_reason_en="" if kind in (ClaimType.ayah, ClaimType.hadith, ClaimType.request) else c.level_reason_en.strip(),
+                    level_reason_origin="rule" if kind in (ClaimType.ayah, ClaimType.hadith, ClaimType.request) else "model",
                 )
             )
         return claims
