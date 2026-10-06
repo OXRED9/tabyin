@@ -217,9 +217,12 @@ class HadithIndex:
 
         Returns (start_word, end_word, hadeethenc_id). Runs start from a distinctive 4-gram, are
         extended in both directions, and runs of the same narration separated by a few words
-        (an honorific written differently, a dropped word) are merged.
+        (an honorific written differently, a dropped word) are merged — when the second run goes on
+        from where the first stopped in the narration. The same narration recited again from its
+        start is a second quotation, not a continuation (seen 6 Oct 2026: three recitations in a row
+        were merged into one run three times the narration's length, which then matched nothing).
         """
-        runs: list[tuple[int, int, int]] = []
+        runs: list[tuple[int, int, int, int]] = []  # (start, end, rid, where the run ends in the narration)
         n = len(norm)
         i = 0
         floor = 0
@@ -228,7 +231,7 @@ class HadithIndex:
             if not posts or len(posts) > _MAX_POSTINGS:
                 i += 1
                 continue
-            best: tuple[int, int, int, int] | None = None
+            best: tuple[int, int, int, int, int, int] | None = None
             for packed in posts:
                 rid, pos = packed >> 16, packed & 0xFFFF
                 words = self._he_words[rid]
@@ -241,20 +244,20 @@ class HadithIndex:
                 while i - back - 1 >= floor and pos - back - 1 >= 0 and norm[i - back - 1] == words[pos - back - 1]:
                     back += 1
                 if best is None or fwd + back > best[0]:
-                    best = (fwd + back, i - back, i + fwd, rid)
+                    best = (fwd + back, i - back, i + fwd, rid, pos - back, pos + fwd)
             if best is None:
                 i += 1
                 continue
-            _length, start, end, rid = best
-            if runs and runs[-1][2] == rid and start - runs[-1][1] <= max_gap:
-                runs[-1] = (runs[-1][0], end, rid)
+            _length, start, end, rid, src_start, src_end = best
+            if runs and runs[-1][2] == rid and start - runs[-1][1] <= max_gap and src_start >= runs[-1][3] - 2:
+                runs[-1] = (runs[-1][0], end, rid, src_end)
             else:
-                runs.append((start, end, rid))
+                runs.append((start, end, rid, src_end))
             floor = end
             i = end
         return [
             (start, end, str(rid))
-            for start, end, rid in runs
+            for start, end, rid, _src_end in runs
             if end - start >= min_words and content_words(normalize_ar(" ".join(norm[start:end]), drop_honorifics=True).split()) >= 4
         ]
 

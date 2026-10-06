@@ -157,6 +157,24 @@ def widen_scanned_verses(scanned: list[RawClaim], proposed: list[RawClaim], qura
     return kept, left
 
 
+def prefer_scholar_quotes(claims: list[RawClaim], scholar: list[RawClaim]) -> list[RawClaim]:
+    """Words the text introduces as a scholar's («قال ابن القيم: …») are a saying attributed to him,
+    and get one note. A narration the scan found on the same words, or a narration / statement the
+    model proposed on them, is dropped here (seen 6 Oct 2026: two notes, «no source» as a saying and
+    «no source» as a narration, on one sentence). Whether the words are really his — or are in fact a
+    narration of the Prophet ﷺ, which is then said — is for the retrieval to establish, not for the
+    extractor: the saying is checked against the hadith sources first. A quotation that is only part
+    of the saying (a narration the scholar quotes inside it) keeps its own note."""
+    out: list[RawClaim] = []
+    for c in claims:
+        same_words = c.type in (ClaimType.hadith, ClaimType.fact, ClaimType.ruling) and not c.is_question and any(
+            overlap(c, s) >= 0.6 * (c.end - c.start) and overlap(c, s) >= 0.8 * (s.end - s.start) for s in scholar
+        )
+        if not same_words:
+            out.append(c)
+    return out
+
+
 def keep_personal_cases(proposed: list[RawClaim], markers: list[RawClaim]) -> list[RawClaim]:
     """A question about the asker's own situation is level D whatever the model called it.
 
@@ -179,6 +197,19 @@ def keep_personal_cases(proposed: list[RawClaim], markers: list[RawClaim]) -> li
 
 
 _NOT_WORDS = re.compile(r"[^\w\s]|_")
+_POINTS_AT_TEXT = re.compile(r"(?<!\w)(?:هذا|هذه|هذي|ذا|ذي|حديث|الحديث|ايه|الايه|نص|النص|الكلام|القول|قران|القران|this|it|hadith|verse|ayah)(?!\w)")
+
+
+def _asks_authenticity(text: str) -> bool:
+    """A short question about whether a text is authentic or is what it claims to be: «هل هذا الحديث
+    صحيح», «هل هذه آية», «is this hadith authentic». Not a question for a ruling."""
+    words = _words(text) or " ".join(_NOT_WORDS.sub(" ", text.lower()).split())
+    if not words or len(words.split()) > 9 or re.search(r"(?<!\w)(?:حكم|يجوز|يحل|يجب|حرام|حلال)(?!\w)", words):
+        return False
+    return bool(_POINTS_AT_TEXT.search(words)) and (bool(_AUTHENTICITY.search(words)) or bool(re.match(r"(?:هل|is)\s+(?:هذا|هذه|هذي|ذا|this)\s+(?:ايه|حديث|قران|verse|hadith|ayah)\s*$", words)))
+
+
+_AUTHENTICITY = re.compile(r"(?<!\w)(?:صحيح|صحيحه|يصح|صحه|ثابت|ثابته|يثبت|ضعيف|ضعيفه|موضوع|مكذوب|اصل|حقيقي|حقيقيه|سند|authentic|sahih|weak|fabricated|true|real|correct)(?!\w)")
 
 
 def _words(text: str) -> str:
@@ -203,6 +234,19 @@ def drop_noise(claims: list[RawClaim], shown: list[RawClaim] | None = None, quot
     plain = {id(c): _words(c.quote) for c in quoted}
     out: list[RawClaim] = []
     for c in claims:
+        if c.type not in _QUOTED and c.type != ClaimType.attributed_quote and (c.is_question or c.type == ClaimType.request):
+            # «هل حديث «…» صحيح؟», «هل هذه آية؟ …», «هل هذا الحديث صحيح: «…»»: asking whether a quotation
+            # is authentic is what the quotation's own note answers. A referral beside it sends the reader
+            # away from the answer, and the model has taken such a question for a request to fabricate
+            # (6 Oct 2026: «Tabayyun does not compose texts» beside the narration asked about).
+            from .lexical import is_fabrication_request
+
+            near = [q for q in quoted + (quotations or []) if q is not c and (overlap(q, c) >= 0.9 * (q.end - q.start) or -80 <= q.start - c.end <= 80 or 0 <= c.start - q.end <= 40)]
+            rest = c.quote
+            for q in near:
+                rest = rest.replace(q.quote, " ")
+            if near and _asks_authenticity(rest) and not is_fabrication_request(c.quote):
+                continue
         if c.type == ClaimType.attributed_quote and len(_words(c.quote).split()) < 3:
             continue
         if c.type in (ClaimType.fact, ClaimType.ruling) and not c.is_question and len(_words(c.quote).split()) <= 30:
@@ -271,4 +315,4 @@ def keep_questions(proposed: list[RawClaim], markers: list[RawClaim], looks_like
     return out
 
 
-__all__ = ["RawClaim", "absorb_closed_quotes", "drop_noise", "keep_personal_cases", "keep_questions", "merge_claims", "overlap", "widen_scanned_verses"]
+__all__ = ["RawClaim", "absorb_closed_quotes", "drop_noise", "keep_personal_cases", "keep_questions", "merge_claims", "overlap", "prefer_scholar_quotes", "widen_scanned_verses"]

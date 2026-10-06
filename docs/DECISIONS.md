@@ -797,3 +797,44 @@ Mock mode only; no paid call. The running stage is the lead's (item 140); these 
     Cloudflare check that rejects scripts and its addresses are by passage, not by verse, so no link to
     it is generated rather than a guessed one.
 
+
+## The stress run (6 October 2026)
+
+About 150 inputs were run through the real pipeline: one verse and several narrations (read from the
+data files) written every way people paste them — brackets of each kind, no marks, extra spaces, tabs,
+line breaks inside, tatweel, Persian letters, emoji and hashtags, HTML and Markdown, a reference after
+it, zero-width characters — together with altered wordings, repeats, questions, personal cases, requests,
+small talk and noise. The faults found, and what was changed:
+
+163. **Zero-width spaces are spaces.** A verse whose words were separated by U+200B (as some apps and
+    sites space words) was read as one long word and reported «لم يُعثر على مصدر». Pasted text and article
+    text now have U+200B, U+2060, U+FEFF and U+180E turned into spaces at ingest; nothing else is changed.
+164. **"Matches the source" needs identical wording.** One word replaced in a thirty-word narration still
+    scored 0.98 character similarity, above the 0.95 "verbatim" line, and was shown «له مرجعية» with no
+    difference marked. A narration is now `hadith.accepted_exact` only when the word comparison shown on the
+    card has no changed, dropped or added word (a spelling variant of the same word, two letters apart at
+    most, still counts as the same word); otherwise it is «له مرجعية مع ملاحظة» with the difference shown.
+    The rule takes the comparison as a fact (`wording_identical`); no threshold moved.
+165. **The same narration recited again is a second quotation, not a longer one.** Three recitations in a
+    row were merged by the verbatim scan into one run three times the narration's length, which matched
+    nothing and was reported «لم يُعثر على مصدر». Runs of one narration are joined only when the second
+    continues from where the first stopped in the narration.
+166. **A narration introduced as a scholar's saying gets one note.** «قال ابن القيم: «…»» over words that are
+    a narration produced two notes on the same words (a saying, and a narration). The saying as the text
+    attributes it is kept; its check against the hadith sources reports that the source gives the words as
+    the Prophet's ﷺ (`quote.misattributed`, as before). When the scholar is himself quoting the Prophet
+    («قال النووي: قال رسول الله ﷺ: «…»»), the narration is the claim and the scholar's line is not a saying.
+    An open saying («يقول ابن تيمية إن … وهذا كلام نفيس») is cut to its longest beginning found verbatim,
+    as open verses and narrations already were, so the speaker's comment after it no longer hides it.
+167. **Small talk is not a question for the scholars.** «كيف الحال؟» and "how are you today?" were referred
+    to the fatwa sites. A general question («كيف …؟», «ما معنى …؟», "what …?") is now taken as put to the
+    tool only when it names a religious topic (a short list of topic words, not texts); a question for a
+    ruling («ما حكم», «هل يجوز», «… حرام؟») needs none.
+168. **«هل حديث «…» صحيح؟» is answered by the narration's note.** The question card beside it sent the
+    reader to the fatwa sites for what the note on the narration already shows. A question that is mostly
+    a quotation and asks only whether it is authentic gets no referral of its own; a question that asks for
+    a ruling about a quoted text («ما حكم من يقرأ ﴿…﴾ بلا وضوء؟») keeps its referral beside the verse's
+    note — in lexical-only mode it had been lost whenever the question contained any quotation.
+169. **Kept as decided (4 October, item 120):** a settled statement on its own («صيام رمضان واجب …») with no
+    retrieved text still gives an empty report rather than «يحتاج مراجعة». The stress run raised it again;
+    it is the team's decision and is left for the team to revisit.

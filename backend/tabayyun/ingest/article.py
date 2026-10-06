@@ -10,7 +10,7 @@ from ..config import settings
 from ..schemas import SourceInfo
 from .document import Document, IngestError
 from .net import validate_public_url
-from .text import segments_from_text
+from .text import clean_pasted, segments_from_text
 
 _MAX_BYTES = 5 * 1024 * 1024
 _MAX_REDIRECTS = 5
@@ -53,5 +53,5 @@ async def ingest_article(url: str | None) -> Document:
     text, title = await asyncio.to_thread(extract)
     if not text or len(text.strip()) < 80:
         raise IngestError("article_fetch_failed", "no article text")
-    text = text[: settings.max_text_chars]
+    text = clean_pasted(text[: settings.max_text_chars])
     return Document(source=SourceInfo(input_type="article_url", title=title, url=final_url), segments=segments_from_text(text))

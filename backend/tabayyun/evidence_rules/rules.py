@@ -121,10 +121,17 @@ def decide_hadith(
     in_sahihayn: bool,
     quoted_words: int,
     grading_source_reachable: bool = True,
+    wording_identical: bool | None = None,
     t: Thresholds = THRESHOLDS,
 ) -> Decision:
     """``paraphrase`` means the candidate was confirmed as the same narration reported by meaning
-    (lexical similarity alone is below the match threshold)."""
+    (lexical similarity alone is below the match threshold).
+
+    ``wording_identical``: whether the word-level comparison with the source shows no difference.
+    Character similarity alone cannot tell one changed word in a long narration from a verbatim
+    quotation (measured 6 Oct 2026: one word replaced in a thirty-word narration still scored 0.98),
+    so a quotation is "matching" only when it is False for none of its words; ``None`` (unknown)
+    leaves the similarity to decide."""
     if not found or (similarity < t.partial_floor(t.hadith_partial, quoted_words) and not paraphrase):
         return Decision(
             S.not_found,
@@ -189,7 +196,7 @@ def decide_hadith(
             referral=True,
         )
     if accepted:
-        if similarity >= t.hadith_exact and not paraphrase:
+        if similarity >= t.hadith_exact and not paraphrase and wording_identical is not False:
             return Decision(
                 S.supported,
                 "hadith.accepted_exact",

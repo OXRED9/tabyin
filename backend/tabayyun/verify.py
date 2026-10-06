@@ -12,6 +12,8 @@ import re
 import time
 from dataclasses import dataclass, field
 
+from rapidfuzz.distance import Levenshtein
+
 from .config import settings
 from .dataversion import get_data_version
 from .evidence_rules import (
@@ -411,6 +413,20 @@ def _dorar_source(h: DorarHit, ctx: Context) -> SourceRef:
     return SourceRef(kind="hadith", source_name=name, text=h.text, ref=" · ".join(p for p in parts if p) or DORAR_NAME, url=h.url)
 
 
+def _same_wording(diff: list) -> bool:
+    """True when the quotation and the source differ in no word. A word replaced by a spelling variant
+    of itself (two letters apart at most, after normalisation) is the same word."""
+    for d in diff:
+        if d.op == "equal":
+            continue
+        if d.op != "replace":
+            return False
+        a, b = normalize_ar(d.quoted).split(), normalize_ar(d.source).split()
+        if len(a) != len(b) or any(Levenshtein.distance(x, y) > 2 or len(x) < 4 for x, y in zip(a, b)):
+            return False
+    return True
+
+
 def _pick_primary(strong: list[HadithCandidate]) -> HadithCandidate:
     """Among the best-matching candidates prefer HadeethEnc (it carries a grading and an explanation),
     and among its records the one with the most concise takhrij line; then the two Sahihs."""
@@ -492,6 +508,10 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
     if dorar_strong and not primary:
         similarity = dorar_strong[0][0]
 
+    # The comparison with the source that will be shown: a changed, dropped or added word is a
+    # difference in wording whatever the character similarity says. Spelling variants of the same word
+    # (the normaliser already unifies hamza, ta marbuta and diacritics) do not count as a change.
+    shown_diff = primary.diff if primary is not None else (dorar_strong[0][2] if dorar_strong else None)
     decision = decide_hadith(
         found=found,
         similarity=similarity,
@@ -500,6 +520,7 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
         in_sahihayn=in_sahihayn,
         quoted_words=quoted_words,
         grading_source_reachable=ctx.dorar.status != "unreachable",
+        wording_identical=_same_wording(shown_diff) if shown_diff is not None else None,
     )
     facts = Facts(similarity=round(similarity, 4) if (found or cands) else None, quoted_words=quoted_words, in_sahihayn=in_sahihayn)
     if not found and cands:
@@ -559,7 +580,7 @@ async def verify_hadith(claim: RawClaim, cid: str, index: int, ctx: Context) -> 
         # words, and the sentence reports one by meaning — not "no source", but a report by meaning.
         decision = decide_attribution_by_meaning()
     kind = "paraphrase" if paraphrase else {"hadith.accepted_exact": "exact", "hadith.partial": "partial"}.get(decision.rule_id, "near")
-    if similarity >= t.hadith_exact and not paraphrase:
+    if similarity >= t.hadith_exact and not paraphrase and (shown_diff is None or _same_wording(shown_diff)):
         kind = "exact"
     return _base_card(
         claim, cid, index, decision, ctx,
@@ -781,14 +802,42 @@ def _shamela_source(page: ShamelaPage) -> SourceRef:
     )  # fmt: skip
 
 
+def _verbatim_prefix(claim: RawClaim, found) -> bool:
+    """An unclosed quotation after «قال فلان» runs to the end of the sentence, and may carry the
+    speaker's own words after the saying («… وهذا كلام نفيس»). When the whole is not found verbatim,
+    the longest prefix that is becomes the quotation (``found(text) -> bool``). Returns whether the
+    quotation was shortened. A quotation closed by quotation marks is taken exactly as written."""
+    words = words_with_offsets(claim.quote)
+    if claim.origin != "marker" or claim.closed or len(words) <= 4:
+        return False
+    for n in sorted((n for n in _PREFIX_LENGTHS if 4 <= n < len(words)), reverse=True):
+        if found(claim.quote[: words[n - 1][1]]):
+            _trim_claim(claim, words, n)
+            return True
+    return False
+
+
 async def verify_quote(claim: RawClaim, cid: str, index: int, ctx: Context) -> Card:
-    cands = await asyncio.to_thread(ctx.hadith.search, claim.quote, k=10)
+    arabic = arabic_ratio(claim.quote) >= 0.5
+    verbatim = THRESHOLDS.quote_verbatim
+
+    def narrations(text: str) -> list[HadithCandidate]:
+        return ctx.hadith.search(text, k=10)
+
+    cands = await asyncio.to_thread(narrations, claim.quote)
     best = cands[0] if cands else None
-    found = best is not None and best.similarity >= THRESHOLDS.quote_verbatim
-    if not found and arabic_ratio(claim.quote) >= 0.5:
+    found = best is not None and best.similarity >= verbatim
+    if not found and arabic and await asyncio.to_thread(_verbatim_prefix, claim, lambda text: bool(c := narrations(text)) and c[0].similarity >= verbatim):
+        cands = await asyncio.to_thread(narrations, claim.quote)
+        best = cands[0] if cands else None
+        found = best is not None and best.similarity >= verbatim
+    if not found and arabic:
         # Not a narration: the books of the scholars, on Shamela.
         pages = await get_shamela().find(claim.quote)
-        hit = _shamela_match(claim.quote, pages or [], claim.attributed_to or "")
+        named = claim.attributed_to or ""
+        hit = _shamela_match(claim.quote, pages or [], named)
+        if hit is None and pages and _verbatim_prefix(claim, lambda text: _shamela_match(text, pages, named) is not None):
+            hit = _shamela_match(claim.quote, pages, named)
         if hit is not None:
             page, score, diff, attribution = hit
             if attribution is None and not _names_someone(claim.attributed_to):

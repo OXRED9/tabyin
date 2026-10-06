@@ -14,7 +14,7 @@ from pathlib import Path
 
 from .config import settings
 from .evidence_rules.thresholds import THRESHOLDS as t
-from .extract import RawClaim, absorb_closed_quotes, drop_noise, keep_personal_cases, join_split_quotations, keep_questions, merge_claims, widen_scanned_narrations, widen_scanned_verses
+from .extract import RawClaim, absorb_closed_quotes, drop_noise, keep_personal_cases, join_split_quotations, keep_questions, merge_claims, prefer_scholar_quotes, widen_scanned_narrations, widen_scanned_verses
 from .extract.lexical import attributes_to_revelation, extract_by_markers, is_fabrication_request, looks_like_question, scan_hadith, scan_hadith_verbatim, scan_quran
 from .extract.llm_extractor import extract_with_llm
 from .ingest.document import Document, IngestError
@@ -179,9 +179,13 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         t_scan = time.monotonic()
         markers = extract_by_markers(doc)
         closed = [c for c in markers if c.closed]
+        scholar = [c for c in markers if c.type == ClaimType.attributed_quote]  # sayings introduced as a scholar's
         quick = await asyncio.to_thread(scan_quran, doc, quran)
         quick = absorb_closed_quotes(quick, [c for c in closed if c.type == ClaimType.ayah], doc.full_text)
         scanned = await asyncio.to_thread(scan_hadith_verbatim, doc, hadith, [(c.start, c.end) for c in quick])
+        # «قال الشيخ فلان: «…»» where the words are a narration: one note, on the saying as attributed —
+        # its check against the hadith sources says that the words are the Prophet's ﷺ, not his.
+        scanned = prefer_scholar_quotes(scanned, scholar)
         quick = merge_claims(quick, absorb_closed_quotes(scanned, [c for c in closed if c.type == ClaimType.hadith], doc.full_text))
         # "قال الله تعالى:" followed by a verse with a changed word: the scan sees only the intact part.
         # The marked quotation replaces that fragment when the matcher finds it is the same verse.
@@ -231,8 +235,9 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
                 rest = join_split_quotations(rest, closed)
                 rest = keep_personal_cases(rest, markers)
                 rest = keep_questions(rest, markers, looks_like_question, is_fabrication_request)
-                # A saying introduced as a scholar's is reported even when the model left it out.
-                rest = merge_claims(rest, [c for c in markers if c.type == ClaimType.attributed_quote])
+                # A saying introduced as a scholar's is reported even when the model left it out, and
+                # a narration or statement the model proposed on the same words is not a second note.
+                rest = merge_claims(prefer_scholar_quotes(rest, scholar), scholar)
             if held:
                 if mode == "full":
                     quick, rest = widen_scanned_verses(quick, rest, quran, t.ayah_near)
@@ -244,7 +249,8 @@ async def _orchestrate(ingest, ui_lang: str, eta_ingest: int | None, queue: asyn
         if mode == "lexical_only":
             ctx.llm_enabled = False
             await put(("error", error_event("llm_unavailable", "extract", fatal=False)))
-            rest = [c for c in markers if not c.closed]
+            # Delimited verses and narrations are already in ``quick``; a delimited saying is not.
+            rest = [c for c in markers if not c.closed or c.type == ClaimType.attributed_quote]
             merged = merge_claims(quick, rest)
             taken = [(c.start, c.end) for c in merged]
             rest = rest + await asyncio.to_thread(scan_hadith, doc, hadith, taken)

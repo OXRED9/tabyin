@@ -96,6 +96,21 @@ _QUESTION = re.compile(
     re.IGNORECASE,
 )
 QUESTION_MAX_CHARS = 400
+# A general question («كيف …؟», «what …?») is put to the tool only when it is about religion: «كيف
+# الحال؟» and «how are you today?» were referred to the fatwa sites (6 Oct 2026). Topic words, matched
+# at the start of a word on the folded spelling; a question for a ruling («ما حكم», «هل يجوز», «حرام؟»)
+# needs none.
+_RELIGIOUS_TOPIC = re.compile(
+    r"(?<![\u0621-\u064a])[وفبلك]?(?:ال)?(?:الله|اله|رب|صلا|صلي|صوم|صيام|زكا|حج|عمره|وضو|غسل|طهار|تيمم|حلال|حرام|حكم|سنه|بدع|شرك|دين|اسلام|مسلم"
+    r"|قران|ايه|سوره|حديث|نبي|رسول|رمضان|دعا|ذكر|مسجد|جنه|نار|توبه|ذنب|فتو|شرع|فقه|استخار|تقو|ايمان|كفر|نكاح|زواج|طلاق|ميراث|عباد"
+    r"|جمعه|عيد|قبر|جناز|ربا|صدق|كفار|نذر|يمين|حجاب|عقيد|توحيد|تفسير|صحاب|سيره|اذان|اقام|قبله|ركع|سجود|تشهد|وتر|تراويح|هجر|جهاد|ملائك|يوم\s+القيامه|اخر)"
+    r"|\b(?:allah|god|pray\w*|salah|fast\w*|ramadan|zakat|hajj|umrah|halal|haram|permissible|islam\w*|qur'?an|hadith|prophet|sunnah|wudu|mosque|sin|dua|fatwa|shari'?a\w*|muslim\w*|ayah|verse|surah)\b",
+    re.IGNORECASE,
+)
+
+
+def _asked_of_the_tool(question: str) -> bool:
+    return bool(re.match(_RULING_QUESTION, question.strip()) or re.search(r"(?:حرام|حلال|جائز|مكروه|واجب|بدعه|مباح|شرك)", question) or _RELIGIOUS_TOPIC.search(question))
 
 
 # A statement that reports, in the speaker's own words, what the Prophet ﷺ said, did or taught, or what
@@ -267,16 +282,23 @@ def extract_by_markers(doc: Document) -> list[RawClaim]:
             continue
         span = _quote_after(plain, m.end())
         if span and len(plain[span[0] : span[1]].split()) >= 4:
+            # «قال النووي: قال رسول الله ﷺ: «…»» — the scholar is quoting; what is quoted is the narration
+            # (or the verse), and it gets the note. The scholar's words are not a saying of his own.
+            head = plain[span[0] : span[0] + 60]
+            if _HADITH_MARKER.match(head) or _AYAH_MARKER.match(head):
+                continue
             add(ClaimType.attributed_quote, span[0], span[1], explicit_attribution=True, closed=span[2], attributed_to=text[index[m.start(1)] : index[min(m.end(1), len(index) - 1)]].strip(), content_level=ContentLevel.B)
     for m in _REQUEST.finditer(plain):
         add(ClaimType.request, m.start(), m.end(), content_level=ContentLevel.B)
     for m in _PERSONAL.finditer(plain):
         add(ClaimType.ruling, m.start(), m.end(), content_level=ContentLevel.D, certainty=Certainty.ijtihadi)
     if len(text) <= QUESTION_MAX_CHARS:
-        taken = [(c.start, c.end) for c in claims]  # a request to fabricate or a personal case is not also "a question"
+        # A request to fabricate or a personal case is not also "a question". A verse or narration quoted
+        # inside the question does not stop it being one: the quotation is verified, the question referred.
+        taken = [(c.start, c.end) for c in claims if c.type == ClaimType.request or c.content_level == ContentLevel.D]
         for m in _QUESTION.finditer(plain):
             start, end = index[m.start()], index[min(m.end(), len(index) - 1)]
-            if any(s < end and start < e for s, e in taken):
+            if any(s < end and start < e for s, e in taken) or not _asked_of_the_tool(m.group(0)):
                 continue
             add(ClaimType.ruling, m.start(), m.end(), content_level=ContentLevel.B, certainty=Certainty.ijtihadi, is_question=True)
     return claims
